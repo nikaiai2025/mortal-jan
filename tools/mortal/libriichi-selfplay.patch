@@ -1,0 +1,115 @@
+diff --git a/libriichi/src/arena/mod.rs b/libriichi/src/arena/mod.rs
+index 880cf87..0ae4f6c 100644
+--- a/libriichi/src/arena/mod.rs
++++ b/libriichi/src/arena/mod.rs
+@@ -2,6 +2,7 @@ mod board;
+ mod game;
+ mod one_vs_three;
+ mod result;
++mod self_play;
+ mod two_vs_two;
+ 
+ pub use board::Board;
+@@ -9,6 +10,7 @@ pub use result::GameResult;
+ 
+ use crate::py_helper::add_submodule;
+ use one_vs_three::OneVsThree;
++use self_play::SelfPlay;
+ use two_vs_two::TwoVsTwo;
+ 
+ use pyo3::prelude::*;
+@@ -21,5 +23,6 @@ pub(crate) fn register_module(
+     let m = PyModule::new(py, "arena")?;
+     m.add_class::<OneVsThree>()?;
+     m.add_class::<TwoVsTwo>()?;
++    m.add_class::<SelfPlay>()?;
+     add_submodule(py, prefix, super_mod, &m)
+ }
+diff --git a/libriichi/src/arena/self_play.rs b/libriichi/src/arena/self_play.rs
+new file mode 100644
+index 0000000..5cb0bb6
+--- /dev/null
++++ b/libriichi/src/arena/self_play.rs
+@@ -0,0 +1,82 @@
++use super::game::{BatchGame, Index};
++use crate::agent::new_py_agent;
++use std::array;
++use std::fs::{self, File};
++use std::io;
++use std::path::PathBuf;
++
++use anyhow::Result;
++use flate2::Compression;
++use flate2::read::GzEncoder;
++use pyo3::prelude::*;
++use rayon::prelude::*;
++
++/// Self-play of one Python agent on all four seats, one game per seed.
++///
++/// `OneVsThree` plays each seed four times with the challenger rotated, which
++/// yields four identical games when both sides are the same greedy model.
++#[pyclass]
++#[derive(Clone, Default)]
++pub struct SelfPlay {
++    pub disable_progress_bar: bool,
++    pub log_dir: Option<String>,
++}
++
++#[pymethods]
++impl SelfPlay {
++    #[new]
++    #[pyo3(signature = (*, disable_progress_bar=false, log_dir=None))]
++    const fn new(disable_progress_bar: bool, log_dir: Option<String>) -> Self {
++        Self {
++            disable_progress_bar,
++            log_dir,
++        }
++    }
++
++    /// Returns the final scores of every game in seed order.
++    pub fn py_self_play(
++        &self,
++        engine: PyObject,
++        seed_start: (u64, u64),
++        seed_count: u64,
++        py: Python<'_>,
++    ) -> Result<Vec<[i32; 4]>> {
++        py.allow_threads(move || {
++            let seeds: Vec<_> = (seed_start.0..seed_start.0 + seed_count)
++                .map(|seed| (seed, seed_start.1))
++                .collect();
++            let player_ids: Vec<u8> = (0..4).cycle().take(seeds.len() * 4).collect();
++            let mut agents = [new_py_agent(engine, &player_ids)?];
++            let indexes: Vec<[Index; 4]> = (0..seeds.len())
++                .map(|game| {
++                    array::from_fn(|seat| Index {
++                        agent_idx: 0,
++                        player_id_idx: game * 4 + seat,
++                    })
++                })
++                .collect();
++
++            let results = BatchGame::tenhou_hanchan(self.disable_progress_bar).run(
++                &mut agents,
++                &indexes,
++                &seeds,
++            )?;
++
++            if let Some(dir) = &self.log_dir {
++                fs::create_dir_all(dir)?;
++                results.par_iter().try_for_each(|game_result| {
++                    let (seed, key) = game_result.seed;
++                    let filename: PathBuf =
++                        [dir, &format!("{seed}_{key}.json.gz")].iter().collect();
++                    let log = game_result.dump_json_log()?;
++                    let mut comp = GzEncoder::new(log.as_bytes(), Compression::best());
++                    let mut f = File::create(filename)?;
++                    io::copy(&mut comp, &mut f)?;
++                    anyhow::Ok(())
++                })?;
++            }
++
++            Ok(results.iter().map(|game_result| game_result.scores).collect())
++        })
++    }
++}

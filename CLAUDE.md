@@ -15,3 +15,5 @@
 
 ## Mortal環境
 - `pwsh -File tools/mortal/setup.ps1` で `.mortal/`（git対象外）にソース・重み・venv・libriichiを構築する。ローカルに重みがあれば `MORTAL_WEIGHT_SOURCE` で指定するとダウンロードを省ける
+- libriichiへの変更は `tools/mortal/libriichi-selfplay.patch` に置き、setup.ps1が適用する。`.mortal/source` を直接編集したら差分をパッチへ書き戻す
+- 問題生成のPythonは `.mortal/venv/Scripts/python.exe` で実行する（テスト: `-m pytest generator/tests`）

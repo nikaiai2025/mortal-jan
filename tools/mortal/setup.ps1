@@ -71,6 +71,13 @@ if (-not (Test-Path -LiteralPath $sourceRoot -PathType Container)) {
 }
 $actualCommit = (& $git -C $sourceRoot rev-parse HEAD).Trim()
 if ($actualCommit -ne $sourceCommit) { throw "Mortal source commitが不一致です: $actualCommit (expected $sourceCommit)" }
+# 自己対局を1seed1対局で回すためのパッチ（未適用のときだけ当てる）
+$patch = Join-Path $PSScriptRoot "libriichi-selfplay.patch"
+& $git -C $sourceRoot apply --reverse --check $patch 2>$null
+if ($LASTEXITCODE -ne 0) {
+	& $git -C $sourceRoot apply $patch
+	Assert-ExitCode "libriichi patch"
+}
 
 if (-not (Test-Path -LiteralPath $venvRoot -PathType Container)) {
 	& $python -m venv $venvRoot
@@ -81,8 +88,8 @@ $venvPython = Join-Path $venvRoot "Scripts\python.exe"
 Assert-ExitCode "pip upgrade"
 & $venvPython -m pip install --index-url https://download.pytorch.org/whl/cpu torch
 Assert-ExitCode "CPU PyTorch install"
-& $venvPython -m pip install numpy
-Assert-ExitCode "numpy install"
+& $venvPython -m pip install numpy pytest
+Assert-ExitCode "numpy/pytest install"
 
 $env:PYO3_PYTHON = $venvPython
 & $cargo build --release --lib --manifest-path (Join-Path $sourceRoot "libriichi\Cargo.toml")

@@ -9,3 +9,6 @@ dist/
 .env*
 __pycache__/
 *.pyc
+
+# 問題生成の中間・最終データ（python -m generator.* で再生成）
+generated/
