@@ -26,19 +26,21 @@ CREATE TABLE players (
   created_at TEXT NOT NULL
 );
 
+-- The facts: who answered what. Everything else is counted from these rows.
 CREATE TABLE answers (
+  id INTEGER PRIMARY KEY,     -- insertion order; the aggregation reads new rows by id
   player_id INTEGER NOT NULL,
   problem_id INTEGER NOT NULL,
   action TEXT NOT NULL,
   score INTEGER NOT NULL,
   pitari INTEGER NOT NULL,
   answered_at TEXT NOT NULL,
-  PRIMARY KEY (player_id, problem_id)
-) WITHOUT ROWID;
-CREATE INDEX answers_history ON answers (player_id, answered_at DESC);
+  jst_date TEXT NOT NULL      -- 'YYYY-MM-DD' in Japan time
+);
+CREATE UNIQUE INDEX answers_by_player ON answers (player_id, problem_id);
 
--- Aggregates updated with each answer so that rankings never scan answers.
--- period: 'all' or a JST date 'YYYY-MM-DD'.
+-- Aggregates of answers for rankings, folded in every 10 minutes (worker/aggregate.ts)
+-- so that rankings never scan answers. period: 'all' or a JST date 'YYYY-MM-DD'.
 CREATE TABLE player_stats (
   player_id INTEGER NOT NULL,
   period TEXT NOT NULL,
@@ -53,3 +55,10 @@ CREATE TABLE player_stats (
 CREATE INDEX ranking_answers ON player_stats (period, answers DESC);
 CREATE INDEX ranking_average ON player_stats (period, average DESC) WHERE qualified = 1;
 CREATE INDEX ranking_pitari ON player_stats (period, pitari_rate DESC) WHERE qualified = 1;
+
+-- Answers up to last_answer_id are already in player_stats and the problems' counters.
+CREATE TABLE aggregation (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  last_answer_id INTEGER NOT NULL
+);
+INSERT INTO aggregation (id, last_answer_id) VALUES (1, 0);

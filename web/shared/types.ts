@@ -61,7 +61,7 @@ export interface Choice {
 export interface Candidate {
 	action: string;
 	q: number;
-	/** Mortal evaluation (softmax of Q / T), 0-1. */
+	/** AI evaluation (softmax of Q / T), 0-1. */
 	p: number;
 	score: number;
 }

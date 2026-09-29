@@ -177,9 +177,9 @@ export function rulesPage(root: HTMLElement): Promise<void> {
 		),
 		section(
 			"採点",
-			"Mortalは候補ごとに評価（%）を出します。得点は「あなたの手の評価 ÷ 最善手の評価 × 100」です。",
+			"AI（mortal-298k）は候補ごとに評価（%）を出します。得点は「あなたの手の評価 ÷ 最善手の評価 × 100」です。",
 			"最善手と一致すると「ピタリ」（100点・花丸）。70〜99点は○、30〜69点は△、29点以下は✕です。",
-			"難易度はMortalが最善手をどれだけ確信しているかで分けます（かんたん90%以上／ふつう50%以上／むずかしい50%未満）。98%以上の自明な局面は出題しません。",
+			"難易度はAIが最善手をどれだけ確信しているかで分けます（打牌はかんたん90%以上／ふつう50%以上／むずかしい50%未満。鳴きはそれに近い割合になる基準）。98%以上の自明な局面は出題しません。",
 		),
 	);
 	return Promise.resolve();
@@ -213,7 +213,9 @@ export async function profilePage(root: HTMLElement, publicId: string, app: App)
 		publicId = (await ensureSession()).publicId;
 		if (location.pathname === "/u/me") history.replaceState(null, "", `/u/${publicId}`);
 	}
-	const profile = await publicApi<Profile>(`/api/players/${encodeURIComponent(publicId)}`);
+	// The owner asks with their token and gets live stats and history; others get the aggregated stats.
+	const path = `/api/players/${encodeURIComponent(publicId)}`;
+	const profile = currentPublicId() === publicId ? await api<Profile>(path) : await publicApi<Profile>(path);
 	const isMe = currentPublicId() === profile.publicId;
 	const recent = h("ol", { class: "history" });
 	for (const item of profile.history) {
@@ -236,8 +238,9 @@ export async function profilePage(root: HTMLElement, publicId: string, app: App)
 		),
 		h("div", { class: "stat-row" }, statBlock("全期間", profile.all), statBlock("今日", profile.today)),
 		isMe ? h("div", { class: "result__actions" }, h("button", { class: "ghost-button", type: "button", onclick: share }, "成績を共有")) : null,
-		h("h2", { class: "section-title" }, "最近の回答"),
-		profile.history.length ? recent : h("p", { class: "empty" }, "まだ回答がありません。"),
+		isMe ? h("h2", { class: "section-title" }, "最近の回答") : null,
+		isMe ? (profile.history.length ? recent : h("p", { class: "empty" }, "まだ回答がありません。")) : null,
+		isMe ? null : h("p", { class: "note" }, "成績は10分ごとに更新します。"),
 	);
 }
 
@@ -310,7 +313,7 @@ export async function rankingPage(root: HTMLElement): Promise<void> {
 		h("header", { class: "page-head" }, h("h1", {}, "ランキング")),
 		tabs(PERIODS, "period", period),
 		tabs(AXES, "axis", axis),
-		axis === "answers" ? null : h("p", { class: "note" }, `${minimum}問以上回答したプレイヤーが対象です。`),
+		h("p", { class: "note" }, `10分ごとに更新します。${axis === "answers" ? "" : `${minimum}問以上回答したプレイヤーが対象です。`}`),
 		data.entries.length ? table : h("p", { class: "empty" }, "まだ記録がありません。"),
 	);
 }

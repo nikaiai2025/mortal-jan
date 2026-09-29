@@ -43,7 +43,7 @@ export async function showProblem(root: HTMLElement, response: ProblemResponse, 
 }
 
 const rulesNote = () =>
-	h("p", { class: "rules-note" }, "天鳳段位戦準拠の東南戦。対戦相手の3人も全員Mortalです。", h("a", { href: "/rules" }, "ルール"));
+	h("p", { class: "rules-note" }, "天鳳段位戦準拠の東南戦。対戦相手の3人も同じAI（Mortal）です。", h("a", { href: "/rules" }, "ルール"));
 
 function heading(question: Question, options: PlayOptions): HTMLElement {
 	return h(
@@ -125,7 +125,7 @@ function resultCard(result: Result, options: PlayOptions): HTMLElement {
 				h("span", { class: "candidate__action" }, actionElement(candidate.action, result)),
 				h(
 					"span",
-					{ class: "candidate__bar", "aria-label": `Mortal評価 ${percent.toFixed(1)}%` },
+					{ class: "candidate__bar", "aria-label": `AI評価 ${percent.toFixed(1)}%` },
 					h("span", { class: "candidate__fill", style: { width: `${Math.max(percent, 0.5)}%` } }),
 				),
 				h("span", { class: "candidate__percent" }, percent < 0.1 ? "0%" : `${percent.toFixed(percent < 10 ? 1 : 0)}%`),
@@ -138,7 +138,7 @@ function resultCard(result: Result, options: PlayOptions): HTMLElement {
 	const meta = h(
 		"dl",
 		{ class: "result__meta" },
-		h("dt", {}, "Mortalの判定"),
+		h("dt", {}, "AIの判定"),
 		h("dd", {}, DIFFICULTY_LABELS[result.difficulty]),
 		h("dt", {}, "みんなの平均"),
 		h("dd", {}, result.human ? `${result.human.average.toFixed(1)}点（${result.human.answers}人）` : "集計中"),
@@ -164,9 +164,9 @@ function resultCard(result: Result, options: PlayOptions): HTMLElement {
 			"div",
 			{ class: "result__answers" },
 			h("div", { class: "result__line" }, h("span", { class: "result__label" }, "あなた"), actionElement(answer.action, result, "tile tile--result")),
-			h("div", { class: "result__line" }, h("span", { class: "result__label" }, "Mortal"), actionElement(evaluation.best, result, "tile tile--result")),
+			h("div", { class: "result__line" }, h("span", { class: "result__label" }, "AI"), actionElement(evaluation.best, result, "tile tile--result")),
 		),
-		result.kind === "call" ? h("div", { class: "result__list" }, h("h3", {}, "候補ごとのMortal評価"), list) : null,
+		result.kind === "call" ? h("div", { class: "result__list" }, h("h3", {}, "候補ごとのAI評価"), list) : null,
 		meta,
 		h(
 			"div",

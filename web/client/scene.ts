@@ -110,9 +110,9 @@ export interface HandView {
 }
 
 export interface HandBar {
-	/** Mortal evaluation of discarding this tile without riichi (0-1), if legal. */
+	/** AI evaluation of discarding this tile without riichi (0-1), if legal. */
 	dama?: number;
-	/** Mortal evaluation of riichi with this tile, if legal. */
+	/** AI evaluation of riichi with this tile, if legal. */
 	riichi?: number;
 	best: boolean;
 }
@@ -352,7 +352,7 @@ function drawOpponentRow(ctx: CanvasRenderingContext2D, scene: Scene, seat: numb
 
 const BAR_MAX = 250;
 
-/** Mortal evaluation of each hand tile as bars rising from the hand (after answering). */
+/** AI evaluation of each hand tile as bars rising from the hand (after answering). */
 function drawBars(ctx: CanvasRenderingContext2D, scene: Scene, bars: HandBar[], progress: number): void {
 	const slots = handSlots(scene);
 	// Bars stand on the hand and grow upward over the player's own river.

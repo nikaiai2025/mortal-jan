@@ -1,5 +1,5 @@
 param(
-	[int]$Hanchan = 1050,
+	[int]$Hanchan = 1150,
 	[int]$Problems = 10000
 )
 $ErrorActionPreference = "Stop"
@@ -10,6 +10,17 @@ $repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
 $python = Join-Path $repoRoot ".mortal\venv\Scripts\python.exe"
 if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
 	throw "Mortal環境がありません。先に pwsh -File tools/mortal/setup.ps1 を実行してください。"
+}
+
+# The published problem set uses secret seeds (see generator/runtime.py). Keep this file:
+# without it the same problems cannot be regenerated.
+$seedsPath = Join-Path $repoRoot "generator\seeds.local.json"
+if (-not (Test-Path -LiteralPath $seedsPath -PathType Leaf)) {
+	$bytes = [byte[]]::new(8)
+	[System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+	[ordered]@{ seedKey = [BitConverter]::ToUInt32($bytes, 0); extractSeed = [BitConverter]::ToUInt32($bytes, 4) } |
+		ConvertTo-Json | Set-Content -LiteralPath $seedsPath -Encoding UTF8
+	Write-Output "非公開の乱数seedを作成しました: generator\seeds.local.json（リポジトリに入れず、バックアップしてください）"
 }
 
 Push-Location $repoRoot

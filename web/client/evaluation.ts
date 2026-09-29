@@ -10,7 +10,7 @@ export function chosenSlot(result: Result): number | null {
 	return index >= 0 ? index : null;
 }
 
-/** Mortal evaluation per hand tile: its dama discard and, when legal, riichi with it. */
+/** AI evaluation per hand tile: its dama discard and, when legal, riichi with it. */
 export function handBars(result: Result): HandBar[] {
 	const p = new Map(result.evaluation.candidates.map((c) => [c.action, c.p]));
 	return handTiles(result.scene).map((pai) => ({

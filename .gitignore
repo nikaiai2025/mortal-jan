@@ -15,3 +15,6 @@ generated/
 
 # wrangler types の生成物（npm run typecheck が作り直す）
 web/worker/worker-configuration.d.ts
+
+# 本番の問題集の乱数seed（公開すると問題と答えを再現できる）
+generator/seeds.local.json

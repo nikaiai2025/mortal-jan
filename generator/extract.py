@@ -19,17 +19,17 @@ from .actions import deaka, tile_sort_key
 from .scene import SceneTracker
 from .scoring import (
     DIFFICULTIES,
-    EASY_MIN,
-    HARD_MAX,
+    DISCARD_THRESHOLDS,
     TEMPERATURE,
     TRIVIAL,
     best_action,
-    difficulty,
+    classify_difficulty,
     mortal_evaluation,
+    p_max,
     scores,
 )
 
-EXTRACT_SEED = 20260930
+EXTRACT_SEED = runtime.seeds()["extractSeed"]
 CALIBRATION_PATH = Path(__file__).with_name("calibration.json")
 CALL_ORDER = ("chi_low", "chi_mid", "chi_high", "pon", "pass")
 CALL_OFFSETS = {"chi_low": (1, 2), "chi_mid": (-1, 1), "chi_high": (-2, -1), "pon": (0, 0)}
@@ -40,7 +40,7 @@ def game_number(game: str) -> int:
 
 
 def load_calibration() -> dict[str, Any]:
-    """Riichi weight written by generator.calibrate."""
+    """Call thresholds, call probability and riichi weight written by generator.calibrate."""
     return json.loads(CALIBRATION_PATH.read_text(encoding="utf-8"))
 
 
@@ -53,7 +53,13 @@ def read_decisions(path: Path) -> dict[str, Any]:
 
 
 def decision_files(directory: Path) -> list[Path]:
-    return sorted(directory.glob("*.json.gz"), key=lambda p: game_number(p.name))
+    """Evaluated games of the current seed key, in game order."""
+    key = runtime.seeds()["seedKey"]
+    return sorted(directory.glob(f"*_{key}.json.gz"), key=lambda p: game_number(p.name))
+
+
+def thresholds_for(kind: str, calibration: dict[str, Any]) -> tuple[float, float]:
+    return tuple(calibration["callThresholds"]) if kind == "call" else DISCARD_THRESHOLDS
 
 
 def by_kyoku(decisions: list[dict[str, Any]]) -> list[tuple[int, list[dict[str, Any]]]]:
@@ -67,13 +73,18 @@ def kyoku_rng(game: str, kyoku_index: int) -> random.Random:
     return random.Random(f"{EXTRACT_SEED}:{game}:{kyoku_index}")
 
 
-def pick(decisions: list[dict[str, Any]], rng: random.Random, riichi_weight: float) -> dict[str, Any] | None:
-    """Choose a difficulty uniformly, then one decision of it (riichi weighted).
+def pick(
+    decisions: list[dict[str, Any]], rng: random.Random, riichi_weight: float, call_probability: float
+) -> dict[str, Any] | None:
+    """Choose the call or the discard pool, then a difficulty uniformly, then one decision of it.
 
-    Each decision carries "kind" and "difficulty" (None: too obvious, never picked).
+    Each decision carries "kind" and "difficulty" (None: too obvious, never picked). The call pool
+    is chosen with `call_probability` when the kyoku has a call problem; riichi decisions weigh more.
     """
+    calls = [d for d in decisions if d["kind"] == "call" and d["difficulty"]]
+    use_calls = bool(calls) and rng.random() < call_probability
     wanted = rng.choice(DIFFICULTIES)
-    pool = [d for d in decisions if d["difficulty"] == wanted]
+    pool = [d for d in decisions if (d["kind"] == "call") == use_calls and d["difficulty"] == wanted]
     if not pool:
         return None
     weights = [riichi_weight if d["kind"] == "riichi" else 1.0 for d in pool]
@@ -92,9 +103,10 @@ def select(
         data = read_decisions(path)
         log_hashes[data["game"]] = data["logSha256"]
         for decision in data["decisions"]:
-            decision["difficulty"] = difficulty(decision["q"])
+            decision["difficulty"] = classify_difficulty(p_max(decision["q"]), thresholds_for(decision["kind"], calibration))
         for kyoku_index, decisions in by_kyoku(data["decisions"]):
-            decision = pick(decisions, kyoku_rng(data["game"], kyoku_index), calibration["riichiWeight"])
+            rng = kyoku_rng(data["game"], kyoku_index)
+            decision = pick(decisions, rng, calibration["riichiWeight"], calibration["callProbability"])
             if decision is not None:
                 selected.append((data["game"], decision))
     return selected[:count], log_hashes
@@ -206,10 +218,9 @@ def main() -> None:
         **runtime.IDENTITY,
         "temperature": TEMPERATURE,
         "trivial": TRIVIAL,
-        "easyMin": EASY_MIN,
-        "hardMax": HARD_MAX,
-        "riichiWeight": calibration["riichiWeight"],
-        "extractSeed": EXTRACT_SEED,
+        "discardThresholds": DISCARD_THRESHOLDS,
+        **{key: value for key, value in calibration.items() if key != "games"},
+        "secretSeeds": runtime.SEEDS_PATH.exists(),
         "games": used_games,
         "problems": len(problems),
     }

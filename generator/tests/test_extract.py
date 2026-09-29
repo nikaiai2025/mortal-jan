@@ -6,7 +6,7 @@ import pytest
 from generator.actions import CHI_LOW, PASS, PON, RIICHI, TILE_NAMES
 from generator.evaluate import DecisionPoint, candidates, classify
 from generator.extract import call_consumed, choices, number, pick
-from generator.scoring import difficulty
+from generator.scoring import classify_difficulty, p_max
 
 
 EASY = {"d:1m": 0.0, "d:2m": -3.0}  # p_max ≈ 0.95
@@ -16,33 +16,33 @@ OBVIOUS = {"d:1m": 0.0, "d:2m": -10.0}  # p_max ≈ 1
 
 
 def decision(kind, q):
-    return {"kind": kind, "q": q, "difficulty": difficulty(q), "kyokuIndex": 0, "eventIndex": 0, "seat": 0}
+    return {"kind": kind, "q": q, "difficulty": classify_difficulty(p_max(q), (0.9, 0.5)), "kyokuIndex": 0, "eventIndex": 0, "seat": 0}
 
 
 def test_pick_is_reproducible_and_covers_each_difficulty():
     decisions = [decision("discard", EASY), decision("discard", NORMAL), decision("discard", HARD)]
-    first = [pick(decisions, random.Random(f"s:{i}"), 2.0) for i in range(30)]
-    second = [pick(decisions, random.Random(f"s:{i}"), 2.0) for i in range(30)]
+    first = [pick(decisions, random.Random(f"s:{i}"), 2.0, 0.0) for i in range(30)]
+    second = [pick(decisions, random.Random(f"s:{i}"), 2.0, 0.0) for i in range(30)]
     assert first == second
     assert {id(d) for d in first} == {id(d) for d in decisions}
 
 
 def test_pick_skips_when_the_difficulty_is_absent():
     only_easy = [decision("discard", EASY)]
-    results = [pick(only_easy, random.Random(i), 1.0) for i in range(50)]
+    results = [pick(only_easy, random.Random(i), 1.0, 0.0) for i in range(50)]
     assert None in results and only_easy[0] in results
 
 
 def test_pick_never_chooses_an_obvious_decision():
     obvious = [decision("discard", OBVIOUS)]
-    assert all(pick(obvious, random.Random(i), 1.0) is None for i in range(50))
+    assert all(pick(obvious, random.Random(i), 1.0, 0.0) is None for i in range(50))
 
 
 def test_riichi_weight_raises_the_riichi_share():
     decisions = [decision("discard", HARD)] * 9 + [decision("riichi", HARD)]
 
     def riichi_picks(weight):
-        picks = [pick(decisions, random.Random(i), weight) for i in range(3000)]
+        picks = [pick(decisions, random.Random(i), weight, 0.0) for i in range(3000)]
         return sum(p is not None and p["kind"] == "riichi" for p in picks)
 
     assert riichi_picks(3.0) > 2 * riichi_picks(1.0)
@@ -103,3 +103,18 @@ def test_riichi_candidates_combine_both_stages():
     after = np.zeros(46)
     after[[one_m, two_m]] = [2.0, 1.2]
     assert candidates(point, q, after) == pytest.approx({"d:1m": 0.1, "d:2m": 0.3, "r:1m": 0.5, "r:2m": -0.3})
+
+
+def test_call_probability_chooses_the_call_pool():
+    decisions = [decision("discard", HARD), decision("call", HARD)]
+    kinds = lambda probability: {
+        p["kind"] for i in range(200) if (p := pick(decisions, random.Random(i), 1.0, probability)) is not None
+    }
+    assert kinds(0.0) == {"discard"}
+    assert kinds(1.0) == {"call"}
+    assert kinds(0.5) == {"discard", "call"}
+
+
+def test_a_kyoku_without_call_problems_uses_the_discard_pool():
+    decisions = [decision("discard", HARD), decision("call", OBVIOUS)]
+    assert all(p is None or p["kind"] == "discard" for p in (pick(decisions, random.Random(i), 1.0, 1.0) for i in range(50)))

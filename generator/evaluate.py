@@ -191,7 +191,8 @@ def main() -> None:
 
     args.out.mkdir(parents=True, exist_ok=True)
     brain, dqn = runtime.load_model()
-    paths = sorted(args.logs.glob("*.json.gz"))
+    # Only games of the current seed key (logs of other keys may share the folder).
+    paths = sorted(args.logs.glob(f"*_{runtime.seeds()['seedKey']}.json.gz"))
     started = time.time()
     for number, path in enumerate(paths, 1):
         out = args.out / path.name

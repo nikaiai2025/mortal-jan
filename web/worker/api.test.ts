@@ -1,6 +1,7 @@
 import { SELF, applyD1Migrations, env } from "cloudflare:test";
 import { beforeAll, describe, expect, it } from "vitest";
 import type { Me, ProblemResponse, Result, Session } from "../shared/types";
+import { aggregate, fold, readCursor } from "./aggregate";
 
 declare global {
 	namespace Cloudflare {
@@ -228,6 +229,7 @@ describe("ranking", () => {
 		await setStats(player, today(), 9, 900, 3);
 		await call("/api/problems/8", player);
 		await answer(player, 8, "d:2m"); // 63 points, not pitari
+		await aggregate(env.DB);
 		expect(await statsRow(player, "all")).toEqual({ answers: 50, qualified: 1, average: 4963 / 50, pitari_rate: 10 / 50 });
 		expect(await statsRow(player, today())).toEqual({ answers: 10, qualified: 1, average: 963 / 10, pitari_rate: 3 / 10 });
 	});
@@ -237,16 +239,52 @@ describe("ranking", () => {
 		await setStats(player, "all", 48, 4800, 0);
 		await call("/api/problems/9", player);
 		await answer(player, 9, "d:1m");
+		await aggregate(env.DB);
 		expect(await statsRow(player, "all")).toEqual({ answers: 49, qualified: 0, average: 4900 / 49, pitari_rate: 1 / 49 });
 	});
 });
 
-describe("daily limit", () => {
-	it("stops saving answers after the daily limit", async () => {
+describe("aggregation", () => {
+	it("folds each answer into the stats and the problem's counters exactly once", async () => {
 		const player = await newPlayer();
-		await setStats(player, today(), 300, 0, 0);
+		for (const [id, action] of [[15, "d:1m"], [16, "d:2m"]] as const) {
+			await call(`/api/problems/${id}`, player);
+			await answer(player, id, action);
+		}
+		const before = await env.DB.prepare("SELECT answer_count, score_sum FROM problems WHERE id = 16").first();
+		const cursor = await readCursor(env.DB);
+		await aggregate(env.DB);
+		expect(await aggregate(env.DB)).toBe(0);
+		// A run that overlapped (still holding the old cursor) must not add the same answers again.
+		await fold(env.DB, cursor, await readCursor(env.DB));
+		expect(await statsRow(player, "all")).toMatchObject({ answers: 2, average: 163 / 2, pitari_rate: 1 / 2 });
+		const after = await env.DB.prepare("SELECT answer_count, score_sum FROM problems WHERE id = 16").first<{ answer_count: number; score_sum: number }>();
+		expect(after).toEqual({ answer_count: (before?.answer_count as number) + 1, score_sum: (before?.score_sum as number) + 63 });
+	});
+
+	it("shows a player's own stats before the aggregation runs, and others the aggregated ones", async () => {
+		const player = await newPlayer();
+		await call("/api/problems/17", player);
+		await answer(player, 17, "d:1m");
+		const me = (await call<Me>("/api/me", player)).body;
+		expect(me.all).toEqual({ answers: 1, scoreSum: 100, pitari: 1 });
+		const own = (await call<{ all: unknown; history: unknown[] }>(`/api/players/${player.publicId}`, player)).body;
+		expect(own.history).toHaveLength(1);
+		const shared = (await call<{ all: { answers: number }; history: unknown[] }>(`/api/players/${player.publicId}`)).body;
+		expect(shared).toMatchObject({ all: { answers: 0 }, history: [] });
+		await aggregate(env.DB);
+		expect((await call<{ all: { answers: number } }>(`/api/players/${player.publicId}`)).body.all.answers).toBe(1);
+	});
+});
+
+describe("daily limit", () => {
+	it("counts aggregated and not yet aggregated answers towards the daily limit", async () => {
+		const player = await newPlayer();
+		await setStats(player, today(), 299, 0, 0);
 		await call("/api/problems/10", player);
-		const response = await answer(player, 10, "d:1m");
+		expect((await answer(player, 10, "d:1m")).status).toBe(200); // the 300th, not aggregated yet
+		await call("/api/problems/18", player);
+		const response = await answer(player, 18, "d:1m");
 		expect(response.status).toBe(429);
 		expect(response.body).toEqual({ error: "daily_limit" });
 	});

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import sys
 from pathlib import Path
 
@@ -17,6 +18,19 @@ IDENTITY = {
     "modelSha256": "bfb3a6c072aa0bfd4171a9cdc77cb6c02ae42cde920843f9e5784394f23447d8",
 }
 OBS_VERSION = 4
+
+# Seeds of the published problem set stay out of the repository: with the public code and
+# public seeds anyone could regenerate every problem together with its answer.
+SEEDS_PATH = Path(__file__).with_name("seeds.local.json")
+PUBLIC_SEEDS = {"seedKey": 20260930, "extractSeed": 20260930}
+
+
+def seeds() -> dict[str, int]:
+    """Self-play seed key and extraction seed; the public ones when no local file exists."""
+    if SEEDS_PATH.exists():
+        return json.loads(SEEDS_PATH.read_text(encoding="utf-8"))
+    return PUBLIC_SEEDS
+
 
 sys.path.insert(0, str(MORTAL_ROOT / "source" / "mortal"))
 sys.path.insert(0, str(MORTAL_ROOT / "libriichi"))

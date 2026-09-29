@@ -12,7 +12,7 @@ from pathlib import Path
 
 from . import runtime
 
-SEED_KEY = 20260930
+SEED_KEY = runtime.seeds()["seedKey"]
 
 
 def log_path(out: Path, seed: int) -> Path:

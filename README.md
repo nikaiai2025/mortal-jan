@@ -12,10 +12,12 @@ Python 3.12・Rust（cargo）・gitが必要。生成物は `generated/` に出�
 
 ```powershell
 pwsh -File tools/mortal/setup.ps1          # Mortal環境を .mortal/ に構築
-pwsh -File tools/generate-problems.ps1     # 自己対局→全判断の評価→リーチ重みの導出→問題データ
+pwsh -File tools/generate-problems.ps1     # 自己対局→全判断の評価→抽出の設定の導出→問題データ
 ```
 
-`generate-problems.ps1` は中断しても、再実行すれば続きから処理する。導出したリーチ重みは `generator/calibration.json` に保存される。
+`generate-problems.ps1` は中断しても、再実行すれば続きから処理する。導出した抽出の設定（鳴きの閾値・鳴き枠の確率・リーチ重み）は `generator/calibration.json` に保存される。
+
+初回実行時に、本番の問題集用の非公開の乱数seed（`generator/seeds.local.json`、git対象外）を作る。公開コードとseedがあれば問題と答えを再現できるため、このファイルは公開せず、バックアップしておく。
 
 ## Web（`web/`）
 

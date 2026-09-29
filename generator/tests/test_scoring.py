@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from generator.scoring import best_action, difficulty, mortal_evaluation, scores
+from generator.scoring import best_action, classify_difficulty, mortal_evaluation, p_max, scores
 
 
 def test_best_action_gets_100_and_others_follow_regret():
@@ -37,4 +37,4 @@ def test_best_action_tie_is_deterministic():
     ],
 )
 def test_difficulty_by_best_evaluation(q, expected):
-    assert difficulty(q) == expected
+    assert classify_difficulty(p_max(q), (0.9, 0.5)) == expected

@@ -1,7 +1,6 @@
 import {
 	DAILY_ANSWER_LIMIT,
 	HUMAN_STATS_MIN_ANSWERS,
-	RANKING_MIN_ANSWERS,
 	SET_SIZE,
 	type SetTheme,
 	displayName,
@@ -26,6 +25,7 @@ import type {
 	Stats,
 } from "../shared/types";
 import { HttpError, addressKey, json, positiveInt, randomId, randomInt, randomToken, readJson, sha256Hex } from "./http";
+import { readCursor } from "./aggregate";
 import { validateName } from "./names";
 
 interface Ctx {
@@ -134,22 +134,40 @@ async function createPlayer(ctx: Ctx): Promise<Response> {
 	throw new HttpError(500, "id_exhausted");
 }
 
-async function statsOf(db: D1Database, playerId: number, now: Date): Promise<{ all: Stats; today: Stats }> {
+interface PlayerAnswers {
+	all: Stats;
+	today: Stats;
+	history: Profile["history"];
+}
+
+/** A player's stats and recent answers, counted from their answers (always up to date). */
+async function playerAnswers(db: D1Database, playerId: number, now: Date): Promise<PlayerAnswers> {
 	const today = jstDate(now);
 	const { results } = await db
-		.prepare("SELECT period, answers, score_sum, pitari FROM player_stats WHERE player_id = ? AND period IN ('all', ?)")
-		.bind(playerId, today)
-		.all<{ period: string; answers: number; score_sum: number; pitari: number }>();
-	const pick = (period: string): Stats => {
-		const row = results.find((r) => r.period === period);
-		return { answers: row?.answers ?? 0, scoreSum: row?.score_sum ?? 0, pitari: row?.pitari ?? 0 };
-	};
-	return { all: pick("all"), today: pick(today) };
+		.prepare("SELECT id, problem_id, score, pitari, answered_at, jst_date FROM answers WHERE player_id = ?")
+		.bind(playerId)
+		.all<{ id: number; problem_id: number; score: number; pitari: number; answered_at: string; jst_date: string }>();
+	const empty = (): Stats => ({ answers: 0, scoreSum: 0, pitari: 0 });
+	const all = empty();
+	const day = empty();
+	for (const r of results) {
+		for (const stats of r.jst_date === today ? [all, day] : [all]) {
+			stats.answers++;
+			stats.scoreSum += r.score;
+			stats.pitari += r.pitari;
+		}
+	}
+	const history = results
+		.sort((a, b) => b.id - a.id)
+		.slice(0, 50)
+		.map((r) => ({ id: r.problem_id, score: r.score, pitari: r.pitari === 1, answeredAt: r.answered_at }));
+	return { all, today: day, history };
 }
 
 async function getMe(ctx: Ctx): Promise<Response> {
 	const player = await authenticate(ctx);
-	const me: Me = { publicId: player.public_id, name: player.name, ...(await statsOf(ctx.env.DB, player.id, new Date())) };
+	const { all, today } = await playerAnswers(ctx.env.DB, player.id, new Date());
+	const me: Me = { publicId: player.public_id, name: player.name, all, today };
 	return json(me);
 }
 
@@ -299,17 +317,6 @@ async function getProblem(ctx: Ctx): Promise<Response> {
 	return json({ state: "question", question: questionOf(row) } satisfies ProblemResponse);
 }
 
-const statsUpsert = `
-INSERT INTO player_stats (player_id, period, answers, score_sum, pitari, qualified, average, pitari_rate)
-VALUES (?1, ?2, 1, ?3, ?4, 1 >= ?5, ?3, ?4)
-ON CONFLICT (player_id, period) DO UPDATE SET
-  answers = answers + 1,
-  score_sum = score_sum + ?3,
-  pitari = pitari + ?4,
-  qualified = answers + 1 >= ?5,
-  average = CAST(score_sum + ?3 AS REAL) / (answers + 1),
-  pitari_rate = CAST(pitari + ?4 AS REAL) / (answers + 1)`;
-
 async function postAnswer(ctx: Ctx): Promise<Response> {
 	const player = await authenticate(ctx);
 	await limitPlayerWrites(ctx, player);
@@ -323,10 +330,15 @@ async function postAnswer(ctx: Ctx): Promise<Response> {
 	if (existing) return json({ state: "result", result: await resultOf(db, row, existing, sharerId) } satisfies ProblemResponse);
 	if (player.current_problem_id !== id) throw new HttpError(409, "not_assigned");
 	const now = new Date();
+	// Today's aggregated count plus this player's answers the aggregation has not folded in yet.
+	// "+player_id" keeps SQLite on the rowid range (the last minutes) instead of the player's index.
 	const answeredToday = await db
-		.prepare("SELECT answers FROM player_stats WHERE player_id = ? AND period = ?")
-		.bind(player.id, jstDate(now))
-		.first<number>("answers");
+		.prepare(
+			`SELECT COALESCE((SELECT answers FROM player_stats WHERE player_id = ?1 AND period = ?2), 0)
+			      + (SELECT COUNT(*) FROM answers WHERE id > ?3 AND +player_id = ?1 AND jst_date = ?2) AS n`,
+		)
+		.bind(player.id, jstDate(now), await readCursor(db))
+		.first<number>("n");
 	if ((answeredToday ?? 0) >= DAILY_ANSWER_LIMIT) throw new HttpError(429, "daily_limit");
 	const choices: Choice[] = JSON.parse(row.choices);
 	if (typeof action !== "string" || !choices.some((c) => c.action === action)) throw new HttpError(400, "invalid_action");
@@ -334,23 +346,19 @@ async function postAnswer(ctx: Ctx): Promise<Response> {
 	const evaluation: Evaluation = JSON.parse(row.evaluation);
 	const score = evaluation.candidates.find((c) => c.action === action)?.score ?? 0;
 	const pitari = action === evaluation.best ? 1 : 0;
+	// The only write of an answer; rankings and players' averages follow from aggregate().
 	try {
-		await db.batch([
-			db
-				.prepare("INSERT INTO answers (player_id, problem_id, action, score, pitari, answered_at) VALUES (?, ?, ?, ?, ?, ?)")
-				.bind(player.id, id, action, score, pitari, now.toISOString()),
-			db.prepare(statsUpsert).bind(player.id, "all", score, pitari, RANKING_MIN_ANSWERS.all),
-			db.prepare(statsUpsert).bind(player.id, jstDate(now), score, pitari, RANKING_MIN_ANSWERS.today),
-			db.prepare("UPDATE problems SET answer_count = answer_count + 1, score_sum = score_sum + ? WHERE id = ?").bind(score, id),
-		]);
+		await db
+			.prepare("INSERT INTO answers (player_id, problem_id, action, score, pitari, answered_at, jst_date) VALUES (?, ?, ?, ?, ?, ?, ?)")
+			.bind(player.id, id, action, score, pitari, now.toISOString(), jstDate(now))
+			.run();
 	} catch (error) {
 		// A concurrent submission already stored the answer; return that one.
 		const stored = await loadAnswer(db, player.id, id);
 		if (!stored) throw error;
 		return json({ state: "result", result: await resultOf(db, row, stored, sharerId) } satisfies ProblemResponse);
 	}
-	const updated = { ...row, answer_count: row.answer_count + 1, score_sum: row.score_sum + score };
-	const result = await resultOf(db, updated, { action, score, pitari: pitari === 1 }, sharerId);
+	const result = await resultOf(db, row, { action, score, pitari: pitari === 1 }, sharerId);
 	return json({ state: "result", result } satisfies ProblemResponse);
 }
 
@@ -449,6 +457,24 @@ async function getSet(ctx: Ctx): Promise<Response> {
 
 // ---- public pages ----
 
+/** Aggregated stats (up to 10 minutes old): two rows, whatever the player's history. */
+async function aggregatedStats(db: D1Database, playerId: number, now: Date): Promise<{ all: Stats; today: Stats }> {
+	const today = jstDate(now);
+	const { results } = await db
+		.prepare("SELECT period, answers, score_sum, pitari FROM player_stats WHERE player_id = ? AND period IN ('all', ?)")
+		.bind(playerId, today)
+		.all<{ period: string; answers: number; score_sum: number; pitari: number }>();
+	const of = (period: string): Stats => {
+		const row = results.find((r) => r.period === period);
+		return { answers: row?.answers ?? 0, scoreSum: row?.score_sum ?? 0, pitari: row?.pitari ?? 0 };
+	};
+	return { all: of("all"), today: of(today) };
+}
+
+/**
+ * The owner sees live stats and history counted from their answers. Anyone else (a shared
+ * link) gets the aggregated stats only, so a popular page never scans a long history.
+ */
 async function getProfile(ctx: Ctx): Promise<Response> {
 	const db = ctx.env.DB;
 	const player = await db
@@ -456,18 +482,12 @@ async function getProfile(ctx: Ctx): Promise<Response> {
 		.bind(ctx.params[0])
 		.first<PlayerRow>();
 	if (!player) throw new HttpError(404, "not_found");
-	const { results } = await db
-		.prepare(
-			"SELECT problem_id, score, pitari, answered_at FROM answers WHERE player_id = ? ORDER BY answered_at DESC LIMIT 50",
-		)
-		.bind(player.id)
-		.all<{ problem_id: number; score: number; pitari: number; answered_at: string }>();
-	const profile: Profile = {
-		publicId: player.public_id,
-		name: player.name,
-		...(await statsOf(db, player.id, new Date())),
-		history: results.map((r) => ({ id: r.problem_id, score: r.score, pitari: r.pitari === 1, answeredAt: r.answered_at })),
-	};
+	const viewer = ctx.request.headers.has("Authorization") ? await authenticate(ctx).catch(() => null) : null;
+	const now = new Date();
+	const profile: Profile =
+		viewer?.id === player.id
+			? { publicId: player.public_id, name: player.name, ...(await playerAnswers(db, player.id, now)) }
+			: { publicId: player.public_id, name: player.name, ...(await aggregatedStats(db, player.id, now)), history: [] };
 	return json(profile);
 }
 

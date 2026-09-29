@@ -5,11 +5,11 @@ from __future__ import annotations
 import math
 
 TEMPERATURE = 1.0
-# On the best action's Mortal evaluation (p_max), for every kind of decision:
-# at or above TRIVIAL it is not a problem; then easy / normal / hard.
+# On the best action's AI evaluation (p_max): at or above TRIVIAL it is not a problem.
 TRIVIAL = 0.98
-EASY_MIN = 0.9
-HARD_MAX = 0.5
+# (easy lower bound, hard upper bound) for discard and riichi decisions. Call decisions use
+# thresholds derived by generator.calibrate so that their mix matches this one.
+DISCARD_THRESHOLDS = (0.9, 0.5)
 DIFFICULTIES = ("easy", "normal", "hard")
 
 
@@ -26,6 +26,10 @@ def mortal_evaluation(q: dict[str, float]) -> dict[str, float]:
     return {action: weight / total for action, weight in weights.items()}
 
 
+def p_max(q: dict[str, float]) -> float:
+    return max(mortal_evaluation(q).values())
+
+
 def scores(q: dict[str, float]) -> dict[str, int]:
     """100 × p / p_max. Only the best action gets 100."""
     best = best_action(q)
@@ -36,16 +40,13 @@ def scores(q: dict[str, float]) -> dict[str, int]:
     }
 
 
-def difficulty(q: dict[str, float]) -> str | None:
+def classify_difficulty(best: float, thresholds: tuple[float, float]) -> str | None:
     """None when the decision is too obvious to be a problem."""
-    return classify_difficulty(max(mortal_evaluation(q).values()))
-
-
-def classify_difficulty(p_max: float) -> str | None:
-    if p_max >= TRIVIAL:
+    easy_min, hard_max = thresholds
+    if best >= TRIVIAL:
         return None
-    if p_max >= EASY_MIN:
+    if best >= easy_min:
         return "easy"
-    if p_max < HARD_MAX:
+    if best < hard_max:
         return "hard"
     return "normal"

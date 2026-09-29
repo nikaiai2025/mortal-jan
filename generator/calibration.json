@@ -1,4 +1,9 @@
 {
-  "riichiWeight": 1.4,
+  "callThresholds": [
+    0.9577,
+    0.6535
+  ],
+  "callProbability": 0.28,
+  "riichiWeight": 2.4,
   "games": 100
 }
