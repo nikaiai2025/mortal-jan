@@ -1,0 +1,11 @@
+# Mortal推論環境（tools/mortal/setup.ps1で再構築）
+.mortal/
+
+trash/
+node_modules/
+dist/
+.wrangler/
+.dev.vars*
+.env*
+__pycache__/
+*.pyc
