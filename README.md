@@ -17,6 +17,21 @@ pwsh -File tools/generate-problems.ps1     # 自己対局→全判断の評価�
 
 `generate-problems.ps1` は中断しても、再実行すれば続きから処理する。導出した閾値は `generator/calibration.json` に保存される。
 
+## Web（`web/`）
+
+Node.js 24が必要。問題データは `.mortal/venv/Scripts/python.exe -m generator.load` でSQL（`generated/problems.sql`）にしてから投入する。
+
+```powershell
+cd web
+npm ci
+npm run db:migrate:local    # ローカルD1にテーブルを作る
+npm run db:load:local       # ローカルD1に問題を入れる
+npm run dev                 # http://localhost:5173
+npm test; npm run typecheck
+```
+
+配信はGitHub Actionsの「Deploy」ワークフローを手動で実行する（リポジトリのSecretに `CLOUDFLARE_API_TOKEN` が必要）。本番D1への問題投入は一度だけ `npx wrangler d1 execute DB --remote --file ../generated/problems.sql` で行う。
+
 ## ライセンス
 
 [GNU Affero General Public License v3.0 or later](LICENSE)。第三者の素材は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) を参照。

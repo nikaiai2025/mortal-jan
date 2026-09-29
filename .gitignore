@@ -12,3 +12,6 @@ __pycache__/
 
 # 問題生成の中間・最終データ（python -m generator.* で再生成）
 generated/
+
+# wrangler types の生成物（npm run typecheck が作り直す）
+web/worker/worker-configuration.d.ts

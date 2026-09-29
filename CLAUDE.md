@@ -13,6 +13,9 @@
 - D1は読んだ行数で課金・制限される。一覧・ランキングは集計テーブルと索引で読み、`answers`を全件走査しない
 - 公開リポジトリのため、秘密情報をコミットしない。第三者の素材・コードを追加したら`THIRD_PARTY_NOTICES.md`に出典とライセンスを記録する
 
+## Web
+- 手順はREADME。`web/dev/` は開発サーバー専用の確認ページで、ビルドに含まれない。`/dev/marks.html` で回答後の演出を再生でき、`/dev/ogp.html` を1200×630で撮影したものが `assets/og.png`（OGPカード）
+
 ## Mortal環境
 - `pwsh -File tools/mortal/setup.ps1` で `.mortal/`（git対象外）にソース・重み・venv・libriichiを構築する。ローカルに重みがあれば `MORTAL_WEIGHT_SOURCE` で指定するとダウンロードを省ける
 - libriichiへの変更は `tools/mortal/libriichi-selfplay.patch` に置き、setup.ps1が適用する。`.mortal/source` を直接編集したら差分をパッチへ書き戻す
