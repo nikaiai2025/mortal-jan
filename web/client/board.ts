@@ -1,12 +1,19 @@
-// The problem image on the page: a crisp canvas that follows its box, with an overlay for marks.
+// The problem image on the page: a crisp canvas that follows its box, an overlay for marks,
+// and the own hand as the place where a discard is chosen.
 
 import type { Question } from "../shared/types";
 import { h } from "./dom";
-import { drawScene, preloadScene } from "./scene";
+import { type HandBar, type HandView, SCENE_SIZE, drawScene, handSlotAt, preloadScene } from "./scene";
 
 export interface Board {
 	element: HTMLElement;
 	overlay(layer: HTMLElement): void;
+	/** Redraw the own hand with this selection / enabled state. */
+	setHand(view: HandView): void;
+	/** Tapping a hand tile calls back with its index; null stops listening. */
+	onHandTap(listener: ((index: number) => void) | null): void;
+	/** Grow evaluation bars above the hand; they jump to full height once `skipped()` is true. */
+	showBars(bars: HandBar[], skipped: () => boolean): Promise<void>;
 }
 
 export async function board(question: Question): Promise<Board> {
@@ -14,9 +21,15 @@ export async function board(question: Question): Promise<Board> {
 	const canvas = h("canvas", { class: "board__canvas", role: "img", "aria-label": `第${question.id}問の局面` });
 	const overlayBox = h("div", { class: "board__overlay" });
 	const element = h("figure", { class: "board" }, canvas, overlayBox);
+	let hand: HandView = { selected: null };
+	let listener: ((index: number) => void) | null = null;
 
-	const observer = new ResizeObserver(() => draw());
-	const draw = () => {
+	const paint = () => {
+		const ctx = canvas.getContext("2d");
+		if (ctx) drawScene(ctx, question.scene, canvas.width, { problemId: question.id, hand });
+	};
+	const observer = new ResizeObserver(() => resize());
+	const resize = () => {
 		if (!canvas.isConnected) {
 			// The page moved on: release the observer and the bitmap.
 			observer.disconnect();
@@ -29,10 +42,41 @@ export async function board(question: Question): Promise<Board> {
 		if (canvas.width === size) return;
 		canvas.width = size;
 		canvas.height = size;
-		const ctx = canvas.getContext("2d");
-		if (ctx) drawScene(ctx, question.scene, size, { problemId: question.id, kind: question.kind, choices: question.choices });
+		paint();
 	};
 	observer.observe(canvas);
 
-	return { element, overlay: (layer) => overlayBox.replaceChildren(layer) };
+	canvas.addEventListener("click", (event) => {
+		if (!listener) return;
+		const scale = SCENE_SIZE / canvas.clientWidth;
+		const index = handSlotAt(question.scene, event.offsetX * scale, event.offsetY * scale);
+		if (index !== null) listener(index);
+	});
+
+	return {
+		element,
+		overlay: (layer) => overlayBox.replaceChildren(layer),
+		setHand(view) {
+			hand = view;
+			paint();
+		},
+		onHandTap(next) {
+			listener = next;
+			element.classList.toggle("is-choosing", next !== null);
+		},
+		showBars(bars, skipped) {
+			const duration = 700;
+			const start = performance.now();
+			return new Promise((resolve) => {
+				const frame = (now: number) => {
+					const t = skipped() ? 1 : Math.min(1, (now - start) / duration);
+					hand = { ...hand, bars, barProgress: 1 - (1 - t) ** 3 };
+					paint();
+					if (t < 1 && canvas.isConnected) requestAnimationFrame(frame);
+					else resolve();
+				};
+				requestAnimationFrame(frame);
+			});
+		},
+	};
 }

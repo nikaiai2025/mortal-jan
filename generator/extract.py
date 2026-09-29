@@ -19,8 +19,10 @@ from .actions import deaka, tile_sort_key
 from .scene import SceneTracker
 from .scoring import (
     DIFFICULTIES,
-    DISCARD_THRESHOLDS,
+    EASY_MIN,
+    HARD_MAX,
     TEMPERATURE,
+    TRIVIAL,
     best_action,
     difficulty,
     mortal_evaluation,
@@ -38,7 +40,7 @@ def game_number(game: str) -> int:
 
 
 def load_calibration() -> dict[str, Any]:
-    """Call thresholds and riichi weight written by generator.calibrate."""
+    """Riichi weight written by generator.calibrate."""
     return json.loads(CALIBRATION_PATH.read_text(encoding="utf-8"))
 
 
@@ -68,7 +70,7 @@ def kyoku_rng(game: str, kyoku_index: int) -> random.Random:
 def pick(decisions: list[dict[str, Any]], rng: random.Random, riichi_weight: float) -> dict[str, Any] | None:
     """Choose a difficulty uniformly, then one decision of it (riichi weighted).
 
-    Each decision carries "kind" and "difficulty".
+    Each decision carries "kind" and "difficulty" (None: too obvious, never picked).
     """
     wanted = rng.choice(DIFFICULTIES)
     pool = [d for d in decisions if d["difficulty"] == wanted]
@@ -90,8 +92,7 @@ def select(
         data = read_decisions(path)
         log_hashes[data["game"]] = data["logSha256"]
         for decision in data["decisions"]:
-            thresholds = calibration["callThresholds"] if decision["kind"] == "call" else DISCARD_THRESHOLDS
-            decision["difficulty"] = difficulty(decision["q"], thresholds)
+            decision["difficulty"] = difficulty(decision["q"])
         for kyoku_index, decisions in by_kyoku(data["decisions"]):
             decision = pick(decisions, kyoku_rng(data["game"], kyoku_index), calibration["riichiWeight"])
             if decision is not None:
@@ -204,8 +205,9 @@ def main() -> None:
     meta = {
         **runtime.IDENTITY,
         "temperature": TEMPERATURE,
-        "discardThresholds": DISCARD_THRESHOLDS,
-        "callThresholds": calibration["callThresholds"],
+        "trivial": TRIVIAL,
+        "easyMin": EASY_MIN,
+        "hardMax": HARD_MAX,
         "riichiWeight": calibration["riichiWeight"],
         "extractSeed": EXTRACT_SEED,
         "games": used_games,

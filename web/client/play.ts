@@ -6,8 +6,9 @@ import { currentPublicId, post } from "./api";
 import { answerWindow } from "./answer";
 import { board, type Board } from "./board";
 import { h, replace } from "./dom";
-import { Sequence, markLayer, reveal } from "./effects";
+import { Sequence, dock, markLayer, reveal } from "./effects";
 import { DIFFICULTY_LABELS, KIND_LABELS, actionElement } from "./labels";
+import { chosenSlot, handBars } from "./evaluation";
 import { HASHTAG, SITE_NAME, openShare, problemCard } from "./share";
 
 export interface PlayOptions {
@@ -41,6 +42,9 @@ export async function showProblem(root: HTMLElement, response: ProblemResponse, 
 	}
 }
 
+const rulesNote = () =>
+	h("p", { class: "rules-note" }, "天鳳段位戦準拠の東南戦。対戦相手の3人も全員Mortalです。", h("a", { href: "/rules" }, "ルール"));
+
 function heading(question: Question, options: PlayOptions): HTMLElement {
 	return h(
 		"header",
@@ -53,20 +57,21 @@ function heading(question: Question, options: PlayOptions): HTMLElement {
 
 async function showQuestion(root: HTMLElement, question: Question, options: PlayOptions): Promise<void> {
 	const view = await board(question);
-	const answer = answerWindow(question, async (action) => {
+	const answer = answerWindow(question, view, async (action) => {
 		const from = options.from ? `?from=${encodeURIComponent(options.from)}` : "";
 		const response = await post<ProblemResponse>(`/api/problems/${question.id}/answer${from}`, { action });
 		if (response.state !== "result") return showProblem(root, response, options);
 		options.onAnswered?.(response.result);
 		await grade(root, view, answer, response.result, options, true);
 	});
-	replace(root, heading(question, options), h("div", { class: "play" }, view.element, answer));
+	replace(root, heading(question, options), h("div", { class: "play" }, h("div", {}, view.element, rulesNote()), answer));
 }
 
 async function showResult(root: HTMLElement, result: Result, options: PlayOptions): Promise<void> {
 	const view = await board(result);
+	view.setHand({ selected: chosenSlot(result) });
 	const placeholder = h("div");
-	replace(root, heading(result, options), h("div", { class: "play" }, view.element, placeholder));
+	replace(root, heading(result, options), h("div", { class: "play" }, h("div", {}, view.element, rulesNote()), placeholder));
 	await grade(root, view, placeholder, result, options, false);
 }
 
@@ -85,6 +90,12 @@ async function grade(root: HTMLElement, view: Board, replaced: HTMLElement, resu
 	const skip = () => sequence.skip();
 	root.addEventListener("pointerdown", skip);
 	await layer.play(sequence);
+	if (result.kind !== "call") {
+		// The marks step aside to the corner and the evaluation rises over the hand.
+		await sequence.pause(350);
+		await dock(sequence, layer.element);
+		await view.showBars(handBars(result), () => sequence.isSkipped);
+	}
 	await reveal(sequence, rows);
 	root.removeEventListener("pointerdown", skip);
 	card.inert = false;
@@ -155,7 +166,7 @@ function resultCard(result: Result, options: PlayOptions): HTMLElement {
 			h("div", { class: "result__line" }, h("span", { class: "result__label" }, "あなた"), actionElement(answer.action, result, "tile tile--result")),
 			h("div", { class: "result__line" }, h("span", { class: "result__label" }, "Mortal"), actionElement(evaluation.best, result, "tile tile--result")),
 		),
-		h("div", { class: "result__list" }, h("h3", {}, "候補ごとのMortal評価"), list),
+		result.kind === "call" ? h("div", { class: "result__list" }, h("h3", {}, "候補ごとのMortal評価"), list) : null,
 		meta,
 		h(
 			"div",

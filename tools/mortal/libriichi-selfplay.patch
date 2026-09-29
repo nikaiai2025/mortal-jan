@@ -1,3 +1,14 @@
+Modification of Mortal (https://github.com/Equim-chan/Mortal) at commit
+0cff2b52982be5b1163aa9a62fb01f03ce91e0d2, made by the mortal-jan project
+(https://github.com/nikaiai2025/mortal-jan) on 2026-09-30.
+
+Adds libriichi.arena.SelfPlay: self-play of one agent on all four seats, one
+game per seed (OneVsThree plays each seed four times, which gives four identical
+games when both sides are the same greedy model).
+
+This patch and the modified program are licensed under the GNU Affero General
+Public License v3.0 or later, as Mortal is. `git apply` ignores this text.
+
 diff --git a/libriichi/src/arena/mod.rs b/libriichi/src/arena/mod.rs
 index 880cf87..0ae4f6c 100644
 --- a/libriichi/src/arena/mod.rs
@@ -27,10 +38,14 @@ index 880cf87..0ae4f6c 100644
  }
 diff --git a/libriichi/src/arena/self_play.rs b/libriichi/src/arena/self_play.rs
 new file mode 100644
-index 0000000..5cb0bb6
+index 0000000..53a1dc2
 --- /dev/null
 +++ b/libriichi/src/arena/self_play.rs
-@@ -0,0 +1,82 @@
+@@ -0,0 +1,86 @@
++// Added to Mortal (https://github.com/Equim-chan/Mortal, commit 0cff2b5) by the mortal-jan
++// project (https://github.com/nikaiai2025/mortal-jan) on 2026-09-30.
++// Licensed under the GNU Affero General Public License v3.0 or later, as Mortal is.
++
 +use super::game::{BatchGame, Index};
 +use crate::agent::new_py_agent;
 +use std::array;

@@ -8,15 +8,17 @@ export const SCENE_SIZE = 1000;
 
 const RIVER_W = 44;
 const RIVER_H = 59;
-const HAND_W = 60;
-const HAND_H = 80;
-const PANEL_HALF = 180;
-const RIVER_Y = PANEL_HALF + 26;
+const HAND_W = 66;
+const HAND_H = 88;
+const PANEL_HALF = 170;
+const RIVER_Y = PANEL_HALF + 28;
 const RIVER_X = -3 * RIVER_W;
 const RIVER_ROW = 6;
 const EDGE = SCENE_SIZE / 2;
 const OPPONENT_ROW_HALF = 380; // keeps the three opponent rows clear of each other's corners
 const SELF_ROW_HALF = 490;
+const SELF_BOTTOM = SCENE_SIZE - 10;
+const RAISE = 16; // a selected hand tile rises by this much
 
 const COLORS = {
 	felt: "#1b5741",
@@ -27,6 +29,7 @@ const COLORS = {
 	dim: "#9fb8aa",
 	accent: "#ffd166",
 	oya: "#ff8f70",
+	red: "#d62a1e",
 };
 
 const FONT = "'Zen Kaku Gothic New', 'Hiragino Sans', 'Noto Sans JP', sans-serif";
@@ -35,9 +38,9 @@ const BAKAZE: Record<string, string> = { E: "東", S: "南", W: "西", N: "北" 
 // Relative seat → rotation (0 bottom, 1 right, 2 top, 3 left).
 const ROTATIONS = [0, -Math.PI / 2, Math.PI, Math.PI / 2];
 
-export function questionText(kind: ProblemKind, choices: Choice[], short = false): string {
-	if (kind === "discard") return short ? "何切る？" : "何を切る？";
-	if (kind === "riichi") return short ? "リーチ？何切る？" : "リーチする？ 何を切る？";
+export function questionText(kind: ProblemKind, choices: Choice[]): string {
+	if (kind === "discard") return "何を切る？";
+	if (kind === "riichi") return "リーチする？ 何を切る？";
 	const chi = choices.some((c) => c.action.startsWith("chi"));
 	const pon = choices.some((c) => c.action === "pon");
 	return chi && pon ? "鳴く？" : chi ? "チーする？" : "ポンする？";
@@ -54,10 +57,69 @@ export function preloadScene(scene: Scene, choices: Choice[] = []): Promise<void
 	return preloadTiles(pais);
 }
 
+// ---- own hand (shared by drawing, tapping and the evaluation bars) ----
+
+/** A tile of the answering player's concealed hand, in scene coordinates (top-left, size). */
+export interface HandSlot {
+	/** Index in [...hand, drawn]. */
+	index: number;
+	pai: Pai;
+	x: number;
+	y: number;
+	w: number;
+	h: number;
+}
+
+export function handTiles(scene: Scene): Pai[] {
+	return scene.drawn ? [...scene.hand, scene.drawn] : [...scene.hand];
+}
+
+export function handSlots(scene: Scene): HandSlot[] {
+	const melds = scene.melds[scene.seat];
+	const tiles = handTiles(scene);
+	const drawGap = scene.drawn ? HAND_W * 0.25 : 0;
+	const natural = tiles.length * HAND_W + drawGap + HAND_W * 0.4 + meldsTotalWidth(melds, scene.seat, HAND_W, HAND_H);
+	const scale = Math.min(1, (2 * SELF_ROW_HALF) / natural);
+	const w = HAND_W * scale;
+	const h = HAND_H * scale;
+	return tiles.map((pai, index) => ({
+		index,
+		pai,
+		x: EDGE - SELF_ROW_HALF + index * w + (scene.drawn && index === tiles.length - 1 ? drawGap * scale : 0),
+		y: SELF_BOTTOM - h,
+		w,
+		h,
+	}));
+}
+
+/** The hand tile under a point in scene coordinates (generous upward, for fingers). */
+export function handSlotAt(scene: Scene, x: number, y: number): number | null {
+	const slot = handSlots(scene).find((s) => x >= s.x && x < s.x + s.w && y >= s.y - 60 && y <= s.y + s.h + 10);
+	return slot ? slot.index : null;
+}
+
+/** Interaction and result state of the own hand. */
+export interface HandView {
+	selected: number | null;
+	/** Per slot; false dims a tile that cannot be chosen now. */
+	enabled?: boolean[];
+	/** Evaluation bars shown above the hand after answering. */
+	bars?: HandBar[];
+	/** Growth of the bars, 0-1. */
+	barProgress?: number;
+}
+
+export interface HandBar {
+	/** Mortal evaluation of discarding this tile without riichi (0-1), if legal. */
+	dama?: number;
+	/** Mortal evaluation of riichi with this tile, if legal. */
+	riichi?: number;
+	best: boolean;
+}
+
 export interface SceneOptions {
 	problemId: number;
-	kind: ProblemKind;
-	choices: Choice[];
+	hand?: HandView;
 }
 
 /** Draw into a square of `size` pixels at the current origin. Tiles must be preloaded. */
@@ -65,20 +127,23 @@ export function drawScene(ctx: CanvasRenderingContext2D, scene: Scene, size: num
 	ctx.save();
 	ctx.scale(size / SCENE_SIZE, size / SCENE_SIZE);
 	drawFelt(ctx);
+	ctx.save();
 	ctx.translate(EDGE, EDGE);
 	for (let relative = 0; relative < 4; relative++) {
 		const seat = (scene.seat + relative) % 4;
 		ctx.save();
 		ctx.rotate(ROTATIONS[relative]);
+		if (scene.riichi[seat]) drawRiichi(ctx);
 		drawRiver(ctx, scene, seat);
-		if (scene.riichi[seat]) drawRiichiStick(ctx);
-		if (relative === 0) drawOwnRow(ctx, scene);
-		else drawOpponentRow(ctx, scene, seat);
+		if (relative > 0) drawOpponentRow(ctx, scene, seat);
 		ctx.restore();
 	}
-	drawPanel(ctx, scene, options);
+	drawPanel(ctx, scene);
 	ctx.restore();
-	drawCornerLabel(ctx, size, options.problemId);
+	drawOwnRow(ctx, scene, options.hand);
+	if (options.hand?.bars) drawBars(ctx, scene, options.hand.bars, options.hand.barProgress ?? 1);
+	drawCornerLabel(ctx, options.problemId);
+	ctx.restore();
 }
 
 function drawFelt(ctx: CanvasRenderingContext2D): void {
@@ -96,6 +161,7 @@ interface TileOptions {
 	sideways?: boolean;
 	dim?: boolean;
 	highlight?: boolean;
+	selected?: boolean;
 }
 
 /** Draw a tile whose bounding box (after rotation) has its top-left at (x, y). */
@@ -117,14 +183,15 @@ function drawTile(ctx: CanvasRenderingContext2D, pai: Pai | null, x: number, y: 
 		ctx.fill();
 	}
 	if (o.dim) {
-		ctx.fillStyle = "rgba(20, 30, 28, 0.32)";
+		ctx.fillStyle = "rgba(20, 30, 28, 0.36)";
 		roundRect(ctx, -w / 2, -h / 2, w, h, w * 0.12);
 		ctx.fill();
 	}
-	if (o.highlight) {
-		ctx.strokeStyle = COLORS.accent;
-		ctx.lineWidth = 4;
-		ctx.shadowColor = COLORS.accent;
+	if (o.highlight || o.selected) {
+		const color = o.selected ? COLORS.red : COLORS.accent;
+		ctx.strokeStyle = color;
+		ctx.lineWidth = o.selected ? 5 : 4;
+		ctx.shadowColor = color;
 		ctx.shadowBlur = 14;
 		roundRect(ctx, -w / 2 - 3, -h / 2 - 3, w + 6, h + 6, w * 0.16);
 		ctx.stroke();
@@ -137,7 +204,7 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 	ctx.roundRect(x, y, w, h, r);
 }
 
-// ---- rivers ----
+// ---- rivers and riichi ----
 
 function drawRiver(ctx: CanvasRenderingContext2D, scene: Scene, seat: number): void {
 	const river = scene.rivers[seat];
@@ -168,17 +235,38 @@ function drawRiver(ctx: CanvasRenderingContext2D, scene: Scene, seat: number): v
 	});
 }
 
-function drawRiichiStick(ctx: CanvasRenderingContext2D): void {
-	const w = 120;
-	const h = 10;
-	const y = PANEL_HALF + 9;
-	ctx.fillStyle = "#f4f1e8";
+/** A riichi player: a lit stick, a label, and a red wash under the river. */
+function drawRiichi(ctx: CanvasRenderingContext2D): void {
+	ctx.fillStyle = "rgba(214, 42, 30, 0.3)";
+	roundRect(ctx, RIVER_X - 10, RIVER_Y - 8, RIVER_W * 6 + 20, RIVER_H * 3 + 16, 12);
+	ctx.fill();
+	ctx.strokeStyle = "rgba(255, 120, 100, 0.7)";
+	ctx.lineWidth = 3;
+	ctx.stroke();
+
+	const w = 150;
+	const h = 13;
+	const y = PANEL_HALF + 8;
+	ctx.save();
+	ctx.shadowColor = COLORS.accent;
+	ctx.shadowBlur = 16;
+	ctx.fillStyle = "#fbf8ef";
 	roundRect(ctx, -w / 2, y, w, h, h / 2);
 	ctx.fill();
-	ctx.fillStyle = "#d62a1e";
+	ctx.restore();
+	ctx.fillStyle = COLORS.red;
 	ctx.beginPath();
-	ctx.arc(0, y + h / 2, 3.2, 0, Math.PI * 2);
+	ctx.arc(0, y + h / 2, 4, 0, Math.PI * 2);
 	ctx.fill();
+
+	ctx.fillStyle = COLORS.red;
+	roundRect(ctx, w / 2 + 10, y - 7, 74, 27, 6);
+	ctx.fill();
+	ctx.fillStyle = "#fff6ea";
+	ctx.font = `700 18px ${FONT}`;
+	ctx.textAlign = "center";
+	ctx.textBaseline = "middle";
+	ctx.fillText("リーチ", w / 2 + 47, y + 7);
 }
 
 // ---- hands and melds ----
@@ -235,21 +323,17 @@ function meldsTotalWidth(melds: Meld[], owner: number, w: number, h: number): nu
 	return melds.reduce((sum, m) => sum + meldWidth(meldTiles(m, owner), w, h) + w * 0.2, 0);
 }
 
-function drawOwnRow(ctx: CanvasRenderingContext2D, scene: Scene): void {
-	const melds = scene.melds[scene.seat];
-	const handCount = scene.hand.length + (scene.drawn ? 1 : 0);
-	const natural = handCount * HAND_W + (scene.drawn ? HAND_W * 0.25 : 0) + HAND_W * 0.4 + meldsTotalWidth(melds, scene.seat, HAND_W, HAND_H);
-	const scale = Math.min(1, (2 * SELF_ROW_HALF) / natural);
-	const w = HAND_W * scale;
-	const h = HAND_H * scale;
-	const bottom = EDGE - 10;
-	let x = -SELF_ROW_HALF;
-	for (const pai of scene.hand) {
-		drawTile(ctx, pai, x, bottom - h, w, h);
-		x += w;
+function drawOwnRow(ctx: CanvasRenderingContext2D, scene: Scene, view?: HandView): void {
+	const slots = handSlots(scene);
+	for (const slot of slots) {
+		const selected = view?.selected === slot.index;
+		drawTile(ctx, slot.pai, slot.x, slot.y - (selected ? RAISE : 0), slot.w, slot.h, {
+			selected,
+			dim: view?.enabled ? !view.enabled[slot.index] : false,
+		});
 	}
-	if (scene.drawn) drawTile(ctx, scene.drawn, x + w * 0.25, bottom - h, w, h);
-	drawMelds(ctx, melds, scene.seat, SELF_ROW_HALF, bottom, w, h);
+	const { w, h } = slots[0] ?? { w: HAND_W, h: HAND_H };
+	drawMelds(ctx, scene.melds[scene.seat], scene.seat, EDGE + SELF_ROW_HALF, SELF_BOTTOM, w, h);
 }
 
 function drawOpponentRow(ctx: CanvasRenderingContext2D, scene: Scene, seat: number): void {
@@ -264,9 +348,61 @@ function drawOpponentRow(ctx: CanvasRenderingContext2D, scene: Scene, seat: numb
 	drawMelds(ctx, melds, seat, OPPONENT_ROW_HALF, bottom, w, h);
 }
 
+// ---- evaluation bars ----
+
+const BAR_MAX = 250;
+
+/** Mortal evaluation of each hand tile as bars rising from the hand (after answering). */
+function drawBars(ctx: CanvasRenderingContext2D, scene: Scene, bars: HandBar[], progress: number): void {
+	const slots = handSlots(scene);
+	// Bars stand on the hand and grow upward over the player's own river.
+	const base = slots[0].y - RAISE - 8;
+	const hasRiichi = bars.some((b) => b?.riichi !== undefined);
+	const top = base - BAR_MAX - (hasRiichi ? 70 : 40);
+	ctx.fillStyle = "rgba(6, 20, 15, 0.74)";
+	roundRect(ctx, 6, top, SCENE_SIZE - 12, base - top + 6, 14);
+	ctx.fill();
+	if (hasRiichi) {
+		ctx.font = `700 18px ${FONT}`;
+		ctx.textAlign = "left";
+		ctx.textBaseline = "middle";
+		ctx.fillStyle = COLORS.text;
+		ctx.fillText("■ ダマ", 24, top + 20);
+		ctx.fillStyle = "#ff9f43";
+		ctx.fillText("■ リーチ", 104, top + 20);
+	}
+	ctx.textAlign = "center";
+	ctx.textBaseline = "alphabetic";
+	for (const slot of slots) {
+		const bar = bars[slot.index];
+		if (!bar) continue;
+		const columns: { value: number; color: string }[] = [];
+		if (bar.dama !== undefined) columns.push({ value: bar.dama, color: bar.best && !(bar.riichi !== undefined && bar.riichi > bar.dama) ? COLORS.red : "#efe7cf" });
+		if (bar.riichi !== undefined) columns.push({ value: bar.riichi, color: bar.best && bar.riichi >= (bar.dama ?? 0) ? COLORS.red : "#ff9f43" });
+		const width = (slot.w * 0.62) / columns.length;
+		let tallest = 0;
+		columns.forEach((column, i) => {
+			const x = slot.x + slot.w * 0.19 + i * width;
+			const height = Math.max(3, column.value * BAR_MAX * progress);
+			tallest = Math.max(tallest, height);
+			ctx.fillStyle = column.color;
+			roundRect(ctx, x, base - height, width - 3, height, 3);
+			ctx.fill();
+		});
+		if (progress < 1) continue;
+		// Labels stack above the taller bar, in the bars' order (dama on top).
+		const labels = columns.filter((column) => column.value >= 0.02);
+		labels.forEach((column, i) => {
+			ctx.fillStyle = column.color === COLORS.red ? "#ffb4a8" : column.color;
+			ctx.font = `700 ${columns.length > 1 ? 18 : 22}px ${FONT}`;
+			ctx.fillText(`${Math.round(column.value * 100)}%`, slot.x + slot.w / 2, base - tallest - 8 - (labels.length - 1 - i) * 21);
+		});
+	}
+}
+
 // ---- centre panel ----
 
-function drawPanel(ctx: CanvasRenderingContext2D, scene: Scene, options: SceneOptions): void {
+function drawPanel(ctx: CanvasRenderingContext2D, scene: Scene): void {
 	ctx.fillStyle = COLORS.panel;
 	roundRect(ctx, -PANEL_HALF, -PANEL_HALF, PANEL_HALF * 2, PANEL_HALF * 2, 20);
 	ctx.fill();
@@ -275,24 +411,37 @@ function drawPanel(ctx: CanvasRenderingContext2D, scene: Scene, options: SceneOp
 	roundRect(ctx, -PANEL_HALF + 7, -PANEL_HALF + 7, PANEL_HALF * 2 - 14, PANEL_HALF * 2 - 14, 14);
 	ctx.stroke();
 
-	ctx.textAlign = "center";
 	ctx.textBaseline = "middle";
+	ctx.textAlign = "center";
 	ctx.fillStyle = COLORS.text;
-	ctx.font = `700 44px ${FONT}`;
-	ctx.fillText(`${BAKAZE[scene.bakaze]}${scene.kyoku}局`, 0, -90);
-	ctx.fillStyle = COLORS.dim;
-	ctx.font = `500 22px ${FONT}`;
-	ctx.fillText(`${scene.honba}本場　供託${scene.kyotaku}`, 0, -54);
-	ctx.fillText(`残り${scene.tilesLeft}枚`, 0, -28);
-	ctx.font = `500 15px ${FONT}`;
-	ctx.fillText("ドラ表示牌", 0, -2);
-	const doraW = 34;
-	const count = scene.doraMarkers.length;
-	scene.doraMarkers.forEach((pai, i) => drawTile(ctx, pai, -(count * doraW) / 2 + i * doraW, 10, doraW, doraW * (4 / 3)));
+	ctx.font = `700 46px ${FONT}`;
+	const round = `${BAKAZE[scene.bakaze]}${scene.kyoku}局`;
+	if (scene.honba > 0) {
+		const roundWidth = ctx.measureText(round).width;
+		ctx.font = `700 24px ${FONT}`;
+		const honba = `${scene.honba}本場`;
+		const total = roundWidth + 10 + ctx.measureText(honba).width;
+		ctx.textAlign = "left";
+		ctx.font = `700 46px ${FONT}`;
+		ctx.fillText(round, -total / 2, -62);
+		ctx.font = `700 24px ${FONT}`;
+		ctx.fillText(honba, -total / 2 + roundWidth + 10, -56);
+	} else {
+		ctx.fillText(round, 0, -62);
+	}
 
-	ctx.fillStyle = COLORS.accent;
-	ctx.font = `700 30px ${FONT}`;
-	ctx.fillText(questionText(options.kind, options.choices, true), 0, 92);
+	const doraW = 36;
+	const count = scene.doraMarkers.length;
+	ctx.textAlign = "right";
+	ctx.fillStyle = COLORS.dim;
+	ctx.font = `700 16px ${FONT}`;
+	const doraLeft = -(count * doraW) / 2;
+	ctx.fillText("ドラ", doraLeft - 8, 6);
+	scene.doraMarkers.forEach((pai, i) => drawTile(ctx, pai, doraLeft + i * doraW, -18, doraW, doraW * (4 / 3)));
+
+	ctx.textAlign = "center";
+	ctx.font = `500 22px ${FONT}`;
+	ctx.fillText(`残り${scene.tilesLeft}${scene.kyotaku > 0 ? `　供託${scene.kyotaku}` : ""}`, 0, 64);
 
 	// Each seat's score faces that seat, as on an automatic table.
 	for (let relative = 0; relative < 4; relative++) {
@@ -305,16 +454,14 @@ function drawPanel(ctx: CanvasRenderingContext2D, scene: Scene, options: SceneOp
 		const scoreWidth = ctx.measureText(score).width;
 		ctx.textAlign = "left";
 		ctx.fillStyle = wind === 0 ? COLORS.oya : COLORS.text;
-		ctx.fillText(WINDS[wind], -(scoreWidth + 40) / 2, 148);
+		ctx.fillText(WINDS[wind], -(scoreWidth + 40) / 2, 138);
 		ctx.fillStyle = COLORS.text;
-		ctx.fillText(score, -(scoreWidth + 40) / 2 + 40, 148);
+		ctx.fillText(score, -(scoreWidth + 40) / 2 + 40, 138);
 		ctx.restore();
 	}
 }
 
-function drawCornerLabel(ctx: CanvasRenderingContext2D, size: number, problemId: number): void {
-	ctx.save();
-	ctx.scale(size / SCENE_SIZE, size / SCENE_SIZE);
+function drawCornerLabel(ctx: CanvasRenderingContext2D, problemId: number): void {
 	ctx.textAlign = "left";
 	ctx.textBaseline = "top";
 	ctx.fillStyle = COLORS.panelLine;
@@ -324,5 +471,4 @@ function drawCornerLabel(ctx: CanvasRenderingContext2D, size: number, problemId:
 	ctx.fillText(String(problemId), 26, 44);
 	ctx.font = `700 15px ${FONT}`;
 	ctx.fillText("問", 26, 80);
-	ctx.restore();
 }

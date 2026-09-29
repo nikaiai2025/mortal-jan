@@ -9,7 +9,21 @@ export const DAILY_ANSWER_LIMIT = 300;
 /** Minimum answers before a problem's players' average is shown. */
 export const HUMAN_STATS_MIN_ANSWERS = 10;
 
-export const setOf = (problemId: number): number => Math.ceil(problemId / SET_SIZE);
+/** Problem set themes: all problems, one difficulty, or one kind. */
+export const SET_THEMES = ["all", "easy", "normal", "hard", "discard", "riichi", "call"] as const;
+export type SetTheme = (typeof SET_THEMES)[number];
+export const SET_THEME_LABELS: Record<SetTheme, string> = {
+	all: "全問",
+	easy: "かんたん",
+	normal: "ふつう",
+	hard: "むずかしい",
+	discard: "打牌",
+	riichi: "リーチ",
+	call: "鳴き",
+};
+
+/** Set number of the n-th problem of a theme (1-based). */
+export const setOf = (position: number): number => Math.ceil(position / SET_SIZE);
 
 export const setProblemIds = (set: number): number[] =>
 	Array.from({ length: SET_SIZE }, (_, i) => (set - 1) * SET_SIZE + i + 1);

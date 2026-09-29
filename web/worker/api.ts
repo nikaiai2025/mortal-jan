@@ -3,9 +3,11 @@ import {
 	HUMAN_STATS_MIN_ANSWERS,
 	RANKING_MIN_ANSWERS,
 	SET_SIZE,
+	type SetTheme,
 	displayName,
 	jstDate,
 	setOf,
+	setProblemIds,
 } from "../shared/rules";
 import type {
 	AnswerResult,
@@ -67,7 +69,7 @@ const routes: [string, RegExp, Handler][] = [
 	["GET", /^\/api\/problems\/(\d+)$/, getProblem],
 	["POST", /^\/api\/problems\/(\d+)\/answer$/, postAnswer],
 	["GET", /^\/api\/sets$/, getSets],
-	["GET", /^\/api\/sets\/(\d+)$/, getSet],
+	["GET", /^\/api\/sets\/([a-z]+)\/(\d+)$/, getSet],
 	["GET", /^\/api\/players\/([a-z0-9]+)$/, getProfile],
 	["GET", /^\/api\/ranking$/, getRanking],
 ];
@@ -217,16 +219,34 @@ async function resultOf(db: D1Database, row: ProblemRow, answer: AnswerResult, s
 	};
 }
 
-/** Assign a problem unless another one got assigned meanwhile. */
-async function assign(db: D1Database, playerId: number, problemId: number): Promise<void> {
-	await db
-		.prepare("UPDATE players SET current_problem_id = ?1 WHERE id = ?2 AND (current_problem_id IS NULL OR current_problem_id = ?1)")
-		.bind(problemId, playerId)
+/**
+ * Point the player's assignment at `problemId` unless it changed since it was read
+ * (`current`). An assignment to an answered problem counts as free: answering does
+ * not clear it, which saves a write per answer.
+ */
+async function assign(db: D1Database, playerId: number, current: number | null, problemId: number): Promise<boolean> {
+	const { meta } = await db
+		.prepare("UPDATE players SET current_problem_id = ?1 WHERE id = ?2 AND current_problem_id IS ?3")
+		.bind(problemId, playerId, current)
 		.run();
+	return meta.changes === 1;
 }
 
-async function release(db: D1Database, playerId: number, problemId: number): Promise<void> {
-	await db.prepare("UPDATE players SET current_problem_id = NULL WHERE id = ? AND current_problem_id = ?").bind(playerId, problemId).run();
+/** After a lost race, the problem another request assigned (still unanswered). */
+async function pendingAfterRace(db: D1Database, playerId: number): Promise<number> {
+	const player = await db
+		.prepare("SELECT id, public_id, name, current_problem_id FROM players WHERE id = ?")
+		.bind(playerId)
+		.first<PlayerRow>();
+	const pending = player && (await pendingProblem(db, player));
+	if (pending === null || pending === undefined) throw new HttpError(409, "conflict");
+	return pending;
+}
+
+/** The assigned problem that still waits for an answer, if any. */
+async function pendingProblem(db: D1Database, player: PlayerRow): Promise<number | null> {
+	const id = player.current_problem_id;
+	return id !== null && !(await loadAnswer(db, player.id, id)) ? id : null;
 }
 
 /** A random problem the player has not answered, or null when all are answered. */
@@ -248,35 +268,34 @@ async function randomUnanswered(db: D1Database, playerId: number): Promise<numbe
 
 async function getCurrent(ctx: Ctx): Promise<Response> {
 	const player = await authenticate(ctx);
-	let id = player.current_problem_id;
-	if (id !== null && (await loadAnswer(ctx.env.DB, player.id, id))) {
-		// The assignment points at an answered problem (a lost race); move on.
-		await release(ctx.env.DB, player.id, id);
-		id = null;
-	}
+	const db = ctx.env.DB;
+	let id = await pendingProblem(db, player);
 	if (id === null) {
-		id = await randomUnanswered(ctx.env.DB, player.id);
+		id = await randomUnanswered(db, player.id);
 		if (id === null) return json({ state: "finished" } satisfies ProblemResponse);
-		await assign(ctx.env.DB, player.id, id);
+		// A concurrent request may have assigned another problem; show that one instead.
+		if (!(await assign(db, player.id, player.current_problem_id, id))) id = await pendingAfterRace(db, player.id);
 	}
-	const question = questionOf(await loadProblem(ctx.env.DB, id));
+	const question = questionOf(await loadProblem(db, id));
 	return json({ state: "question", question } satisfies ProblemResponse);
 }
 
 async function getProblem(ctx: Ctx): Promise<Response> {
 	const player = await authenticate(ctx);
+	const db = ctx.env.DB;
 	const id = positiveInt(ctx.params[0]);
-	const row = await loadProblem(ctx.env.DB, id);
-	const answer = await loadAnswer(ctx.env.DB, player.id, id);
+	const row = await loadProblem(db, id);
+	const answer = await loadAnswer(db, player.id, id);
 	if (answer) {
-		if (player.current_problem_id === id) await release(ctx.env.DB, player.id, id);
-		const result = await resultOf(ctx.env.DB, row, answer, ctx.url.searchParams.get("from"));
+		const result = await resultOf(db, row, answer, ctx.url.searchParams.get("from"));
 		return json({ state: "result", result } satisfies ProblemResponse);
 	}
-	if (player.current_problem_id !== null && player.current_problem_id !== id) {
-		return json({ state: "locked", currentId: player.current_problem_id } satisfies ProblemResponse);
+	const pending = await pendingProblem(db, player);
+	if (pending !== null && pending !== id) return json({ state: "locked", currentId: pending } satisfies ProblemResponse);
+	if (player.current_problem_id !== id && !(await assign(db, player.id, player.current_problem_id, id))) {
+		const current = await pendingAfterRace(db, player.id);
+		if (current !== id) return json({ state: "locked", currentId: current } satisfies ProblemResponse);
 	}
-	if (player.current_problem_id !== id) await assign(ctx.env.DB, player.id, id);
 	return json({ state: "question", question: questionOf(row) } satisfies ProblemResponse);
 }
 
@@ -291,11 +310,6 @@ ON CONFLICT (player_id, period) DO UPDATE SET
   average = CAST(score_sum + ?3 AS REAL) / (answers + 1),
   pitari_rate = CAST(pitari + ?4 AS REAL) / (answers + 1)`;
 
-const setUpsert = `
-INSERT INTO player_sets (player_id, set_no, answered, score_sum, pitari) VALUES (?1, ?2, 1, ?3, ?4)
-ON CONFLICT (player_id, set_no) DO UPDATE SET
-  answered = answered + 1, score_sum = score_sum + ?3, pitari = pitari + ?4`;
-
 async function postAnswer(ctx: Ctx): Promise<Response> {
 	const player = await authenticate(ctx);
 	await limitPlayerWrites(ctx, player);
@@ -306,10 +320,7 @@ async function postAnswer(ctx: Ctx): Promise<Response> {
 
 	const sharerId = ctx.url.searchParams.get("from");
 	const existing = await loadAnswer(db, player.id, id);
-	if (existing) {
-		if (player.current_problem_id === id) await release(db, player.id, id);
-		return json({ state: "result", result: await resultOf(db, row, existing, sharerId) } satisfies ProblemResponse);
-	}
+	if (existing) return json({ state: "result", result: await resultOf(db, row, existing, sharerId) } satisfies ProblemResponse);
 	if (player.current_problem_id !== id) throw new HttpError(409, "not_assigned");
 	const now = new Date();
 	const answeredToday = await db
@@ -330,9 +341,7 @@ async function postAnswer(ctx: Ctx): Promise<Response> {
 				.bind(player.id, id, action, score, pitari, now.toISOString()),
 			db.prepare(statsUpsert).bind(player.id, "all", score, pitari, RANKING_MIN_ANSWERS.all),
 			db.prepare(statsUpsert).bind(player.id, jstDate(now), score, pitari, RANKING_MIN_ANSWERS.today),
-			db.prepare(setUpsert).bind(player.id, setOf(id), score, pitari),
 			db.prepare("UPDATE problems SET answer_count = answer_count + 1, score_sum = score_sum + ? WHERE id = ?").bind(score, id),
-			db.prepare("UPDATE players SET current_problem_id = NULL WHERE id = ? AND current_problem_id = ?").bind(player.id, id),
 		]);
 	} catch (error) {
 		// A concurrent submission already stored the answer; return that one.
@@ -346,46 +355,96 @@ async function postAnswer(ctx: Ctx): Promise<Response> {
 }
 
 // ---- problem sets ----
+// A theme's sets are its problems in number order, ten at a time (full sets only).
 
 const SETS_PER_PAGE = 100;
+const THEME_FILTERS: Record<SetTheme, { column: "difficulty" | "kind"; value: string } | null> = {
+	all: null,
+	easy: { column: "difficulty", value: "easy" },
+	normal: { column: "difficulty", value: "normal" },
+	hard: { column: "difficulty", value: "hard" },
+	discard: { column: "kind", value: "discard" },
+	riichi: { column: "kind", value: "riichi" },
+	call: { column: "kind", value: "call" },
+};
+
+function theme(text: string | null | undefined): SetTheme {
+	if (!text || !Object.hasOwn(THEME_FILTERS, text)) throw new HttpError(404, "not_found");
+	return text as SetTheme;
+}
+
+const themeSizeCache = new Map<SetTheme, number>();
+
+/** Number of problems in a theme (problems never change after loading). */
+async function themeSize(db: D1Database, t: SetTheme): Promise<number> {
+	let size = themeSizeCache.get(t);
+	if (size === undefined) {
+		const filter = THEME_FILTERS[t];
+		size = filter
+			? ((await db.prepare(`SELECT MAX(${filter.column}_pos) AS n FROM problems WHERE ${filter.column} = ?`).bind(filter.value).first<number>("n")) ?? 0)
+			: await problemCount(db);
+		themeSizeCache.set(t, size);
+	}
+	return size;
+}
 
 async function getSets(ctx: Ctx): Promise<Response> {
 	const player = await authenticate(ctx);
-	const totalSets = Math.ceil((await problemCount(ctx.env.DB)) / SET_SIZE);
+	const db = ctx.env.DB;
+	const t = theme(ctx.url.searchParams.get("theme") ?? "all");
+	const totalSets = Math.floor((await themeSize(db, t)) / SET_SIZE);
 	const page = Math.min(positiveInt(ctx.url.searchParams.get("page") ?? "1"), Math.max(1, Math.ceil(totalSets / SETS_PER_PAGE)));
+	const filter = THEME_FILTERS[t];
 	const first = (page - 1) * SETS_PER_PAGE + 1;
-	const { results } = await ctx.env.DB.prepare(
-		"SELECT set_no, answered, score_sum, pitari FROM player_sets WHERE player_id = ? AND set_no BETWEEN ? AND ?",
-	)
-		.bind(player.id, first, first + SETS_PER_PAGE - 1)
-		.all<{ set_no: number; answered: number; score_sum: number; pitari: number }>();
-	const sets: SetSummary[] = results.map((r) => ({
-		set: r.set_no,
-		answered: r.answered,
-		scoreSum: r.score_sum,
-		pitari: r.pitari,
-	}));
-	return json({ page, totalSets, setsPerPage: SETS_PER_PAGE, sets });
+	const last = Math.min(first + SETS_PER_PAGE - 1, totalSets);
+	const [from, to] = [(first - 1) * SET_SIZE + 1, last * SET_SIZE];
+	// Counted from the answers of this page's problems; no per-set counters are written on answering.
+	const { results } = await (filter
+		? db
+				.prepare(
+					`SELECT p.${filter.column}_pos AS pos, a.score, a.pitari FROM problems p JOIN answers a ON a.player_id = ? AND a.problem_id = p.id
+					 WHERE p.${filter.column} = ? AND p.${filter.column}_pos BETWEEN ? AND ?`,
+				)
+				.bind(player.id, filter.value, from, to)
+		: db.prepare("SELECT problem_id AS pos, score, pitari FROM answers WHERE player_id = ? AND problem_id BETWEEN ? AND ?").bind(player.id, from, to)
+	).all<{ pos: number; score: number; pitari: number }>();
+	const bySet = new Map<number, SetSummary>();
+	for (const r of results) {
+		const set = setOf(r.pos);
+		if (set < first || set > last) continue;
+		const summary = bySet.get(set) ?? { set, answered: 0, scoreSum: 0, pitari: 0 };
+		summary.answered++;
+		summary.scoreSum += r.score;
+		summary.pitari += r.pitari;
+		bySet.set(set, summary);
+	}
+	return json({ theme: t, page, totalSets, setsPerPage: SETS_PER_PAGE, sets: [...bySet.values()] });
 }
 
 async function getSet(ctx: Ctx): Promise<Response> {
 	const player = await authenticate(ctx);
-	const set = positiveInt(ctx.params[0]);
-	const count = await problemCount(ctx.env.DB);
-	const first = (set - 1) * SET_SIZE + 1;
-	if (first > count) throw new HttpError(404, "not_found");
-	const last = Math.min(first + SET_SIZE - 1, count);
-	const { results } = await ctx.env.DB.prepare(
-		"SELECT problem_id, action, score, pitari FROM answers WHERE player_id = ? AND problem_id BETWEEN ? AND ?",
-	)
-		.bind(player.id, first, last)
+	const db = ctx.env.DB;
+	const t = theme(ctx.params[0]);
+	const set = positiveInt(ctx.params[1]);
+	if (set > Math.floor((await themeSize(db, t)) / SET_SIZE)) throw new HttpError(404, "not_found");
+	const filter = THEME_FILTERS[t];
+	const ids = filter
+		? (
+				await db
+					.prepare(`SELECT id FROM problems WHERE ${filter.column} = ? AND ${filter.column}_pos BETWEEN ? AND ? ORDER BY ${filter.column}_pos`)
+					.bind(filter.value, (set - 1) * SET_SIZE + 1, set * SET_SIZE)
+					.all<{ id: number }>()
+			).results.map((r) => r.id)
+		: setProblemIds(set);
+	const { results } = await db
+		.prepare(`SELECT problem_id, action, score, pitari FROM answers WHERE player_id = ? AND problem_id IN (${ids.map(() => "?").join(",")})`)
+		.bind(player.id, ...ids)
 		.all<AnswerRow & { problem_id: number }>();
-	const problems: SetProblem[] = [];
-	for (let id = first; id <= last; id++) {
+	const problems: SetProblem[] = ids.map((id) => {
 		const row = results.find((r) => r.problem_id === id);
-		problems.push({ id, answer: row ? { action: row.action, score: row.score, pitari: row.pitari === 1 } : null });
-	}
-	return json({ set, problems });
+		return { id, answer: row ? { action: row.action, score: row.score, pitari: row.pitari === 1 } : null };
+	});
+	return json({ theme: t, set, problems });
 }
 
 // ---- public pages ----

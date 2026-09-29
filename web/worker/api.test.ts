@@ -24,12 +24,21 @@ const choices = [{ action: "d:1m" }, { action: "d:2m" }, { action: "d:3m" }];
 
 beforeAll(async () => {
 	await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
+	// Odd numbers are easy, even numbers hard; all are discard problems.
 	const insert = env.DB.prepare(
-		"INSERT INTO problems (id, kind, difficulty, scene, choices, evaluation, source) VALUES (?, 'discard', 'normal', ?, ?, ?, '{}')",
+		"INSERT INTO problems (id, kind, difficulty, scene, choices, evaluation, source, difficulty_pos, kind_pos) VALUES (?, 'discard', ?, ?, ?, ?, '{}', ?, ?)",
 	);
 	await env.DB.batch(
 		Array.from({ length: PROBLEMS }, (_, i) =>
-			insert.bind(i + 1, JSON.stringify({ hand: ["1m", "2m", "3m"] }), JSON.stringify(choices), JSON.stringify(evaluation)),
+			insert.bind(
+				i + 1,
+				i % 2 === 0 ? "easy" : "hard",
+				JSON.stringify({ hand: ["1m", "2m", "3m"] }),
+				JSON.stringify(choices),
+				JSON.stringify(evaluation),
+				Math.floor(i / 2) + 1,
+				i + 1,
+			),
 		),
 	);
 });
@@ -133,15 +142,57 @@ describe("answers", () => {
 		expect(solved.sharer).toMatchObject({ action: "d:2m", score: 63, pitari: false });
 	});
 
-	it("update the problem set progress", async () => {
+	it("give concurrent requests the same assigned problem", async () => {
+		const player = await newPlayer();
+		const responses = await Promise.all(Array.from({ length: 5 }, () => call<ProblemResponse>("/api/problems/current", player)));
+		const ids = responses.map((r) => (r.body.state === "question" ? r.body.question.id : r.body.state));
+		expect(new Set(ids).size).toBe(1);
+	});
+
+	it("give the next random problem once the current one is answered", async () => {
+		const player = await newPlayer();
+		const first = await call<ProblemResponse>("/api/problems/current", player);
+		const id = first.body.state === "question" ? first.body.question.id : 0;
+		await answer(player, id, "d:1m");
+		const next = await call<ProblemResponse>("/api/problems/current", player);
+		expect(next.body.state).toBe("question");
+		expect(next.body.state === "question" && next.body.question.id).not.toBe(id);
+	});
+
+	it("free the assignment once answered", async () => {
+		const player = await newPlayer();
+		await call(`/api/problems/13`, player);
+		await answer(player, 13, "d:1m");
+		const next = await call<ProblemResponse>(`/api/problems/14`, player);
+		expect(next.body.state).toBe("question");
+	});
+});
+
+describe("problem sets", () => {
+	type SetBody = { problems: { id: number; answer: unknown }[] };
+
+	it("chunk all problems by number", async () => {
 		const player = await newPlayer();
 		await call(`/api/problems/12`, player);
 		await answer(player, 12, "d:1m");
-		const set = await call<{ problems: { id: number; answer: unknown }[] }>("/api/sets/2", player);
+		const set = await call<SetBody>("/api/sets/all/2", player);
 		expect(set.body.problems.map((p) => p.id)).toEqual([11, 12, 13, 14, 15, 16, 17, 18, 19, 20]);
 		expect(set.body.problems[1].answer).toEqual({ action: "d:1m", score: 100, pitari: true });
-		const sets = await call<{ sets: unknown[] }>("/api/sets?page=1", player);
+		const sets = await call<{ totalSets: number; sets: unknown[] }>("/api/sets?theme=all&page=1", player);
+		expect(sets.body.totalSets).toBe(2);
 		expect(sets.body.sets).toEqual([{ set: 2, answered: 1, scoreSum: 100, pitari: 1 }]);
+	});
+
+	it("chunk a theme's problems in number order", async () => {
+		const player = await newPlayer();
+		const easy = await call<SetBody>("/api/sets/easy/1", player);
+		expect(easy.body.problems.map((p) => p.id)).toEqual([1, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
+		await call(`/api/problems/5`, player);
+		await answer(player, 5, "d:2m");
+		const sets = await call<{ totalSets: number; sets: unknown[] }>("/api/sets?theme=easy", player);
+		expect(sets.body).toMatchObject({ totalSets: 1, sets: [{ set: 1, answered: 1, scoreSum: 63, pitari: 0 }] });
+		expect((await call("/api/sets/call/1", player)).status).toBe(404);
+		expect((await call("/api/sets/unknown/1", player)).status).toBe(404);
 	});
 });
 

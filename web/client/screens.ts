@@ -1,4 +1,13 @@
-import { NAME_MAX_LENGTH, RANKING_MIN_ANSWERS, displayName, markOf, setOf } from "../shared/rules";
+import {
+	NAME_MAX_LENGTH,
+	RANKING_MIN_ANSWERS,
+	SET_THEMES,
+	SET_THEME_LABELS,
+	type SetTheme,
+	displayName,
+	markOf,
+	setOf,
+} from "../shared/rules";
 import type {
 	ProblemResponse,
 	Profile,
@@ -38,8 +47,13 @@ export async function problemPage(root: HTMLElement, id: number, app: App): Prom
 
 // ---- problem sets ----
 
-export async function setList(root: HTMLElement, page: number): Promise<void> {
-	const data = await api<{ page: number; totalSets: number; setsPerPage: number; sets: SetSummary[] }>(`/api/sets?page=${page}`);
+const setTitle = (theme: SetTheme, set: number) =>
+	theme === "all" ? `問題集 第${set}集` : `問題集 ${SET_THEME_LABELS[theme]}編 第${set}集`;
+
+export async function setList(root: HTMLElement, theme: SetTheme, page: number): Promise<void> {
+	const data = await api<{ page: number; totalSets: number; setsPerPage: number; sets: SetSummary[] }>(
+		`/api/sets?theme=${theme}&page=${page}`,
+	);
 	const byNumber = new Map(data.sets.map((s) => [s.set, s]));
 	const first = (data.page - 1) * data.setsPerPage + 1;
 	const last = Math.min(first + data.setsPerPage - 1, data.totalSets);
@@ -53,7 +67,7 @@ export async function setList(root: HTMLElement, page: number): Promise<void> {
 				{},
 				h(
 					"a",
-					{ class: `set-cell${done ? " is-done" : summary ? " is-started" : ""}`, href: `/sets/${set}` },
+					{ class: `set-cell${done ? " is-done" : summary ? " is-started" : ""}`, href: `/sets/${theme}/${set}` },
 					h("span", { class: "set-cell__no" }, String(set)),
 					h("span", { class: "set-cell__state" }, done ? `${(summary.scoreSum / 10).toFixed(1)}点` : summary ? `${summary.answered}/10` : ""),
 				),
@@ -62,34 +76,50 @@ export async function setList(root: HTMLElement, page: number): Promise<void> {
 	}
 	const pages = Math.ceil(data.totalSets / data.setsPerPage);
 	const pager = h("nav", { class: "pager", "aria-label": "ページ" });
-	for (let p = 1; p <= pages; p++) {
-		pager.append(h("a", { class: p === data.page ? "is-current" : "", href: `/sets?page=${p}` }, `${(p - 1) * data.setsPerPage + 1}〜`));
+	if (pages > 1) {
+		for (let p = 1; p <= pages; p++) {
+			pager.append(h("a", { class: p === data.page ? "is-current" : "", href: `/sets?theme=${theme}&page=${p}` }, `${(p - 1) * data.setsPerPage + 1}〜`));
+		}
 	}
-	replace(root, 
+	const themes = h(
+		"nav",
+		{ class: "tabs", "aria-label": "テーマ" },
+		...SET_THEMES.map((t) => h("a", { class: t === theme ? "is-current" : "", href: `/sets?theme=${t}` }, SET_THEME_LABELS[t])),
+	);
+	replace(
+		root,
 		h("header", { class: "page-head" }, h("h1", {}, "問題集"), h("p", {}, "10問ずつの問題集です。10問そろうと合計点（100点満点）が出ます。")),
+		themes,
+		h(
+			"section",
+			{ class: "assort", "aria-label": "アソート問題集" },
+			h("h2", {}, "アソート問題集", h("span", { class: "assort__badge" }, "工事中")),
+			h("p", {}, "難易度や種類を組み合わせて、自分だけの問題集を作れる機能を準備しています。"),
+		),
 		pager,
-		grid,
+		data.totalSets ? grid : h("p", { class: "empty" }, "このテーマの問題集はまだありません。"),
 	);
 }
 
-export async function setPlay(root: HTMLElement, set: number, app: App): Promise<void> {
-	const data = await api<{ set: number; problems: SetProblem[] }>(`/api/sets/${set}`);
+export async function setPlay(root: HTMLElement, theme: SetTheme, set: number, app: App): Promise<void> {
+	const data = await api<{ set: number; problems: SetProblem[] }>(`/api/sets/${theme}/${set}`);
 	const next = data.problems.find((p) => !p.answer);
-	if (!next) return setSummary(root, set, data.problems, app);
+	if (!next) return setSummary(root, theme, set, data.problems, app);
 	const position = data.problems.indexOf(next) + 1;
 	const remaining = data.problems.filter((p) => !p.answer).length;
 	const response = await api<ProblemResponse>(`/api/problems/${next.id}`);
 	await showProblem(root, response, {
 		from: null,
-		progress: `問題集 第${set}集 ${position}/10`,
+		progress: `${setTitle(theme, set)} ${position}/10`,
 		nextLabel: remaining > 1 ? "次の問題へ" : "問題集の結果へ",
 		onNext: app.refresh,
 	});
 }
 
-function setSummary(root: HTMLElement, set: number, problems: SetProblem[], app: App): void {
+function setSummary(root: HTMLElement, theme: SetTheme, set: number, problems: SetProblem[], app: App): void {
 	const total = problems.reduce((sum, p) => sum + (p.answer?.score ?? 0), 0) / problems.length;
 	const pitari = problems.filter((p) => p.answer?.pitari).length;
+	const title = setTitle(theme, set);
 	const list = h("ol", { class: "set-result" });
 	for (const problem of problems) {
 		const icon = problem.answer ? markIcon(markOf(problem.answer.score, problem.answer.pitari), "set-result__mark") : null;
@@ -102,14 +132,15 @@ function setSummary(root: HTMLElement, set: number, problems: SetProblem[], app:
 		);
 	}
 	const share = async () => {
-		const text = `${SITE_NAME} 問題集 第${set}集 ${total.toFixed(1)}点（ピタリ${pitari}/10）\n同じ10問に挑戦してみて ${HASHTAG}`;
-		await openShare(await setCard(set, problems), text, `${location.origin}/sets/${set}`, `mortal-nanikiru-set-${set}.png`);
+		const text = `${SITE_NAME} ${title} ${total.toFixed(1)}点（ピタリ${pitari}/10）\n同じ10問に挑戦してみて ${HASHTAG}`;
+		await openShare(await setCard(title, problems), text, `${location.origin}/sets/${theme}/${set}`, `mortal-nanikiru-${theme}-${set}.png`);
 	};
-	replace(root, 
+	replace(
+		root,
 		h(
 			"section",
 			{ class: "set-summary" },
-			h("p", { class: "set-summary__title" }, `問題集 第${set}集`),
+			h("p", { class: "set-summary__title" }, title),
 			h("p", { class: "set-summary__score" }, total.toFixed(1), h("small", {}, "点")),
 			h("p", { class: "set-summary__pitari" }, `ピタリ ${pitari} / 10`),
 			list,
@@ -117,10 +148,41 @@ function setSummary(root: HTMLElement, set: number, problems: SetProblem[], app:
 				"div",
 				{ class: "result__actions" },
 				h("button", { class: "ghost-button", type: "button", onclick: share }, "結果を共有"),
-				h("button", { class: "stamp-button", type: "button", onclick: () => app.navigate(`/sets/${set + 1}`) }, "次の問題集へ"),
+				h("button", { class: "stamp-button", type: "button", onclick: () => app.navigate(`/sets/${theme}/${set + 1}`) }, "次の問題集へ"),
 			),
 		),
 	);
+}
+
+// ---- rules ----
+
+export function rulesPage(root: HTMLElement): Promise<void> {
+	const section = (title: string, ...items: string[]) =>
+		h("section", { class: "rules__section" }, h("h2", {}, title), h("ul", {}, ...items.map((item) => h("li", {}, item))));
+	replace(
+		root,
+		h("header", { class: "page-head" }, h("h1", {}, "ルール")),
+		section(
+			"問題の出どころ",
+			"問題はすべて、麻雀AI Mortal同士が4人で打った対局の一場面です。対戦相手の3人も全員Mortalで、全員が強豪です。",
+			"あなたは4人のうち1人の席から局面を見て、その席の判断（何を切るか・鳴くか）を答えます。",
+			"評価モデルは第三者が配布するMortal用の重み mortal-298k で、公式モデルではありません。",
+		),
+		section(
+			"対局ルール（天鳳の段位戦に準拠）",
+			"四人麻雀の東南戦（半荘戦）。持ち点25,000点で、オーラスで30,000点に誰も届かなければ西入します。",
+			"赤ドラあり（5萬・5筒・5索に各1枚）。喰いタン・後付けあり。一発・裏ドラ・槓ドラあり。",
+			"途中流局あり（九種九牌・四風連打・四家立直・四槓散了）。持ち点がマイナスになると終了（トビ）。",
+			"天鳳と違い、3人が同時にロンしても流局になりません（Mortalの対局エンジンの仕様）。",
+		),
+		section(
+			"採点",
+			"Mortalは候補ごとに評価（%）を出します。得点は「あなたの手の評価 ÷ 最善手の評価 × 100」です。",
+			"最善手と一致すると「ピタリ」（100点・花丸）。70〜99点は○、30〜69点は△、29点以下は✕です。",
+			"難易度はMortalが最善手をどれだけ確信しているかで分けます（かんたん90%以上／ふつう50%以上／むずかしい50%未満）。98%以上の自明な局面は出題しません。",
+		),
+	);
+	return Promise.resolve();
 }
 
 // ---- profile ----

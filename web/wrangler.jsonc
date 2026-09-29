@@ -12,6 +12,7 @@
 		{
 			"binding": "DB",
 			"database_name": "mortal-jan",
+			"database_id": "8f080e86-2a07-4d4f-bf2f-7cab16f322eb",
 			"migrations_dir": "./migrations"
 		}
 	],

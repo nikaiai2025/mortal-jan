@@ -1,7 +1,8 @@
 import "./style.css";
 import { h } from "./dom";
 import { errorMessage } from "./errors";
-import { type App, freePlay, meLink, problemPage, profilePage, rankingPage, setList, setPlay } from "./screens";
+import { SET_THEMES, type SetTheme } from "../shared/rules";
+import { type App, freePlay, meLink, problemPage, profilePage, rankingPage, rulesPage, setList, setPlay } from "./screens";
 import { SITE_NAME } from "./share";
 import { sound } from "./sound";
 
@@ -12,11 +13,17 @@ type Render = (root: HTMLElement, match: RegExpMatchArray, app: App) => Promise<
 const routes: [RegExp, Render][] = [
 	[/^\/$/, (root, _, app) => freePlay(root, app)],
 	[/^\/q\/(\d+)$/, (root, m, app) => problemPage(root, Number(m[1]), app)],
-	[/^\/sets$/, (root) => setList(root, Number(new URLSearchParams(location.search).get("page") ?? 1) || 1)],
-	[/^\/sets\/(\d+)$/, (root, m, app) => setPlay(root, Number(m[1]), app)],
+	[/^\/sets$/, (root) => setList(root, themeParam(), Number(new URLSearchParams(location.search).get("page") ?? 1) || 1)],
+	[/^\/sets\/([a-z]+)\/(\d+)$/, (root, m, app) => setPlay(root, m[1] as SetTheme, Number(m[2]), app)],
+	[/^\/rules$/, (root) => rulesPage(root)],
 	[/^\/u\/([a-z0-9]+)$/, (root, m, app) => profilePage(root, m[1], app)],
 	[/^\/ranking$/, (root) => rankingPage(root)],
 ];
+
+function themeParam(): SetTheme {
+	const theme = new URLSearchParams(location.search).get("theme");
+	return SET_THEMES.includes(theme as SetTheme) ? (theme as SetTheme) : "all";
+}
 
 const app: App = {
 	navigate(path) {
@@ -61,6 +68,7 @@ const navLinks: [string, string | (() => string)][] = [
 	["問題集", "/sets"],
 	["成績", meLink],
 	["ランキング", "/ranking"],
+	["ルール", "/rules"],
 ];
 const nav = h("nav", { class: "site-nav", "aria-label": "メニュー" });
 

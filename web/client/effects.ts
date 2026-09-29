@@ -106,6 +106,30 @@ export function markLayer(mark: Mark, score: number): MarkLayer {
 	return { element, play };
 }
 
+/**
+ * Move the grading marks to the top-left corner. The docked layout is plain CSS
+ * (.is-docked); each element is animated from where it was to where it lands.
+ */
+export async function dock(sequence: Sequence, layer: HTMLElement): Promise<void> {
+	const parts = Array.from(layer.children) as HTMLElement[];
+	const before = parts.map((part) => part.getBoundingClientRect());
+	layer.classList.add("is-docked");
+	await Promise.all(
+		parts.map((part, i) => {
+			const after = part.getBoundingClientRect();
+			if (!after.width || !before[i].width) return undefined;
+			const dx = before[i].left - after.left;
+			const dy = before[i].top - after.top;
+			const scale = before[i].width / after.width;
+			return sequence.animate(
+				part,
+				[{ translate: `${dx}px ${dy}px`, scale: String(scale), transformOrigin: "0 0" }, { translate: "0 0", scale: "1", transformOrigin: "0 0" }],
+				{ duration: 450, easing: "cubic-bezier(0.3, 0.7, 0.2, 1)" },
+			);
+		}),
+	);
+}
+
 /** Reveal children one after another. */
 export async function reveal(sequence: Sequence, elements: Element[]): Promise<void> {
 	for (const element of elements) {

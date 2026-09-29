@@ -65,7 +65,7 @@ function handScore(ctx: CanvasRenderingContext2D, score: string, x: number, y: n
 export async function problemCard(question: Question, result: Result): Promise<HTMLCanvasElement> {
 	await Promise.all([preloadScene(question.scene, question.choices), document.fonts.ready]);
 	const [element, ctx] = canvas();
-	drawScene(ctx, question.scene, WIDTH, { problemId: question.id, kind: question.kind, choices: question.choices });
+	drawScene(ctx, question.scene, WIDTH, { problemId: question.id });
 	paper(ctx, WIDTH);
 	paintMark(ctx, markOf(result.answer.score, result.answer.pitari), 56, WIDTH + 44, 230);
 	handScore(ctx, String(result.answer.score), 318, WIDTH + 190, 150);
@@ -77,7 +77,7 @@ export async function problemCard(question: Question, result: Result): Promise<H
 	return element;
 }
 
-export async function setCard(set: number, problems: SetProblem[]): Promise<HTMLCanvasElement> {
+export async function setCard(title: string, problems: SetProblem[]): Promise<HTMLCanvasElement> {
 	await document.fonts.ready;
 	const [element, ctx] = canvas();
 	paper(ctx, 0);
@@ -88,7 +88,7 @@ export async function setCard(set: number, problems: SetProblem[]): Promise<HTML
 	ctx.textAlign = "left";
 	ctx.fillStyle = INK;
 	ctx.font = `800 64px ${MINCHO}`;
-	ctx.fillText(`問題集 第${set}集`, 72, 150);
+	ctx.fillText(title, 72, 150);
 	handScore(ctx, total.toFixed(1), 72, 380, 190);
 	ctx.fillStyle = INK;
 	ctx.font = `700 44px ${GOTHIC}`;

@@ -9,14 +9,14 @@ from generator.extract import call_consumed, choices, number, pick
 from generator.scoring import difficulty
 
 
-EASY = {"d:1m": 0.0, "d:2m": -10.0}  # p_max ≈ 1
+EASY = {"d:1m": 0.0, "d:2m": -3.0}  # p_max ≈ 0.95
 NORMAL = {"d:1m": 0.0, "d:2m": -1.0}  # p_max ≈ 0.73
 HARD = {"d:1m": 0.0, "d:2m": 0.0, "d:3m": 0.0}  # p_max = 1/3
-THRESHOLDS = (0.9, 0.5)
+OBVIOUS = {"d:1m": 0.0, "d:2m": -10.0}  # p_max ≈ 1
 
 
 def decision(kind, q):
-    return {"kind": kind, "q": q, "difficulty": difficulty(q, THRESHOLDS), "kyokuIndex": 0, "eventIndex": 0, "seat": 0}
+    return {"kind": kind, "q": q, "difficulty": difficulty(q), "kyokuIndex": 0, "eventIndex": 0, "seat": 0}
 
 
 def test_pick_is_reproducible_and_covers_each_difficulty():
@@ -31,6 +31,11 @@ def test_pick_skips_when_the_difficulty_is_absent():
     only_easy = [decision("discard", EASY)]
     results = [pick(only_easy, random.Random(i), 1.0) for i in range(50)]
     assert None in results and only_easy[0] in results
+
+
+def test_pick_never_chooses_an_obvious_decision():
+    obvious = [decision("discard", OBVIOUS)]
+    assert all(pick(obvious, random.Random(i), 1.0) is None for i in range(50))
 
 
 def test_riichi_weight_raises_the_riichi_share():

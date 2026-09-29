@@ -12,10 +12,10 @@ Python 3.12・Rust（cargo）・gitが必要。生成物は `generated/` に出�
 
 ```powershell
 pwsh -File tools/mortal/setup.ps1          # Mortal環境を .mortal/ に構築
-pwsh -File tools/generate-problems.ps1     # 自己対局→全判断の評価→閾値の導出→問題データ
+pwsh -File tools/generate-problems.ps1     # 自己対局→全判断の評価→リーチ重みの導出→問題データ
 ```
 
-`generate-problems.ps1` は中断しても、再実行すれば続きから処理する。導出した閾値は `generator/calibration.json` に保存される。
+`generate-problems.ps1` は中断しても、再実行すれば続きから処理する。導出したリーチ重みは `generator/calibration.json` に保存される。
 
 ## Web（`web/`）
 

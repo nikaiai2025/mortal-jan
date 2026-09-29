@@ -27,7 +27,9 @@ def test_best_action_tie_is_deterministic():
 @pytest.mark.parametrize(
     ("q", "expected"),
     [
-        # Two candidates: p_max = 1 / (1 + e^-gap), and gap = log 9 gives 0.9.
+        # Two candidates: p_max = 1 / (1 + e^-gap); gap = log(p / (1 - p)) gives p_max = p.
+        ({"a": 0.0, "b": -(math.log(49) + 1e-9)}, None),  # 0.98: too obvious to be a problem
+        ({"a": 0.0, "b": -(math.log(49) - 1e-9)}, "easy"),
         ({"a": 0.0, "b": -(math.log(9) + 1e-9)}, "easy"),
         ({"a": 0.0, "b": -(math.log(9) - 1e-9)}, "normal"),
         ({"a": 0.0, "b": 0.0}, "normal"),  # p_max = 0.5
@@ -35,4 +37,4 @@ def test_best_action_tie_is_deterministic():
     ],
 )
 def test_difficulty_by_best_evaluation(q, expected):
-    assert difficulty(q, (0.9, 0.5)) == expected
+    assert difficulty(q) == expected

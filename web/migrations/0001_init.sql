@@ -7,16 +7,21 @@ CREATE TABLE problems (
   choices TEXT NOT NULL,      -- JSON, returned before answering
   evaluation TEXT NOT NULL,   -- JSON, returned only after answering
   source TEXT NOT NULL,       -- JSON, generation provenance
+  -- Position (1-based, in number order) within its difficulty and within its kind; problem sets by theme.
+  difficulty_pos INTEGER NOT NULL,
+  kind_pos INTEGER NOT NULL,
   answer_count INTEGER NOT NULL DEFAULT 0,
   score_sum INTEGER NOT NULL DEFAULT 0
 );
+CREATE INDEX problems_by_difficulty ON problems (difficulty, difficulty_pos);
+CREATE INDEX problems_by_kind ON problems (kind, kind_pos);
 
 CREATE TABLE players (
   id INTEGER PRIMARY KEY,
   public_id TEXT NOT NULL UNIQUE,
   token_hash TEXT NOT NULL UNIQUE,
   name TEXT,
-  -- Problem shown for answering; locked until answered (NULL when none).
+  -- Problem last shown for answering; it locks other problems until answered.
   current_problem_id INTEGER,
   created_at TEXT NOT NULL
 );
@@ -48,12 +53,3 @@ CREATE TABLE player_stats (
 CREATE INDEX ranking_answers ON player_stats (period, answers DESC);
 CREATE INDEX ranking_average ON player_stats (period, average DESC) WHERE qualified = 1;
 CREATE INDEX ranking_pitari ON player_stats (period, pitari_rate DESC) WHERE qualified = 1;
-
-CREATE TABLE player_sets (
-  player_id INTEGER NOT NULL,
-  set_no INTEGER NOT NULL,
-  answered INTEGER NOT NULL,
-  score_sum INTEGER NOT NULL,
-  pitari INTEGER NOT NULL,
-  PRIMARY KEY (player_id, set_no)
-) WITHOUT ROWID;
