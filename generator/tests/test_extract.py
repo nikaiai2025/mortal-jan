@@ -6,15 +6,17 @@ import pytest
 from generator.actions import CHI_LOW, PASS, PON, RIICHI, TILE_NAMES
 from generator.evaluate import DecisionPoint, candidates, classify
 from generator.extract import call_consumed, choices, number, pick
+from generator.scoring import difficulty
 
 
 EASY = {"d:1m": 0.0, "d:2m": -10.0}  # p_max ≈ 1
 NORMAL = {"d:1m": 0.0, "d:2m": -1.0}  # p_max ≈ 0.73
 HARD = {"d:1m": 0.0, "d:2m": 0.0, "d:3m": 0.0}  # p_max = 1/3
+THRESHOLDS = (0.9, 0.5)
 
 
 def decision(kind, q):
-    return {"kind": kind, "q": q, "kyokuIndex": 0, "eventIndex": 0, "seat": 0}
+    return {"kind": kind, "q": q, "difficulty": difficulty(q, THRESHOLDS), "kyokuIndex": 0, "eventIndex": 0, "seat": 0}
 
 
 def test_pick_is_reproducible_and_covers_each_difficulty():

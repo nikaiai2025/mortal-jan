@@ -7,8 +7,6 @@ import math
 TEMPERATURE = 1.0
 # (easy lower bound, hard upper bound) on the best action's Mortal evaluation.
 DISCARD_THRESHOLDS = (0.9, 0.5)
-# Quantiles of call decisions that give the same easy/hard shares as discard decisions.
-CALL_THRESHOLDS = (0.9988, 0.8148)  # generator.calibrate on seeds 1-100
 DIFFICULTIES = ("easy", "normal", "hard")
 
 
@@ -36,8 +34,11 @@ def scores(q: dict[str, float]) -> dict[str, int]:
 
 
 def difficulty(q: dict[str, float], thresholds: tuple[float, float]) -> str:
+    return classify_difficulty(max(mortal_evaluation(q).values()), thresholds)
+
+
+def classify_difficulty(p_max: float, thresholds: tuple[float, float]) -> str:
     easy_min, hard_max = thresholds
-    p_max = max(mortal_evaluation(q).values())
     if p_max >= easy_min:
         return "easy"
     if p_max < hard_max:

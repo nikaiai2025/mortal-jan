@@ -1,0 +1,8 @@
+{
+  "callThresholds": [
+    0.9988,
+    0.8148
+  ],
+  "riichiWeight": 1.5,
+  "games": 100
+}

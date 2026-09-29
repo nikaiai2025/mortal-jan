@@ -18,7 +18,6 @@ from .evaluate import file_sha256
 from .actions import deaka, tile_sort_key
 from .scene import SceneTracker
 from .scoring import (
-    CALL_THRESHOLDS,
     DIFFICULTIES,
     DISCARD_THRESHOLDS,
     TEMPERATURE,
@@ -29,6 +28,7 @@ from .scoring import (
 )
 
 EXTRACT_SEED = 20260930
+CALIBRATION_PATH = Path(__file__).with_name("calibration.json")
 CALL_ORDER = ("chi_low", "chi_mid", "chi_high", "pon", "pass")
 CALL_OFFSETS = {"chi_low": (1, 2), "chi_mid": (-1, 1), "chi_high": (-2, -1), "pon": (0, 0)}
 
@@ -37,15 +37,41 @@ def game_number(game: str) -> int:
     return int(game.split("_")[0])
 
 
-def decision_difficulty(decision: dict[str, Any]) -> str:
-    thresholds = CALL_THRESHOLDS if decision["kind"] == "call" else DISCARD_THRESHOLDS
-    return difficulty(decision["q"], thresholds)
+def load_calibration() -> dict[str, Any]:
+    """Call thresholds and riichi weight written by generator.calibrate."""
+    return json.loads(CALIBRATION_PATH.read_text(encoding="utf-8"))
+
+
+def read_decisions(path: Path) -> dict[str, Any]:
+    with gzip.open(path, "rt", encoding="utf-8") as f:
+        data = json.load(f)
+    if data["identity"] != runtime.IDENTITY:
+        raise RuntimeError(f"{path.name} was evaluated by another model: {data['identity']}")
+    return data
+
+
+def decision_files(directory: Path) -> list[Path]:
+    return sorted(directory.glob("*.json.gz"), key=lambda p: game_number(p.name))
+
+
+def by_kyoku(decisions: list[dict[str, Any]]) -> list[tuple[int, list[dict[str, Any]]]]:
+    groups: dict[int, list[dict]] = defaultdict(list)
+    for decision in decisions:
+        groups[decision["kyokuIndex"]].append(decision)
+    return sorted(groups.items())
+
+
+def kyoku_rng(game: str, kyoku_index: int) -> random.Random:
+    return random.Random(f"{EXTRACT_SEED}:{game}:{kyoku_index}")
 
 
 def pick(decisions: list[dict[str, Any]], rng: random.Random, riichi_weight: float) -> dict[str, Any] | None:
-    """Choose a difficulty uniformly, then one decision of it (riichi weighted)."""
+    """Choose a difficulty uniformly, then one decision of it (riichi weighted).
+
+    Each decision carries "kind" and "difficulty".
+    """
     wanted = rng.choice(DIFFICULTIES)
-    pool = [d for d in decisions if decision_difficulty(d) == wanted]
+    pool = [d for d in decisions if d["difficulty"] == wanted]
     if not pool:
         return None
     weights = [riichi_weight if d["kind"] == "riichi" else 1.0 for d in pool]
@@ -53,25 +79,21 @@ def pick(decisions: list[dict[str, Any]], rng: random.Random, riichi_weight: flo
 
 
 def select(
-    decision_files: list[Path], count: int, riichi_weight: float
+    files: list[Path], count: int, calibration: dict[str, Any]
 ) -> tuple[list[tuple[str, dict]], dict[str, str]]:
     """Return (game, decision) pairs in game order and the evaluated log hash of each game used."""
     selected: list[tuple[str, dict]] = []
     log_hashes: dict[str, str] = {}
-    for path in decision_files:
+    for path in files:
         if len(selected) >= count:
             break
-        with gzip.open(path, "rt", encoding="utf-8") as f:
-            data = json.load(f)
-        if data["identity"] != runtime.IDENTITY:
-            raise RuntimeError(f"{path.name} was evaluated by another model: {data['identity']}")
+        data = read_decisions(path)
         log_hashes[data["game"]] = data["logSha256"]
-        by_kyoku: dict[int, list[dict]] = defaultdict(list)
         for decision in data["decisions"]:
-            by_kyoku[decision["kyokuIndex"]].append(decision)
-        for kyoku_index in sorted(by_kyoku):
-            rng = random.Random(f"{EXTRACT_SEED}:{data['game']}:{kyoku_index}")
-            decision = pick(by_kyoku[kyoku_index], rng, riichi_weight)
+            thresholds = calibration["callThresholds"] if decision["kind"] == "call" else DISCARD_THRESHOLDS
+            decision["difficulty"] = difficulty(decision["q"], thresholds)
+        for kyoku_index, decisions in by_kyoku(data["decisions"]):
+            decision = pick(decisions, kyoku_rng(data["game"], kyoku_index), calibration["riichiWeight"])
             if decision is not None:
                 selected.append((data["game"], decision))
     return selected[:count], log_hashes
@@ -110,7 +132,7 @@ def build_problem(game: str, decision: dict[str, Any], scene: dict[str, Any]) ->
     candidates = sorted(q, key=lambda a: -q[a])
     return {
         "kind": decision["kind"],
-        "difficulty": decision_difficulty(decision),
+        "difficulty": decision["difficulty"],
         "scene": scene,
         "choices": choices(decision["kind"], list(q), scene),
         "evaluation": {
@@ -167,14 +189,13 @@ def main() -> None:
     parser.add_argument("--logs", type=Path, default=runtime.GENERATED_ROOT / "logs")
     parser.add_argument("--out", type=Path, default=runtime.GENERATED_ROOT / "problems.jsonl")
     parser.add_argument("--count", type=int, default=10000)
-    parser.add_argument("--riichi-weight", type=float, default=1.5)  # generator.calibrate on seeds 1-100
     args = parser.parse_args()
 
-    files = sorted(args.decisions.glob("*.json.gz"), key=lambda p: game_number(p.name))
-    selected, log_hashes = select(files, args.count, args.riichi_weight)
+    calibration = load_calibration()
+    selected, log_hashes = select(decision_files(args.decisions), args.count, calibration)
     used_games = len(log_hashes)
     if len(selected) < args.count:
-        print(f"warning: only {len(selected)} problems from {used_games} games (wanted {args.count})")
+        raise SystemExit(f"only {len(selected)} problems from {used_games} games (wanted {args.count}); play more hanchan")
     problems = number(build_problems(selected, log_hashes, args.logs))
 
     with args.out.open("w", encoding="utf-8", newline="\n") as f:
@@ -184,8 +205,8 @@ def main() -> None:
         **runtime.IDENTITY,
         "temperature": TEMPERATURE,
         "discardThresholds": DISCARD_THRESHOLDS,
-        "callThresholds": CALL_THRESHOLDS,
-        "riichiWeight": args.riichi_weight,
+        "callThresholds": calibration["callThresholds"],
+        "riichiWeight": calibration["riichiWeight"],
         "extractSeed": EXTRACT_SEED,
         "games": used_games,
         "problems": len(problems),
