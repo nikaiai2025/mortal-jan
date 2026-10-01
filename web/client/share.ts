@@ -5,7 +5,7 @@ import type { Profile, Question, Result, SetProblem } from "../shared/types";
 import { currentPublicId } from "./api";
 import { h } from "./dom";
 import { hanamaruFor, paintMark, RED_INK } from "./marks";
-import { drawScene, preloadScene, questionText } from "./scene";
+import { SCENE_HEIGHT, SCENE_WIDTH, drawScene, preloadScene, questionText } from "./scene";
 
 export const SITE_NAME = "もーたる何切る教室";
 export const HASHTAG = "#もーたる何切る教室";
@@ -45,10 +45,12 @@ function footer(ctx: CanvasRenderingContext2D): void {
 	ctx.textAlign = "right";
 	ctx.textBaseline = "alphabetic";
 	ctx.fillStyle = MUTED;
-	ctx.font = `700 30px ${MINCHO}`;
-	ctx.fillText(SITE_NAME, WIDTH - 48, HEIGHT - 46);
+	// One line at the very bottom, clear of the content above it.
 	ctx.font = `500 22px ${GOTHIC}`;
-	ctx.fillText(location.host, WIDTH - 48, HEIGHT - 84);
+	ctx.fillText(location.host, WIDTH - 48, HEIGHT - 24);
+	const hostWidth = ctx.measureText(location.host).width;
+	ctx.font = `700 28px ${MINCHO}`;
+	ctx.fillText(SITE_NAME, WIDTH - 48 - hostWidth - 18, HEIGHT - 24);
 }
 
 function handScore(ctx: CanvasRenderingContext2D, score: string, x: number, y: number, size: number): void {
@@ -66,14 +68,20 @@ function handScore(ctx: CanvasRenderingContext2D, score: string, x: number, y: n
 export async function problemCard(question: Question, result: Result): Promise<HTMLCanvasElement> {
 	await Promise.all([preloadScene(question.scene, question.choices), document.fonts.ready]);
 	const [element, ctx] = canvas();
-	drawScene(ctx, question.scene, WIDTH, { problemId: question.id });
-	paper(ctx, WIDTH);
-	paintMark(ctx, markOf(result.answer.score, result.answer.pitari), 56, WIDTH + 44, 230, hanamaruFor(currentPublicId(), result.id));
-	handScore(ctx, String(result.answer.score), 318, WIDTH + 190, 150);
+	// The scene is drawn SCENE_WIDTH wide with a paper margin, which leaves the bottom for the result.
+	paper(ctx, 0);
+	const margin = (WIDTH - SCENE_WIDTH) / 2;
+	ctx.save();
+	ctx.translate(margin, margin);
+	drawScene(ctx, question.scene, SCENE_WIDTH, { problemId: question.id });
+	ctx.restore();
+	const bottom = margin + SCENE_HEIGHT;
+	paintMark(ctx, markOf(result.answer.score, result.answer.pitari), 56, bottom + 30, 220, hanamaruFor(currentPublicId(), result.id));
+	handScore(ctx, String(result.answer.score), 318, bottom + 168, 150);
 	ctx.textAlign = "left";
 	ctx.fillStyle = INK;
 	ctx.font = `700 40px ${GOTHIC}`;
-	ctx.fillText(`あなたなら？ ${questionText(question.kind, question.choices)}`, 318, WIDTH + 262);
+	ctx.fillText(`あなたなら？ ${questionText(question.kind, question.choices)}`, 318, bottom + 238);
 	footer(ctx);
 	return element;
 }

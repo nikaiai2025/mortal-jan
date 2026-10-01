@@ -4,20 +4,22 @@
 import type { Choice, Meld, Pai, ProblemKind, Scene } from "../shared/types";
 import { BACK_URL, FRONT_URL, faceUrl, preloadTiles, tileImage } from "./tiles";
 
-export const SCENE_SIZE = 1000;
+/** The table is a square of SCENE_WIDTH; below it a strip holds the own hand, so the evaluation bars fit between the own river and the hand. */
+export const SCENE_WIDTH = 1000;
+export const SCENE_HEIGHT = 1068;
 
 const RIVER_W = 44;
 const RIVER_H = 59;
 const HAND_W = 66;
 const HAND_H = 88;
-const PANEL_HALF = 170;
-const RIVER_Y = PANEL_HALF + 28;
+const PANEL_HALF = 115;
+const RIVER_Y = PANEL_HALF + 26; // room for a riichi stick between the panel and the river
 const RIVER_X = -3 * RIVER_W;
 const RIVER_ROW = 6;
-const EDGE = SCENE_SIZE / 2;
-const OPPONENT_ROW_HALF = 380; // keeps the three opponent rows clear of each other's corners
+const EDGE = SCENE_WIDTH / 2; // the table's centre, on both axes
+const OPPONENT_ROW_HALF = 320; // keeps the side rows clear of the corners and of the evaluation bars
 const SELF_ROW_HALF = 490;
-const SELF_BOTTOM = SCENE_SIZE - 10;
+const SELF_BOTTOM = SCENE_HEIGHT - 11;
 const RAISE = 16; // a selected hand tile rises by this much
 
 const COLORS = {
@@ -122,10 +124,10 @@ export interface SceneOptions {
 	hand?: HandView;
 }
 
-/** Draw into a square of `size` pixels at the current origin. Tiles must be preloaded. */
-export function drawScene(ctx: CanvasRenderingContext2D, scene: Scene, size: number, options: SceneOptions): void {
+/** Draw `width` pixels wide (and width × SCENE_HEIGHT / SCENE_WIDTH tall) at the current origin. Tiles must be preloaded. */
+export function drawScene(ctx: CanvasRenderingContext2D, scene: Scene, width: number, options: SceneOptions): void {
 	ctx.save();
-	ctx.scale(size / SCENE_SIZE, size / SCENE_SIZE);
+	ctx.scale(width / SCENE_WIDTH, width / SCENE_WIDTH);
 	drawFelt(ctx);
 	ctx.save();
 	ctx.translate(EDGE, EDGE);
@@ -151,7 +153,7 @@ function drawFelt(ctx: CanvasRenderingContext2D): void {
 	gradient.addColorStop(0, COLORS.felt);
 	gradient.addColorStop(1, COLORS.feltEdge);
 	ctx.fillStyle = gradient;
-	ctx.fillRect(0, 0, SCENE_SIZE, SCENE_SIZE);
+	ctx.fillRect(0, 0, SCENE_WIDTH, SCENE_HEIGHT);
 }
 
 // ---- tiles ----
@@ -350,27 +352,12 @@ function drawOpponentRow(ctx: CanvasRenderingContext2D, scene: Scene, seat: numb
 
 // ---- evaluation bars ----
 
-const BAR_MAX = 250;
+const BAR_MAX = 83;
 
-/** AI evaluation of each hand tile as bars rising from the hand (after answering). */
+/** AI evaluation of each hand tile as bars rising from the hand into the strip below the own river (after answering). */
 function drawBars(ctx: CanvasRenderingContext2D, scene: Scene, bars: HandBar[], progress: number): void {
 	const slots = handSlots(scene);
-	// Bars stand on the hand and grow upward over the player's own river.
-	const base = slots[0].y - RAISE - 8;
-	const hasRiichi = bars.some((b) => b?.riichi !== undefined);
-	const top = base - BAR_MAX - (hasRiichi ? 70 : 40);
-	ctx.fillStyle = "rgba(6, 20, 15, 0.74)";
-	roundRect(ctx, 6, top, SCENE_SIZE - 12, base - top + 6, 14);
-	ctx.fill();
-	if (hasRiichi) {
-		ctx.font = `700 18px ${FONT}`;
-		ctx.textAlign = "left";
-		ctx.textBaseline = "middle";
-		ctx.fillStyle = COLORS.text;
-		ctx.fillText("■ ダマ", 24, top + 20);
-		ctx.fillStyle = "#ff9f43";
-		ctx.fillText("■ リーチ", 104, top + 20);
-	}
+	const base = slots[0].y - RAISE - 6;
 	ctx.textAlign = "center";
 	ctx.textBaseline = "alphabetic";
 	for (const slot of slots) {
@@ -394,8 +381,8 @@ function drawBars(ctx: CanvasRenderingContext2D, scene: Scene, bars: HandBar[], 
 		const labels = columns.filter((column) => column.value >= 0.02);
 		labels.forEach((column, i) => {
 			ctx.fillStyle = column.color === COLORS.red ? "#ffb4a8" : column.color;
-			ctx.font = `700 ${columns.length > 1 ? 18 : 22}px ${FONT}`;
-			ctx.fillText(`${Math.round(column.value * 100)}%`, slot.x + slot.w / 2, base - tallest - 8 - (labels.length - 1 - i) * 21);
+			ctx.font = `700 ${columns.length > 1 ? 15 : 19}px ${FONT}`;
+			ctx.fillText(`${Math.round(column.value * 100)}%`, slot.x + slot.w / 2, base - tallest - 6 - (labels.length - 1 - i) * 16);
 		});
 	}
 }
@@ -404,44 +391,20 @@ function drawBars(ctx: CanvasRenderingContext2D, scene: Scene, bars: HandBar[], 
 
 function drawPanel(ctx: CanvasRenderingContext2D, scene: Scene): void {
 	ctx.fillStyle = COLORS.panel;
-	roundRect(ctx, -PANEL_HALF, -PANEL_HALF, PANEL_HALF * 2, PANEL_HALF * 2, 20);
+	roundRect(ctx, -PANEL_HALF, -PANEL_HALF, PANEL_HALF * 2, PANEL_HALF * 2, 16);
 	ctx.fill();
 	ctx.strokeStyle = COLORS.panelLine;
 	ctx.lineWidth = 2;
-	roundRect(ctx, -PANEL_HALF + 7, -PANEL_HALF + 7, PANEL_HALF * 2 - 14, PANEL_HALF * 2 - 14, 14);
+	roundRect(ctx, -PANEL_HALF + 6, -PANEL_HALF + 6, PANEL_HALF * 2 - 12, PANEL_HALF * 2 - 12, 11);
 	ctx.stroke();
 
+	drawRound(ctx, scene, -54);
+	drawDeadWall(ctx, scene, -22);
+	ctx.textAlign = "center";
 	ctx.textBaseline = "middle";
-	ctx.textAlign = "center";
-	ctx.fillStyle = COLORS.text;
-	ctx.font = `700 46px ${FONT}`;
-	const round = `${BAKAZE[scene.bakaze]}${scene.kyoku}局`;
-	if (scene.honba > 0) {
-		const roundWidth = ctx.measureText(round).width;
-		ctx.font = `700 24px ${FONT}`;
-		const honba = `${scene.honba}本場`;
-		const total = roundWidth + 10 + ctx.measureText(honba).width;
-		ctx.textAlign = "left";
-		ctx.font = `700 46px ${FONT}`;
-		ctx.fillText(round, -total / 2, -62);
-		ctx.font = `700 24px ${FONT}`;
-		ctx.fillText(honba, -total / 2 + roundWidth + 10, -56);
-	} else {
-		ctx.fillText(round, 0, -62);
-	}
-
-	const doraW = 36;
-	const count = scene.doraMarkers.length;
-	ctx.textAlign = "right";
 	ctx.fillStyle = COLORS.dim;
-	ctx.font = `700 16px ${FONT}`;
-	const doraLeft = -(count * doraW) / 2;
-	ctx.fillText("ドラ", doraLeft - 8, 6);
-	scene.doraMarkers.forEach((pai, i) => drawTile(ctx, pai, doraLeft + i * doraW, -18, doraW, doraW * (4 / 3)));
-
-	ctx.textAlign = "center";
-	ctx.font = `500 22px ${FONT}`;
-	ctx.fillText(`残り${scene.tilesLeft}${scene.kyotaku > 0 ? `　供託${scene.kyotaku}` : ""}`, 0, 64);
+	ctx.font = `500 17px ${FONT}`;
+	ctx.fillText(`残り${scene.tilesLeft}`, 0, 44);
 
 	// Each seat's score faces that seat, as on an automatic table.
 	for (let relative = 0; relative < 4; relative++) {
@@ -449,15 +412,69 @@ function drawPanel(ctx: CanvasRenderingContext2D, scene: Scene): void {
 		const wind = (seat - scene.oya + 4) % 4;
 		ctx.save();
 		ctx.rotate(ROTATIONS[relative]);
-		ctx.font = `700 28px ${FONT}`;
+		ctx.font = `700 22px ${FONT}`;
 		const score = scene.scores[seat].toLocaleString("en-US");
 		const scoreWidth = ctx.measureText(score).width;
 		ctx.textAlign = "left";
 		ctx.fillStyle = wind === 0 ? COLORS.oya : COLORS.text;
-		ctx.fillText(WINDS[wind], -(scoreWidth + 40) / 2, 138);
+		ctx.fillText(WINDS[wind], -(scoreWidth + 30) / 2, PANEL_HALF - 24);
 		ctx.fillStyle = COLORS.text;
-		ctx.fillText(score, -(scoreWidth + 40) / 2 + 40, 138);
+		ctx.fillText(score, -(scoreWidth + 30) / 2 + 30, PANEL_HALF - 24);
 		ctx.restore();
+	}
+}
+
+/** "東1局" in a framed box; beside it the deposited 1000-point sticks and the honba (100-point sticks). */
+function drawRound(ctx: CanvasRenderingContext2D, scene: Scene, y: number): void {
+	const label = `${BAKAZE[scene.bakaze]}${scene.kyoku}局`;
+	ctx.font = `800 23px ${FONT}`;
+	const boxW = ctx.measureText(label).width + 16;
+	const boxH = 36;
+	const left = -(boxW + 8 + 62) / 2;
+	ctx.fillStyle = "#121b18";
+	roundRect(ctx, left, y - boxH / 2, boxW, boxH, 7);
+	ctx.fill();
+	ctx.strokeStyle = "#e9e2cf";
+	ctx.lineWidth = 2;
+	ctx.stroke();
+	ctx.fillStyle = COLORS.text;
+	ctx.textAlign = "left";
+	ctx.textBaseline = "middle";
+	ctx.fillText(label, left + 8, y + 1);
+
+	const x = left + boxW + 8;
+	ctx.font = `700 16px ${FONT}`;
+	for (const [kind, count, dy] of [["thousand", scene.kyotaku, -9], ["hundred", scene.honba, 9]] as const) {
+		drawStick(ctx, x, y + dy, kind);
+		ctx.fillStyle = COLORS.text;
+		ctx.fillText(String(count), x + 44, y + dy + 1);
+	}
+}
+
+/** A point stick: 1000 has one red dot, 100 a small cluster of black dots. */
+function drawStick(ctx: CanvasRenderingContext2D, x: number, centre: number, kind: "thousand" | "hundred"): void {
+	const w = 38;
+	const h = 7;
+	ctx.fillStyle = "#f4f1e8";
+	roundRect(ctx, x, centre - h / 2, w, h, 3);
+	ctx.fill();
+	ctx.fillStyle = kind === "thousand" ? COLORS.red : "#222";
+	const dots: [number, number][] = kind === "thousand" ? [[0, 0]] : [-3.2, 0, 3.2].flatMap((dx): [number, number][] => [[dx, -1.4], [dx, 1.4]]);
+	for (const [dx, dy] of dots) {
+		ctx.beginPath();
+		ctx.arc(x + w / 2 + dx, centre + dy, kind === "thousand" ? 2.3 : 1, 0, Math.PI * 2);
+		ctx.fill();
+	}
+}
+
+/** The dead wall's five tiles: the dora indicators face up from the left (one more per kan), the rest face down. */
+function drawDeadWall(ctx: CanvasRenderingContext2D, scene: Scene, top: number): void {
+	const w = 27;
+	const h = 36;
+	const left = -(5 * w + 4) / 2;
+	for (let i = 0; i < 5; i++) {
+		const pai = scene.doraMarkers[i] ?? null;
+		drawTile(ctx, pai, left + i * (w + 1), top, w, h, { back: !pai });
 	}
 }
 

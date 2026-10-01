@@ -3,7 +3,7 @@
 
 import type { Question } from "../shared/types";
 import { h } from "./dom";
-import { type HandBar, type HandView, SCENE_SIZE, drawScene, handSlotAt, preloadScene } from "./scene";
+import { type HandBar, type HandView, SCENE_HEIGHT, SCENE_WIDTH, drawScene, handSlotAt, preloadScene } from "./scene";
 
 export interface Board {
 	element: HTMLElement;
@@ -41,14 +41,14 @@ export async function board(question: Question): Promise<Board> {
 		const size = Math.round(width * Math.min(window.devicePixelRatio || 1, 3));
 		if (canvas.width === size) return;
 		canvas.width = size;
-		canvas.height = size;
+		canvas.height = Math.round((size * SCENE_HEIGHT) / SCENE_WIDTH);
 		paint();
 	};
 	observer.observe(canvas);
 
 	canvas.addEventListener("click", (event) => {
 		if (!listener) return;
-		const scale = SCENE_SIZE / canvas.clientWidth;
+		const scale = SCENE_WIDTH / canvas.clientWidth;
 		const index = handSlotAt(question.scene, event.offsetX * scale, event.offsetY * scale);
 		if (index !== null) listener(index);
 	});

@@ -6,7 +6,7 @@ import { currentPublicId, post } from "./api";
 import { answerWindow } from "./answer";
 import { board, type Board } from "./board";
 import { h, replace } from "./dom";
-import { Sequence, dock, markLayer, reveal } from "./effects";
+import { Sequence, markLayer, reveal } from "./effects";
 import { hanamaruFor } from "./marks";
 import { DIFFICULTY_LABELS, KIND_LABELS, actionElement } from "./labels";
 import { chosenSlot, handBars } from "./evaluation";
@@ -92,9 +92,8 @@ async function grade(root: HTMLElement, view: Board, replaced: HTMLElement, resu
 	root.addEventListener("pointerdown", skip);
 	await layer.play(sequence);
 	if (result.kind !== "call") {
-		// The marks step aside to the corner and the evaluation rises over the hand.
-		await sequence.pause(350);
-		await dock(sequence, layer.element);
+		// The marks stay where they were written; the evaluation rises from the hand below them.
+		await sequence.pause(250);
 		await view.showBars(handBars(result), () => sequence.isSkipped);
 	}
 	await reveal(sequence, rows);
@@ -144,6 +143,13 @@ function resultCard(result: Result, options: PlayOptions): HTMLElement {
 		h("dt", {}, "みんなの平均"),
 		h("dd", {}, result.human ? `${result.human.average.toFixed(1)}点（${result.human.answers}人）` : "集計中"),
 	);
+	if (result.kind === "riichi") {
+		// The bars over the hand: one per way of discarding the tile.
+		meta.append(
+			h("dt", {}, "グラフ"),
+			h("dd", { class: "bars-legend" }, h("i", { class: "bars-legend__dama" }), "ダマ", h("i", { class: "bars-legend__riichi" }), "リーチ"),
+		);
+	}
 	if (result.sharer) {
 		meta.append(
 			h("dt", {}, `${result.sharer.name}さん`),
