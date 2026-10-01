@@ -40,7 +40,7 @@ def game_number(game: str) -> int:
 
 
 def load_calibration() -> dict[str, Any]:
-    """Call thresholds, call probability and riichi weight written by generator.calibrate."""
+    """Call thresholds and the call and riichi probabilities written by generator.calibrate."""
     return json.loads(CALIBRATION_PATH.read_text(encoding="utf-8"))
 
 
@@ -74,21 +74,21 @@ def kyoku_rng(game: str, kyoku_index: int) -> random.Random:
 
 
 def pick(
-    decisions: list[dict[str, Any]], rng: random.Random, riichi_weight: float, call_probability: float
+    decisions: list[dict[str, Any]], rng: random.Random, call_probability: float, riichi_probability: float
 ) -> dict[str, Any] | None:
-    """Choose the call or the discard pool, then a difficulty uniformly, then one decision of it.
+    """Choose a kind, then a difficulty uniformly, then one decision of that kind and difficulty.
 
-    Each decision carries "kind" and "difficulty" (None: too obvious, never picked). The call pool
-    is chosen with `call_probability` when the kyoku has a call problem; riichi decisions weigh more.
+    Each decision carries "kind" and "difficulty" (None: too obvious, never picked). The kyoku draws
+    call with `call_probability`, riichi with `riichi_probability` and plain discard otherwise; a
+    kind the kyoku has no problem of falls back to plain discard. Kinds never share a pool.
     """
-    calls = [d for d in decisions if d["kind"] == "call" and d["difficulty"]]
-    use_calls = bool(calls) and rng.random() < call_probability
+    available = {d["kind"] for d in decisions if d["difficulty"]}
+    roll = rng.random()
+    drawn = "call" if roll < call_probability else "riichi" if roll < call_probability + riichi_probability else "discard"
+    kind = drawn if drawn in available else "discard"
     wanted = rng.choice(DIFFICULTIES)
-    pool = [d for d in decisions if (d["kind"] == "call") == use_calls and d["difficulty"] == wanted]
-    if not pool:
-        return None
-    weights = [riichi_weight if d["kind"] == "riichi" else 1.0 for d in pool]
-    return rng.choices(pool, weights)[0]
+    pool = [d for d in decisions if d["kind"] == kind and d["difficulty"] == wanted]
+    return rng.choice(pool) if pool else None
 
 
 def select(
@@ -106,7 +106,7 @@ def select(
             decision["difficulty"] = classify_difficulty(p_max(decision["q"]), thresholds_for(decision["kind"], calibration))
         for kyoku_index, decisions in by_kyoku(data["decisions"]):
             rng = kyoku_rng(data["game"], kyoku_index)
-            decision = pick(decisions, rng, calibration["riichiWeight"], calibration["callProbability"])
+            decision = pick(decisions, rng, calibration["callProbability"], calibration["riichiProbability"])
             if decision is not None:
                 selected.append((data["game"], decision))
     return selected[:count], log_hashes

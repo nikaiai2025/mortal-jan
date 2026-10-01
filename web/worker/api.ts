@@ -1,5 +1,6 @@
 import {
 	DAILY_ANSWER_LIMIT,
+	DAILY_CHART_DAYS,
 	HUMAN_STATS_MIN_ANSWERS,
 	SET_SIZE,
 	type SetTheme,
@@ -11,6 +12,7 @@ import {
 import type {
 	AnswerResult,
 	Choice,
+	DailyStats,
 	Evaluation,
 	Me,
 	Profile,
@@ -25,7 +27,6 @@ import type {
 	Stats,
 } from "../shared/types";
 import { HttpError, addressKey, json, positiveInt, randomId, randomInt, randomToken, readJson, sha256Hex } from "./http";
-import { readCursor } from "./aggregate";
 import { validateName } from "./names";
 
 interface Ctx {
@@ -35,11 +36,16 @@ interface Ctx {
 	params: string[];
 }
 
+const PLAYER_COLUMNS = "id, public_id, name, current_problem_id, assigned_day, assigned_count";
+
 interface PlayerRow {
 	id: number;
 	public_id: string;
 	name: string | null;
 	current_problem_id: number | null;
+	/** Japan date of the last assignment and how many problems were assigned that day. */
+	assigned_day: string | null;
+	assigned_count: number;
 }
 
 interface ProblemRow {
@@ -95,7 +101,7 @@ async function authenticate(ctx: Ctx): Promise<PlayerRow> {
 	const token = ctx.request.headers.get("Authorization")?.match(/^Bearer (\S+)$/)?.[1];
 	if (!token) throw new HttpError(401, "unauthorized");
 	const player = await ctx.env.DB.prepare(
-		"SELECT id, public_id, name, current_problem_id FROM players WHERE token_hash = ?",
+		"SELECT id, public_id, name, current_problem_id, assigned_day, assigned_count FROM players WHERE token_hash = ?",
 	)
 		.bind(await sha256Hex(token))
 		.first<PlayerRow>();
@@ -137,6 +143,7 @@ async function createPlayer(ctx: Ctx): Promise<Response> {
 interface PlayerAnswers {
 	all: Stats;
 	today: Stats;
+	daily: DailyStats[];
 	history: Profile["history"];
 }
 
@@ -149,19 +156,25 @@ async function playerAnswers(db: D1Database, playerId: number, now: Date): Promi
 		.all<{ id: number; problem_id: number; score: number; pitari: number; answered_at: string; jst_date: string }>();
 	const empty = (): Stats => ({ answers: 0, scoreSum: 0, pitari: 0 });
 	const all = empty();
-	const day = empty();
+	const days = new Map<string, Stats>();
 	for (const r of results) {
-		for (const stats of r.jst_date === today ? [all, day] : [all]) {
+		let day = days.get(r.jst_date);
+		if (!day) days.set(r.jst_date, (day = empty()));
+		for (const stats of [all, day]) {
 			stats.answers++;
 			stats.scoreSum += r.score;
 			stats.pitari += r.pitari;
 		}
 	}
+	const daily = [...days]
+		.sort(([a], [b]) => a.localeCompare(b))
+		.slice(-DAILY_CHART_DAYS)
+		.map(([date, stats]) => ({ date, ...stats }));
 	const history = results
 		.sort((a, b) => b.id - a.id)
 		.slice(0, 50)
 		.map((r) => ({ id: r.problem_id, score: r.score, pitari: r.pitari === 1, answeredAt: r.answered_at }));
-	return { all, today: day, history };
+	return { all, today: days.get(today) ?? empty(), daily, history };
 }
 
 async function getMe(ctx: Ctx): Promise<Response> {
@@ -237,28 +250,35 @@ async function resultOf(db: D1Database, row: ProblemRow, answer: AnswerResult, s
 	};
 }
 
+const dailyLimitReached = (player: PlayerRow, today: string) =>
+	player.assigned_day === today && player.assigned_count >= DAILY_ANSWER_LIMIT;
+
 /**
  * Point the player's assignment at `problemId` unless it changed since it was read
- * (`current`). An assignment to an answered problem counts as free: answering does
- * not clear it, which saves a write per answer.
+ * (`current`) or today's assignments reached the daily limit. An assignment to an
+ * answered problem counts as free: answering does not clear it, which saves a write
+ * per answer. The same write counts today's assignments, which caps the answers.
  */
 async function assign(db: D1Database, playerId: number, current: number | null, problemId: number): Promise<boolean> {
 	const { meta } = await db
-		.prepare("UPDATE players SET current_problem_id = ?1 WHERE id = ?2 AND current_problem_id IS ?3")
-		.bind(problemId, playerId, current)
+		.prepare(
+			`UPDATE players SET current_problem_id = ?1,
+			   assigned_count = CASE WHEN assigned_day = ?4 THEN assigned_count + 1 ELSE 1 END,
+			   assigned_day = ?4
+			 WHERE id = ?2 AND current_problem_id IS ?3 AND (assigned_day IS NOT ?4 OR assigned_count < ?5)`,
+		)
+		.bind(problemId, playerId, current, jstDate(new Date()), DAILY_ANSWER_LIMIT)
 		.run();
 	return meta.changes === 1;
 }
 
-/** After a lost race, the problem another request assigned (still unanswered). */
+/** After a failed assignment: the problem another request assigned (still unanswered), or the daily limit. */
 async function pendingAfterRace(db: D1Database, playerId: number): Promise<number> {
-	const player = await db
-		.prepare("SELECT id, public_id, name, current_problem_id FROM players WHERE id = ?")
-		.bind(playerId)
-		.first<PlayerRow>();
+	const player = await db.prepare(`SELECT ${PLAYER_COLUMNS} FROM players WHERE id = ?`).bind(playerId).first<PlayerRow>();
 	const pending = player && (await pendingProblem(db, player));
-	if (pending === null || pending === undefined) throw new HttpError(409, "conflict");
-	return pending;
+	if (pending !== null && pending !== undefined) return pending;
+	if (player && dailyLimitReached(player, jstDate(new Date()))) throw new HttpError(429, "daily_limit");
+	throw new HttpError(409, "conflict");
 }
 
 /** The assigned problem that still waits for an answer, if any. */
@@ -289,6 +309,7 @@ async function getCurrent(ctx: Ctx): Promise<Response> {
 	const db = ctx.env.DB;
 	let id = await pendingProblem(db, player);
 	if (id === null) {
+		if (dailyLimitReached(player, jstDate(new Date()))) throw new HttpError(429, "daily_limit");
 		id = await randomUnanswered(db, player.id);
 		if (id === null) return json({ state: "finished" } satisfies ProblemResponse);
 		// A concurrent request may have assigned another problem; show that one instead.
@@ -310,6 +331,7 @@ async function getProblem(ctx: Ctx): Promise<Response> {
 	}
 	const pending = await pendingProblem(db, player);
 	if (pending !== null && pending !== id) return json({ state: "locked", currentId: pending } satisfies ProblemResponse);
+	if (pending === null && dailyLimitReached(player, jstDate(new Date()))) throw new HttpError(429, "daily_limit");
 	if (player.current_problem_id !== id && !(await assign(db, player.id, player.current_problem_id, id))) {
 		const current = await pendingAfterRace(db, player.id);
 		if (current !== id) return json({ state: "locked", currentId: current } satisfies ProblemResponse);
@@ -330,16 +352,6 @@ async function postAnswer(ctx: Ctx): Promise<Response> {
 	if (existing) return json({ state: "result", result: await resultOf(db, row, existing, sharerId) } satisfies ProblemResponse);
 	if (player.current_problem_id !== id) throw new HttpError(409, "not_assigned");
 	const now = new Date();
-	// Today's aggregated count plus this player's answers the aggregation has not folded in yet.
-	// "+player_id" keeps SQLite on the rowid range (the last minutes) instead of the player's index.
-	const answeredToday = await db
-		.prepare(
-			`SELECT COALESCE((SELECT answers FROM player_stats WHERE player_id = ?1 AND period = ?2), 0)
-			      + (SELECT COUNT(*) FROM answers WHERE id > ?3 AND +player_id = ?1 AND jst_date = ?2) AS n`,
-		)
-		.bind(player.id, jstDate(now), await readCursor(db))
-		.first<number>("n");
-	if ((answeredToday ?? 0) >= DAILY_ANSWER_LIMIT) throw new HttpError(429, "daily_limit");
 	const choices: Choice[] = JSON.parse(row.choices);
 	if (typeof action !== "string" || !choices.some((c) => c.action === action)) throw new HttpError(400, "invalid_action");
 
@@ -457,18 +469,21 @@ async function getSet(ctx: Ctx): Promise<Response> {
 
 // ---- public pages ----
 
-/** Aggregated stats (up to 10 minutes old): two rows, whatever the player's history. */
-async function aggregatedStats(db: D1Database, playerId: number, now: Date): Promise<{ all: Stats; today: Stats }> {
+/** Aggregated stats (up to 10 minutes old): at most DAILY_CHART_DAYS + 1 rows, whatever the player's history. */
+async function aggregatedStats(db: D1Database, playerId: number, now: Date): Promise<Omit<PlayerAnswers, "history">> {
 	const today = jstDate(now);
+	// In descending order 'all' comes before every date ('a' > digits), then the latest days.
 	const { results } = await db
-		.prepare("SELECT period, answers, score_sum, pitari FROM player_stats WHERE player_id = ? AND period IN ('all', ?)")
-		.bind(playerId, today)
+		.prepare("SELECT period, answers, score_sum, pitari FROM player_stats WHERE player_id = ? ORDER BY period DESC LIMIT ?")
+		.bind(playerId, DAILY_CHART_DAYS + 1)
 		.all<{ period: string; answers: number; score_sum: number; pitari: number }>();
-	const of = (period: string): Stats => {
-		const row = results.find((r) => r.period === period);
-		return { answers: row?.answers ?? 0, scoreSum: row?.score_sum ?? 0, pitari: row?.pitari ?? 0 };
+	const stats = (row: (typeof results)[number] | undefined): Stats => ({ answers: row?.answers ?? 0, scoreSum: row?.score_sum ?? 0, pitari: row?.pitari ?? 0 });
+	const days = results.filter((r) => r.period !== "all");
+	return {
+		all: stats(results.find((r) => r.period === "all")),
+		today: stats(days.find((r) => r.period === today)),
+		daily: days.reverse().map((r) => ({ date: r.period, ...stats(r) })),
 	};
-	return { all: of("all"), today: of(today) };
 }
 
 /**
@@ -478,7 +493,7 @@ async function aggregatedStats(db: D1Database, playerId: number, now: Date): Pro
 async function getProfile(ctx: Ctx): Promise<Response> {
 	const db = ctx.env.DB;
 	const player = await db
-		.prepare("SELECT id, public_id, name, current_problem_id FROM players WHERE public_id = ?")
+		.prepare("SELECT id, public_id, name, current_problem_id, assigned_day, assigned_count FROM players WHERE public_id = ?")
 		.bind(ctx.params[0])
 		.first<PlayerRow>();
 	if (!player) throw new HttpError(404, "not_found");

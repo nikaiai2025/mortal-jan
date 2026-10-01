@@ -21,7 +21,8 @@ import type {
 import { api, currentPublicId, ensureSession, publicApi, put } from "./api";
 import { h, replace } from "./dom";
 import { errorMessage } from "./errors";
-import { markIcon } from "./marks";
+import { dailyChart } from "./chart";
+import { hanamaruFor, markIcon } from "./marks";
 import { showProblem } from "./play";
 import { HASHTAG, SITE_NAME, openShare, profileCard, setCard } from "./share";
 
@@ -122,7 +123,7 @@ function setSummary(root: HTMLElement, theme: SetTheme, set: number, problems: S
 	const title = setTitle(theme, set);
 	const list = h("ol", { class: "set-result" });
 	for (const problem of problems) {
-		const icon = problem.answer ? markIcon(markOf(problem.answer.score, problem.answer.pitari), "set-result__mark") : null;
+		const icon = problem.answer ? markIcon(markOf(problem.answer.score, problem.answer.pitari), "set-result__mark", hanamaruFor(currentPublicId(), problem.id)) : null;
 		list.append(
 			h(
 				"li",
@@ -176,6 +177,11 @@ export function rulesPage(root: HTMLElement): Promise<void> {
 			"天鳳と違い、3人が同時にロンしても流局になりません（Mortalの対局エンジンの仕様）。",
 		),
 		section(
+			"記録",
+			"同じ問題は1人1回だけ解けます。解き直しはできず、最初の回答が記録に残ります。",
+			"成績表では、全期間と今日の成績に加えて、1日ごとの平均点をグラフで見られます（回答のない日は除きます）。",
+		),
+		section(
 			"採点",
 			"AI（mortal-298k）は候補ごとに評価（%）を出します。得点は「あなたの手の評価 ÷ 最善手の評価 × 100」です。",
 			"最善手と一致すると「ピタリ」（100点・花丸）。70〜99点は○、30〜69点は△、29点以下は✕です。",
@@ -220,7 +226,7 @@ export async function profilePage(root: HTMLElement, publicId: string, app: App)
 	const recent = h("ol", { class: "history" });
 	for (const item of profile.history) {
 		recent.append(
-			h("li", {}, h("a", { href: `/q/${item.id}` }, markIcon(markOf(item.score, item.pitari), "history__mark"), h("span", {}, `第${item.id}問（問題集 第${setOf(item.id)}集）`), h("strong", {}, `${item.score}点`))),
+			h("li", {}, h("a", { href: `/q/${item.id}` }, markIcon(markOf(item.score, item.pitari), "history__mark", hanamaruFor(profile.publicId, item.id)), h("span", {}, `第${item.id}問（問題集 第${setOf(item.id)}集）`), h("strong", {}, `${item.score}点`))),
 		);
 	}
 	const share = async () => {
@@ -238,6 +244,8 @@ export async function profilePage(root: HTMLElement, publicId: string, app: App)
 		),
 		h("div", { class: "stat-row" }, statBlock("全期間", profile.all), statBlock("今日", profile.today)),
 		isMe ? h("div", { class: "result__actions" }, h("button", { class: "ghost-button", type: "button", onclick: share }, "成績を共有")) : null,
+		h("h2", { class: "section-title" }, "1日ごとの成績"),
+		profile.daily.length ? dailyChart(profile.daily) : h("p", { class: "empty" }, "まだ回答がありません。"),
 		isMe ? h("h2", { class: "section-title" }, "最近の回答") : null,
 		isMe ? (profile.history.length ? recent : h("p", { class: "empty" }, "まだ回答がありません。")) : null,
 		isMe ? null : h("p", { class: "note" }, "成績は10分ごとに更新します。"),

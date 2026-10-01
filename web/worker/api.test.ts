@@ -1,6 +1,7 @@
 import { SELF, applyD1Migrations, env } from "cloudflare:test";
 import { beforeAll, describe, expect, it } from "vitest";
-import type { Me, ProblemResponse, Result, Session } from "../shared/types";
+import type { Me, ProblemResponse, Profile, Result, Session } from "../shared/types";
+import { DAILY_ANSWER_LIMIT } from "../shared/rules";
 import { aggregate, fold, readCursor } from "./aggregate";
 
 declare global {
@@ -275,17 +276,40 @@ describe("aggregation", () => {
 		await aggregate(env.DB);
 		expect((await call<{ all: { answers: number } }>(`/api/players/${player.publicId}`)).body.all.answers).toBe(1);
 	});
+
+	it("lists the days with answers, oldest first: live for the owner, aggregated for others", async () => {
+		const player = await newPlayer();
+		await call("/api/problems/17", player);
+		await answer(player, 17, "d:1m");
+		const own = (await call<Profile>(`/api/players/${player.publicId}`, player)).body;
+		expect(own.daily).toEqual([{ date: today(), answers: 1, scoreSum: 100, pitari: 1 }]);
+		await aggregate(env.DB);
+		await setStats(player, "2026-01-02", 4, 250, 1);
+		const shared = (await call<Profile>(`/api/players/${player.publicId}`)).body;
+		expect(shared.daily).toEqual([
+			{ date: "2026-01-02", answers: 4, scoreSum: 250, pitari: 1 },
+			{ date: today(), answers: 1, scoreSum: 100, pitari: 1 },
+		]);
+		expect(shared.all.answers).toBe(1);
+	});
 });
 
 describe("daily limit", () => {
-	it("counts aggregated and not yet aggregated answers towards the daily limit", async () => {
+	const setAssigned = (session: Session, day: string, count: number) =>
+		env.DB.prepare("UPDATE players SET assigned_day = ?, assigned_count = ? WHERE public_id = ?").bind(day, count, session.publicId).run();
+
+	it("stops assigning new problems after the daily limit, and starts again the next day", async () => {
 		const player = await newPlayer();
-		await setStats(player, today(), 299, 0, 0);
-		await call("/api/problems/10", player);
-		expect((await answer(player, 10, "d:1m")).status).toBe(200); // the 300th, not aggregated yet
-		await call("/api/problems/18", player);
-		const response = await answer(player, 18, "d:1m");
-		expect(response.status).toBe(429);
-		expect(response.body).toEqual({ error: "daily_limit" });
+		await setAssigned(player, today(), DAILY_ANSWER_LIMIT - 1);
+		expect((await call("/api/problems/10", player)).body).toMatchObject({ state: "question" }); // the last one today
+		expect((await answer(player, 10, "d:1m")).status).toBe(200);
+		for (const path of ["/api/problems/current", "/api/problems/18"]) {
+			const response = await call(path, player);
+			expect(response.status).toBe(429);
+			expect(response.body).toEqual({ error: "daily_limit" });
+		}
+		expect((await call("/api/problems/10", player)).body).toMatchObject({ state: "result" }); // answered ones stay viewable
+		await setAssigned(player, "2026-01-01", DAILY_ANSWER_LIMIT);
+		expect((await call("/api/problems/18", player)).body).toMatchObject({ state: "question" });
 	});
 });

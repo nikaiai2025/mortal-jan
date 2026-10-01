@@ -2,12 +2,13 @@
 
 import { type Mark, displayName, markOf } from "../shared/rules";
 import type { Profile, Question, Result, SetProblem } from "../shared/types";
+import { currentPublicId } from "./api";
 import { h } from "./dom";
-import { paintMark, RED_INK } from "./marks";
+import { hanamaruFor, paintMark, RED_INK } from "./marks";
 import { drawScene, preloadScene, questionText } from "./scene";
 
-export const SITE_NAME = "Mortal何切る";
-export const HASHTAG = "#Mortal何切る";
+export const SITE_NAME = "もーたる何切る教室";
+export const HASHTAG = "#もーたる何切る教室";
 
 const WIDTH = 1080;
 const HEIGHT = 1440;
@@ -67,7 +68,7 @@ export async function problemCard(question: Question, result: Result): Promise<H
 	const [element, ctx] = canvas();
 	drawScene(ctx, question.scene, WIDTH, { problemId: question.id });
 	paper(ctx, WIDTH);
-	paintMark(ctx, markOf(result.answer.score, result.answer.pitari), 56, WIDTH + 44, 230);
+	paintMark(ctx, markOf(result.answer.score, result.answer.pitari), 56, WIDTH + 44, 230, hanamaruFor(currentPublicId(), result.id));
 	handScore(ctx, String(result.answer.score), 318, WIDTH + 190, 150);
 	ctx.textAlign = "left";
 	ctx.fillStyle = INK;
@@ -100,7 +101,7 @@ export async function setCard(title: string, problems: SetProblem[]): Promise<HT
 		const x = 80 + column * 480;
 		const y = 560 + row * 150;
 		const mark: Mark = problem.answer ? markOf(problem.answer.score, problem.answer.pitari) : "batsu";
-		paintMark(ctx, mark, x, y, 110);
+		paintMark(ctx, mark, x, y, 110, hanamaruFor(currentPublicId(), problem.id));
 		ctx.fillStyle = INK;
 		ctx.font = `600 34px ${GOTHIC}`;
 		ctx.fillText(`第${problem.id}問`, x + 132, y + 50);

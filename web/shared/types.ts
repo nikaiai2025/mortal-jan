@@ -131,11 +131,18 @@ export interface SetSummary {
 	pitari: number;
 }
 
+export interface DailyStats extends Stats {
+	/** Japan date, YYYY-MM-DD. */
+	date: string;
+}
+
 export interface Profile {
 	publicId: string;
 	name: string | null;
 	all: Stats;
 	today: Stats;
+	/** Days with answers, oldest first: the latest DAILY_CHART_DAYS of them. */
+	daily: DailyStats[];
 	history: { id: number; score: number; pitari: boolean; answeredAt: string }[];
 }
 

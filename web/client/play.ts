@@ -7,6 +7,7 @@ import { answerWindow } from "./answer";
 import { board, type Board } from "./board";
 import { h, replace } from "./dom";
 import { Sequence, dock, markLayer, reveal } from "./effects";
+import { hanamaruFor } from "./marks";
 import { DIFFICULTY_LABELS, KIND_LABELS, actionElement } from "./labels";
 import { chosenSlot, handBars } from "./evaluation";
 import { HASHTAG, SITE_NAME, openShare, problemCard } from "./share";
@@ -78,7 +79,7 @@ async function showResult(root: HTMLElement, result: Result, options: PlayOption
 async function grade(root: HTMLElement, view: Board, replaced: HTMLElement, result: Result, options: PlayOptions, animate: boolean): Promise<void> {
 	const sequence = new Sequence();
 	if (!animate || matchMedia("(prefers-reduced-motion: reduce)").matches) sequence.skip();
-	const layer = markLayer(markOf(result.answer.score, result.answer.pitari), result.answer.score);
+	const layer = markLayer(markOf(result.answer.score, result.answer.pitari), result.answer.score, hanamaruFor(currentPublicId(), result.id));
 	view.overlay(layer.element);
 	const card = resultCard(result, options);
 	const rows = Array.from(card.children);

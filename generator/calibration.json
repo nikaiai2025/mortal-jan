@@ -3,7 +3,7 @@
     0.9577,
     0.6535
   ],
-  "callProbability": 0.28,
-  "riichiWeight": 2.4,
+  "callProbability": 0.18,
+  "riichiProbability": 0.37,
   "games": 100
 }

@@ -1,5 +1,5 @@
 param(
-	[int]$Hanchan = 1150,
+	[int]$Hanchan = 1250,
 	[int]$Problems = 10000
 )
 $ErrorActionPreference = "Stop"

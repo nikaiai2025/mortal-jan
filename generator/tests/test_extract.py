@@ -21,31 +21,21 @@ def decision(kind, q):
 
 def test_pick_is_reproducible_and_covers_each_difficulty():
     decisions = [decision("discard", EASY), decision("discard", NORMAL), decision("discard", HARD)]
-    first = [pick(decisions, random.Random(f"s:{i}"), 2.0, 0.0) for i in range(30)]
-    second = [pick(decisions, random.Random(f"s:{i}"), 2.0, 0.0) for i in range(30)]
+    first = [pick(decisions, random.Random(f"s:{i}"), 0.0, 0.0) for i in range(30)]
+    second = [pick(decisions, random.Random(f"s:{i}"), 0.0, 0.0) for i in range(30)]
     assert first == second
     assert {id(d) for d in first} == {id(d) for d in decisions}
 
 
 def test_pick_skips_when_the_difficulty_is_absent():
     only_easy = [decision("discard", EASY)]
-    results = [pick(only_easy, random.Random(i), 1.0, 0.0) for i in range(50)]
+    results = [pick(only_easy, random.Random(i), 0.0, 0.0) for i in range(50)]
     assert None in results and only_easy[0] in results
 
 
 def test_pick_never_chooses_an_obvious_decision():
     obvious = [decision("discard", OBVIOUS)]
-    assert all(pick(obvious, random.Random(i), 1.0, 0.0) is None for i in range(50))
-
-
-def test_riichi_weight_raises_the_riichi_share():
-    decisions = [decision("discard", HARD)] * 9 + [decision("riichi", HARD)]
-
-    def riichi_picks(weight):
-        picks = [pick(decisions, random.Random(i), weight, 0.0) for i in range(3000)]
-        return sum(p is not None and p["kind"] == "riichi" for p in picks)
-
-    assert riichi_picks(3.0) > 2 * riichi_picks(1.0)
+    assert all(pick(obvious, random.Random(i), 0.0, 0.0) is None for i in range(50))
 
 
 @pytest.mark.parametrize(
@@ -105,16 +95,21 @@ def test_riichi_candidates_combine_both_stages():
     assert candidates(point, q, after) == pytest.approx({"d:1m": 0.1, "d:2m": 0.3, "r:1m": 0.5, "r:2m": -0.3})
 
 
-def test_call_probability_chooses_the_call_pool():
-    decisions = [decision("discard", HARD), decision("call", HARD)]
-    kinds = lambda probability: {
-        p["kind"] for i in range(200) if (p := pick(decisions, random.Random(i), 1.0, probability)) is not None
-    }
-    assert kinds(0.0) == {"discard"}
-    assert kinds(1.0) == {"call"}
-    assert kinds(0.5) == {"discard", "call"}
+def test_probabilities_choose_one_kind_per_kyoku():
+    decisions = [decision("discard", HARD), decision("riichi", HARD), decision("call", HARD)]
+
+    def kinds(call_probability, riichi_probability):
+        picks = (pick(decisions, random.Random(i), call_probability, riichi_probability) for i in range(300))
+        return {p["kind"] for p in picks if p is not None}
+
+    assert kinds(0.0, 0.0) == {"discard"}
+    assert kinds(1.0, 0.0) == {"call"}
+    assert kinds(0.0, 1.0) == {"riichi"}
+    assert kinds(0.3, 0.3) == {"discard", "riichi", "call"}
 
 
-def test_a_kyoku_without_call_problems_uses_the_discard_pool():
-    decisions = [decision("discard", HARD), decision("call", OBVIOUS)]
-    assert all(p is None or p["kind"] == "discard" for p in (pick(decisions, random.Random(i), 1.0, 1.0) for i in range(50)))
+def test_a_kind_without_problems_falls_back_to_plain_discard():
+    decisions = [decision("discard", HARD), decision("call", OBVIOUS), decision("riichi", OBVIOUS)]
+    for probabilities in ((1.0, 0.0), (0.0, 1.0)):
+        picks = (pick(decisions, random.Random(i), *probabilities) for i in range(50))
+        assert all(p is None or p["kind"] == "discard" for p in picks)

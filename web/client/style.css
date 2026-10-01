@@ -1086,3 +1086,56 @@ button {
 		transition: none;
 	}
 }
+
+/* ---- daily results chart ---- */
+
+.daily-chart {
+	display: flex;
+}
+
+.daily-chart__scroll {
+	overflow-x: auto;
+	padding-bottom: 4px;
+}
+
+.daily-chart svg {
+	display: block;
+	flex: none;
+}
+
+.daily-chart__grid {
+	stroke: rgba(29, 40, 48, 0.12);
+	stroke-width: 1;
+}
+
+.daily-chart__bar {
+	fill: var(--red);
+	opacity: 0.85;
+}
+
+.daily-chart text {
+	font-family: var(--hand);
+	fill: var(--ink);
+	text-anchor: middle;
+}
+
+.daily-chart__axis {
+	font-size: 11px;
+	text-anchor: end !important;
+	opacity: 0.6;
+}
+
+.daily-chart__value {
+	font-size: 13px;
+	font-weight: 600;
+	fill: var(--red) !important;
+}
+
+.daily-chart__date {
+	font-size: 12px;
+}
+
+.daily-chart__count {
+	font-size: 11px;
+	opacity: 0.65;
+}

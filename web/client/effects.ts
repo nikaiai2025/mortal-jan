@@ -2,10 +2,8 @@
 
 import type { Mark } from "../shared/rules";
 import { h, wait } from "./dom";
-import { MARK_BOX, RED_INK, STROKE_WIDTH, markStrokes } from "./marks";
+import { type HanamaruStyle, MARK_BOX, markDrawing, markSvg } from "./marks";
 import { sound } from "./sound";
-
-const SVG_NS = "http://www.w3.org/2000/svg";
 
 /** Runs animations in order; skip() jumps every remaining step to its end. */
 export class Sequence {
@@ -49,22 +47,12 @@ export interface MarkLayer {
 }
 
 /** Overlay for the board: mark, handwritten score and (for pitari) a seal. */
-export function markLayer(mark: Mark, score: number): MarkLayer {
-	const svg = document.createElementNS(SVG_NS, "svg");
-	svg.setAttribute("viewBox", `0 0 ${MARK_BOX} ${MARK_BOX}`);
-	svg.setAttribute("class", "grade__mark");
-	svg.setAttribute("aria-hidden", "true");
-	const paths = markStrokes(mark).map((stroke) => {
-		const path = document.createElementNS(SVG_NS, "path");
-		path.setAttribute("d", stroke.d);
-		path.setAttribute("fill", "none");
-		path.setAttribute("stroke", RED_INK);
-		path.setAttribute("stroke-width", String(STROKE_WIDTH));
-		path.setAttribute("stroke-linecap", "round");
-		path.setAttribute("stroke-linejoin", "round");
+export function markLayer(mark: Mark, score: number, style?: HanamaruStyle): MarkLayer {
+	const drawing = markDrawing(mark, style);
+	const { svg, paths: elements } = markSvg(drawing, `0 0 ${MARK_BOX} ${MARK_BOX}`, "grade__mark");
+	const paths = elements.map((path, i) => {
 		path.style.visibility = "hidden";
-		svg.appendChild(path);
-		return { path, duration: stroke.duration };
+		return { path, duration: drawing.strokes[i].duration };
 	});
 	const scoreText = h("div", { class: "grade__score" }, String(score), h("small", {}, "点"));
 	const seal = mark === "hanamaru" ? h("div", { class: "grade__seal" }, "ピタリ") : null;

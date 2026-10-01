@@ -5,7 +5,9 @@ export const NAME_MAX_LENGTH = 12;
 /** Minimum answers to appear in the average / pitari rankings. */
 export const RANKING_MIN_ANSWERS = { all: 50, today: 10 } as const;
 /** Answers one player can save per JST day (protects the D1 write quota). */
-export const DAILY_ANSWER_LIMIT = 300;
+export const DAILY_ANSWER_LIMIT = 1000;
+/** Days shown in the daily results chart (days with answers only). */
+export const DAILY_CHART_DAYS = 30;
 /** Minimum answers before a problem's players' average is shown. */
 export const HUMAN_STATS_MIN_ANSWERS = 10;
 

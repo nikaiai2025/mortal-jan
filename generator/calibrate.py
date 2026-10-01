@@ -1,9 +1,10 @@
-"""Derive the call thresholds, the call probability and the riichi weight for generator.extract.
+"""Derive the call thresholds and the call and riichi probabilities for generator.extract.
 
 - Call thresholds: quantiles of call decisions that reproduce the easy/normal/hard mix of
   discard decisions (obvious decisions excluded on both sides).
-- Call probability and riichi weight: the values whose simulated extraction gives call and
-  riichi problems closest to their target shares.
+- Call and riichi probabilities: the values whose simulated extraction gives call and riichi
+  problems closest to their target shares. They exceed the shares, since not every kyoku has
+  a call or riichi problem.
 
     python -m generator.calibrate
 """
@@ -18,10 +19,9 @@ from . import runtime
 from .extract import CALIBRATION_PATH, by_kyoku, decision_files, kyoku_rng, pick, read_decisions
 from .scoring import DISCARD_THRESHOLDS, TRIVIAL, classify_difficulty, p_max
 
-TARGET_CALL_SHARE = 0.20
-TARGET_RIICHI_SHARE = 0.05
-CALL_PROBABILITIES = [round(0.02 * i, 2) for i in range(1, 36)]  # 0.02 .. 0.70
-RIICHI_WEIGHTS = [round(1 + 0.05 * i, 2) for i in range(41)]  # 1.00 .. 3.00
+TARGET_CALL_SHARE = 0.15
+TARGET_RIICHI_SHARE = 0.15
+PROBABILITIES = [round(0.01 * i, 2) for i in range(101)]
 
 
 def quantile(sorted_values: list[float], share: float) -> float:
@@ -52,29 +52,37 @@ def main() -> None:
         for d in decisions:
             d["difficulty"] = classify_difficulty(d["best"], call_thresholds if d["kind"] == "call" else DISCARD_THRESHOLDS)
 
-    def shares(call_probability: float, riichi_weight: float) -> tuple[float, float]:
+    def extract(call_probability: float, riichi_probability: float) -> tuple[float, float, int]:
         picked = [
-            p for game, index, ds in kyokus if (p := pick(ds, kyoku_rng(game, index), riichi_weight, call_probability)) is not None
+            p for game, index, ds in kyokus if (p := pick(ds, kyoku_rng(game, index), call_probability, riichi_probability)) is not None
         ]
         return (
             sum(p["kind"] == "call" for p in picked) / len(picked),
             sum(p["kind"] == "riichi" for p in picked) / len(picked),
+            len(picked),
         )
 
-    weight = 1.4
-    for _ in range(2):
-        probability = min(CALL_PROBABILITIES, key=lambda c: abs(shares(c, weight)[0] - TARGET_CALL_SHARE))
-        weight = min(RIICHI_WEIGHTS, key=lambda w: abs(shares(probability, w)[1] - TARGET_RIICHI_SHARE))
-    call_share, riichi_share = shares(probability, weight)
+    call_probability = riichi_probability = 0.0
+    for _ in range(3):
+        call_probability = min(
+            (p for p in PROBABILITIES if p + riichi_probability <= 1),
+            key=lambda p: abs(extract(p, riichi_probability)[0] - TARGET_CALL_SHARE),
+        )
+        riichi_probability = min(
+            (p for p in PROBABILITIES if call_probability + p <= 1),
+            key=lambda p: abs(extract(call_probability, p)[1] - TARGET_RIICHI_SHARE),
+        )
+    call_share, riichi_share, picked = extract(call_probability, riichi_probability)
     calibration = {
         "callThresholds": call_thresholds,
-        "callProbability": probability,
-        "riichiWeight": weight,
+        "callProbability": call_probability,
+        "riichiProbability": riichi_probability,
         "games": games,
     }
     CALIBRATION_PATH.write_text(json.dumps(calibration, indent=2) + "\n", encoding="utf-8")
     print(f"{games} games: call thresholds {call_thresholds} (discard easy {easy_share:.1%} / hard {hard_share:.1%})")
-    print(f"call probability {probability} -> {call_share:.1%} calls; riichi weight {weight} -> {riichi_share:.1%} riichi")
+    print(f"call probability {call_probability} -> {call_share:.1%} calls; riichi probability {riichi_probability} -> {riichi_share:.1%} riichi")
+    print(f"{picked} problems ({picked / games:.2f} per hanchan)")
     print(f"saved {CALIBRATION_PATH.name}")
 
 
