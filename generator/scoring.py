@@ -6,10 +6,11 @@ import math
 
 TEMPERATURE = 1.0
 # On the best action's AI evaluation (p_max): at or above TRIVIAL it is not a problem.
-TRIVIAL = 0.98
-# (easy lower bound, hard upper bound) for discard and riichi decisions. Call decisions use
-# thresholds derived by generator.calibrate so that their mix matches this one.
-DISCARD_THRESHOLDS = (0.9, 0.5)
+TRIVIAL = 0.96
+# (easy lower bound, hard upper bound) for discard and riichi decisions: they split the decisions
+# below TRIVIAL into thirds. Call decisions use thresholds derived by generator.calibrate so that
+# their mix matches this one.
+DISCARD_THRESHOLDS = (0.78, 0.57)
 DIFFICULTIES = ("easy", "normal", "hard")
 
 

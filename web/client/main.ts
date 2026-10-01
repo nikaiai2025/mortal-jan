@@ -3,6 +3,7 @@ import { h } from "./dom";
 import { errorMessage } from "./errors";
 import { SET_THEMES, type SetTheme } from "../shared/rules";
 import { type App, freePlay, meLink, problemPage, profilePage, rankingPage, rulesPage, setList, setPlay } from "./screens";
+import { effectsSetting } from "./effects";
 import { SITE_NAME } from "./share";
 import { sound } from "./sound";
 
@@ -83,23 +84,33 @@ function updateNav(): void {
 	);
 }
 
-function soundToggle(): HTMLButtonElement {
-	const button = h("button", { class: "sound-toggle", type: "button" });
+/** A header switch that reads "<label> ON" or "<label> OFF". */
+function settingToggle(label: string, isOn: () => boolean, turn: (on: boolean) => void): HTMLButtonElement {
+	const button = h("button", { class: "setting-toggle", type: "button" });
 	const update = () => {
-		button.textContent = sound.enabled ? "音 ON" : "音 OFF";
-		button.setAttribute("aria-pressed", String(sound.enabled));
+		button.textContent = `${label} ${isOn() ? "ON" : "OFF"}`;
+		button.setAttribute("aria-pressed", String(isOn()));
 	};
 	button.addEventListener("click", () => {
-		sound.setEnabled(!sound.enabled);
-		sound.unlock();
+		turn(!isOn());
 		update();
 	});
 	update();
 	return button;
 }
 
+const settings = h(
+	"div",
+	{ class: "settings" },
+	settingToggle("演出", () => effectsSetting.enabled, (on) => effectsSetting.set(on)),
+	settingToggle("音", () => sound.enabled, (on) => {
+		sound.setEnabled(on);
+		sound.unlock();
+	}),
+);
+
 document.body.append(
-	h("header", { class: "site-header" }, h("a", { class: "brand", href: "/" }, SITE_NAME), nav, soundToggle()),
+	h("header", { class: "site-header" }, h("a", { class: "brand", href: "/" }, SITE_NAME), nav, settings),
 	main,
 	h(
 		"footer",
@@ -111,7 +122,8 @@ document.body.append(
 			h("a", { href: "https://github.com/Equim-chan/Mortal" }, "Mortal"),
 			"（AGPL-3.0） / ",
 			h("a", { href: "https://github.com/nikaiai2025/mortal-jan" }, "このサイトのソースコード"),
-			"（AGPL-3.0）",
+			"（AGPL-3.0） / 制作: ",
+			h("a", { href: "https://x.com/shika_bakudan" }, "@shika_bakudan"),
 		),
 	),
 );

@@ -17,6 +17,8 @@ pwsh -File tools/generate-problems.ps1     # 自己対局→全判断の評価�
 
 `generate-problems.ps1` は中断しても、再実行すれば続きから処理する。導出した抽出の設定（鳴きの閾値・鳴き枠とリーチ枠の確率）は `generator/calibration.json` に保存される。
 
+公開後に難易度の閾値（`generator/scoring.py` の `DISCARD_THRESHOLDS`）を変えるときは、`python -m generator.calibrate` で鳴きの閾値を導き直してから `python -m generator.relabel` を実行し、できた `generated/relabel.sql` を本番D1に流す（`npx wrangler d1 execute DB --remote --file ../generated/relabel.sql`）。問題・回答・成績はそのままで、問題の難易度と難易度別問題集の並びだけが変わる（Workerのテーマ別の問題数は最大10分で追従する）。
+
 初回実行時に、本番の問題集用の非公開の乱数seed（`generator/seeds.local.json`、git対象外）を作る。公開コードとseedがあれば問題と答えを再現できるため、このファイルは公開せず、バックアップしておく。
 
 ## Web（`web/`）

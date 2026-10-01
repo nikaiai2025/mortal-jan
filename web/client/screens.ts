@@ -10,6 +10,7 @@ import {
 	setOf,
 } from "../shared/rules";
 import type {
+	Breakdown,
 	ProblemResponse,
 	Profile,
 	RankingAxis,
@@ -25,7 +26,7 @@ import { errorMessage } from "./errors";
 import { dailyChart } from "./chart";
 import { hanamaruFor, markIcon } from "./marks";
 import { showProblem } from "./play";
-import { HASHTAG, SITE_NAME, openShare, profileCard, setCard } from "./share";
+import { openShare, profileCard, setCard } from "./share";
 
 /** Navigation shared by the screens. */
 export interface App {
@@ -92,24 +93,23 @@ export async function setList(root: HTMLElement, theme: SetTheme, page: number):
 		root,
 		h("header", { class: "page-head" }, h("h1", {}, "問題集"), h("p", {}, "10問ずつの問題集です。10問そろうと合計点（100点満点）が出ます。")),
 		themes,
-		h(
-			"section",
-			{ class: "assort", "aria-label": "アソート問題集" },
-			h("h2", {}, "アソート問題集", h("span", { class: "assort__badge" }, "工事中")),
-			h("p", {}, "難易度や種類を組み合わせて、自分だけの問題集を作れる機能を準備しています。"),
-		),
 		pager,
 		data.totalSets ? grid : h("p", { class: "empty" }, "このテーマの問題集はまだありません。"),
 	);
 }
 
 export async function setPlay(root: HTMLElement, theme: SetTheme, set: number, app: App): Promise<void> {
-	const data = await api<{ set: number; problems: SetProblem[] }>(`/api/sets/${theme}/${set}`);
+	const data = await api<{ set: number; problems: SetProblem[]; playerName: string }>(`/api/sets/${theme}/${set}`);
 	const next = data.problems.find((p) => !p.answer);
-	if (!next) return setSummary(root, theme, set, data.problems, app);
+	if (!next) return setSummary(root, theme, set, data.problems, data.playerName, app);
 	const position = data.problems.indexOf(next) + 1;
 	const remaining = data.problems.filter((p) => !p.answer).length;
 	const response = await api<ProblemResponse>(`/api/problems/${next.id}`);
+	if (response.state === "locked") {
+		// The problem left unanswered elsewhere comes first, here; its result starts the set.
+		const pending = await api<ProblemResponse>(`/api/problems/${response.currentId}`);
+		return showProblem(root, pending, { from: null, notice: "解きかけの問題を終わらせてください", nextLabel: "問題集を始める", onNext: app.refresh });
+	}
 	await showProblem(root, response, {
 		from: null,
 		progress: `${setTitle(theme, set)} ${position}/10`,
@@ -118,7 +118,7 @@ export async function setPlay(root: HTMLElement, theme: SetTheme, set: number, a
 	});
 }
 
-function setSummary(root: HTMLElement, theme: SetTheme, set: number, problems: SetProblem[], app: App): void {
+function setSummary(root: HTMLElement, theme: SetTheme, set: number, problems: SetProblem[], playerName: string, app: App): void {
 	const total = problems.reduce((sum, p) => sum + (p.answer?.score ?? 0), 0) / problems.length;
 	const pitari = problems.filter((p) => p.answer?.pitari).length;
 	const title = setTitle(theme, set);
@@ -135,14 +135,7 @@ function setSummary(root: HTMLElement, theme: SetTheme, set: number, problems: S
 	}
 	const share = async () => {
 		const url = `${location.origin}/sets/${theme}/${set}`;
-		const shareText = (includeResult: boolean) => `${SITE_NAME} ${title}${includeResult ? ` ${total.toFixed(1)}点（ピタリ${pitari}/10）` : ""}\n同じ10問に挑戦してみて ${HASHTAG}`;
-		await openShare(
-			await setCard(title, problems),
-			shareText(true),
-			url,
-			`mortal-nanikiru-${theme}-${set}.png`,
-			async () => ({ element: await setCard(title, problems, false), text: shareText(false), url }),
-		);
+		await openShare(await setCard(title, problems, playerName), title, url, `mortal-nanikiru-${theme}-${set}.png`);
 	};
 	replace(
 		root,
@@ -173,23 +166,19 @@ export function rulesPage(root: HTMLElement): Promise<void> {
 		h("header", { class: "page-head" }, h("h1", {}, "ルール")),
 		section(
 			"対局ルール",
-			"四人麻雀の東南戦（半荘戦）。4人とも同じAIが打っていて、全員ガチレベルの打ち手です。",
+			"四人麻雀の東南戦（半荘戦）で、ルールは天鳳準拠です。4人とも同じAIが打っていて、全員ガチレベルの打ち手です。天鳳の上級者の対局で学習したAIで、配布者によると雀魂のMAKAテストで平均S+です。",
 			"持ち点25,000点。オーラスで30,000点に誰も届かなければ西入します。持ち点がマイナスになると終了（トビ）。",
 			"赤ドラあり（5萬・5筒・5索に各1枚）。喰いタン・後付けあり。一発・裏ドラ・槓ドラあり。",
 			"途中流局あり（九種九牌・四風連打・四家立直・四槓散了）。3人が同時にロンしても流局になりません。",
 		),
 		section(
 			"遊び方",
-			"「何を切る？」の問題は、盤面の自分の手牌をタップして選び、「確定」で回答します。リーチできる局面では、回答欄の「リーチ」も選べます。",
-			"鳴きの問題は、回答欄の選択肢（チー・ポン・スルー）から選びます。",
 			"同じ問題は1回だけ解けます。解き直しはできず、最初の回答が記録に残ります。",
 			`出題は1日${DAILY_ANSWER_LIMIT.toLocaleString("ja-JP")}問までです（日本時間0時に戻ります）。`,
 		),
 		section(
 			"採点",
 			"AIは候補ごとに評価（%）を出します。得点は「あなたの手の評価 ÷ 最善手の評価 × 100」で、最善手と同じなら100点です。",
-			"最善手と一致すると「ピタリ」で花丸。70〜99点は○、30〜69点は△、29点以下は✕です。",
-			"回答後は、手牌の上のグラフで、どの牌を切るとAIの評価が何%かを確かめられます。",
 			"難易度（かんたん・ふつう・むずかしい）は、AIが最善手をどれだけ確信しているかで分けています。",
 			"評価に使うAIは、Mortal用に第三者が配布している重み mortal-298k です（公式モデルではありません）。",
 		),
@@ -205,9 +194,12 @@ export function rulesPage(root: HTMLElement): Promise<void> {
 
 // ---- profile ----
 
+const averageText = (stats: Stats) => (stats.answers ? (stats.scoreSum / stats.answers).toFixed(1) : "—");
+const pitariText = (stats: Stats) => (stats.answers ? `${((stats.pitari / stats.answers) * 100).toFixed(1)}%` : "—");
+
 function statBlock(label: string, stats: Stats): HTMLElement {
-	const average = stats.answers ? (stats.scoreSum / stats.answers).toFixed(1) : "—";
-	const pitari = stats.answers ? `${((stats.pitari / stats.answers) * 100).toFixed(1)}%` : "—";
+	const average = averageText(stats);
+	const pitari = pitariText(stats);
 	return h(
 		"section",
 		{ class: "stat-block" },
@@ -221,6 +213,23 @@ function statBlock(label: string, stats: Stats): HTMLElement {
 			h("dd", {}, average),
 			h("dt", {}, "ピタリ率"),
 			h("dd", {}, pitari),
+		),
+	);
+}
+
+/** The owner's answers by difficulty, then by kind. */
+function breakdownTable(breakdown: Breakdown): HTMLElement {
+	const row = (label: string, stats: Stats) =>
+		h("tr", {}, h("th", { scope: "row" }, label), h("td", {}, `${stats.answers}`), h("td", {}, averageText(stats)), h("td", {}, pitariText(stats)));
+	return h(
+		"div",
+		{ class: "breakdown" },
+		h(
+			"table",
+			{},
+			h("thead", {}, h("tr", {}, h("td"), h("th", { scope: "col" }, "回答数"), h("th", { scope: "col" }, "平均点"), h("th", { scope: "col" }, "ピタリ率"))),
+			h("tbody", {}, ...(["easy", "normal", "hard"] as const).map((d) => row(SET_THEME_LABELS[d], breakdown.difficulty[d]))),
+			h("tbody", {}, ...(["discard", "riichi", "call"] as const).map((k) => row(SET_THEME_LABELS[k], breakdown.kind[k]))),
 		),
 	);
 }
@@ -241,11 +250,7 @@ export async function profilePage(root: HTMLElement, publicId: string, app: App)
 			h("li", {}, h("a", { href: `/q/${item.id}` }, markIcon(markOf(item.score, item.pitari), "history__mark", hanamaruFor(profile.publicId, item.id, item.difficulty)), h("span", {}, `第${item.id}問（問題集 第${setOf(item.id)}集）`), h("strong", {}, `${item.score}点`))),
 		);
 	}
-	const share = async () => {
-		const average = profile.all.answers ? (profile.all.scoreSum / profile.all.answers).toFixed(1) : "0";
-		const text = `${SITE_NAME} 成績：${profile.all.answers}問 平均${average}点 ピタリ${profile.all.pitari}回 ${HASHTAG}`;
-		await openShare(await profileCard(profile), text, `${location.origin}/u/${profile.publicId}`, "mortal-nanikiru-profile.png");
-	};
+	const share = async () => openShare(await profileCard(profile), "私の成績", `${location.origin}/u/${profile.publicId}`, "mortal-nanikiru-profile.png");
 	replace(root, 
 		h(
 			"header",
@@ -256,6 +261,8 @@ export async function profilePage(root: HTMLElement, publicId: string, app: App)
 		),
 		h("div", { class: "stat-row" }, statBlock("全期間", profile.all), statBlock("今日", profile.today)),
 		isMe ? h("div", { class: "result__actions" }, h("button", { class: "ghost-button", type: "button", onclick: share }, "成績を共有")) : null,
+		profile.breakdown && profile.all.answers ? h("h2", { class: "section-title" }, "難易度別・種類別の成績") : null,
+		profile.breakdown && profile.all.answers ? breakdownTable(profile.breakdown) : null,
 		h("h2", { class: "section-title" }, "1日ごとの成績"),
 		profile.daily.length ? dailyChart(profile.daily) : h("p", { class: "empty" }, "まだ回答がありません。"),
 		isMe ? h("h2", { class: "section-title" }, "最近の回答") : null,
@@ -298,6 +305,8 @@ const AXES: [RankingAxis, string][] = [
 	["pitari", "ピタリ率"],
 ];
 
+const MEDALS = ["gold", "silver", "bronze"] as const;
+
 export async function rankingPage(root: HTMLElement): Promise<void> {
 	const params = new URLSearchParams(location.search);
 	const period = (params.get("period") as RankingPeriod) ?? "all";
@@ -317,12 +326,21 @@ export async function rankingPage(root: HTMLElement): Promise<void> {
 	const me = currentPublicId();
 	const table = h("ol", { class: "ranking" });
 	for (const entry of data.entries) {
+		// The top three (ties included) wear a crown and the title.
+		const medal = MEDALS[entry.rank - 1];
 		table.append(
 			h(
 				"li",
 				{ class: entry.publicId === me ? "is-me" : "" },
-				h("span", { class: "ranking__rank" }, String(entry.rank)),
-				h("a", { class: "ranking__name", href: `/u/${entry.publicId}` }, displayName(entry.name, entry.publicId)),
+				medal
+					? h("span", { class: `ranking__rank ranking__crown ranking__crown--${medal}`, role: "img", "aria-label": `${entry.rank}位` })
+					: h("span", { class: "ranking__rank" }, String(entry.rank)),
+				h(
+					"span",
+					{ class: "ranking__who" },
+					h("a", { class: "ranking__name", href: `/u/${entry.publicId}` }, displayName(entry.name, entry.publicId)),
+					medal ? h("span", { class: `ranking__title ranking__title--${medal}` }, "You are Mortal") : null,
+				),
 				h("span", { class: "ranking__value" }, format(entry)),
 				axis === "answers" ? null : h("span", { class: "ranking__answers" }, `${entry.answers}問`),
 			),

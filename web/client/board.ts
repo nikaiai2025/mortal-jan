@@ -15,8 +15,6 @@ export interface Board {
 	onHandTap(listener: ((index: number) => void) | null): void;
 	/** Show content in the band above the hand; null clears it. */
 	prompt(content: HTMLElement | null): void;
-	/** Call choices and confirmation below the hand, on an extending felt surface. */
-	answer(content: HTMLElement | null): void;
 	/** Grow evaluation bars above the hand; they jump to full height once `skipped()` is true. */
 	showBars(bars: HandBar[], skipped: () => boolean): Promise<void>;
 }
@@ -33,17 +31,15 @@ export async function board(question: Question): Promise<Board> {
 	// The prompt comes after the tile buttons: it lies over a raised tile's reach, and the keyboard reaches it after a tile.
 	const controls = h("div", { class: "board__controls" }, promptBox);
 	const overlayBox = h("div", { class: "board__overlay" });
-	const sceneBox = h("div", { class: "board__scene", style: { aspectRatio: `${SCENE_WIDTH} / ${height}` } }, controls, overlayBox);
-	const answerBox = h("div", { class: "board__answer", hidden: true });
-	const surface = h("div", { class: "board__surface" }, canvas, sceneBox, answerBox);
-	const element = h("figure", { class: "board" }, surface);
+	const sceneBox = h("div", { class: "board__scene", style: { aspectRatio: `${SCENE_WIDTH} / ${height}` } }, canvas, controls, overlayBox);
+	const element = h("figure", { class: "board" }, sceneBox);
 	let hand: HandView = { selected: null };
 	let hovered: number | null = null;
 	let listener: ((index: number) => void) | null = null;
 
 	const paint = () => {
 		const ctx = canvas.getContext("2d");
-		if (ctx) drawScene(ctx, question.scene, canvas.width, { problemId: question.id, kind: question.kind, height: canvas.height * SCENE_WIDTH / canvas.width, hand: { ...hand, hovered } });
+		if (ctx) drawScene(ctx, question.scene, canvas.width, { problemId: question.id, kind: question.kind, choices: question.choices, hand: { ...hand, hovered } });
 	};
 	const observer = new ResizeObserver(() => resize());
 	const resize = () => {
@@ -55,15 +51,13 @@ export async function board(question: Question): Promise<Board> {
 		}
 		const width = canvas.clientWidth;
 		if (!width) return;
-		const ratio = Math.min(window.devicePixelRatio || 1, 3);
-		const size = Math.round(width * ratio);
-		const pixelHeight = Math.round(canvas.clientHeight * ratio);
-		if (canvas.width === size && canvas.height === pixelHeight) return;
+		const size = Math.round(width * Math.min(window.devicePixelRatio || 1, 3));
+		if (canvas.width === size) return;
 		canvas.width = size;
-		canvas.height = pixelHeight;
+		canvas.height = Math.round((size * height) / SCENE_WIDTH);
 		paint();
 	};
-	observer.observe(surface);
+	observer.observe(canvas);
 
 	// One button over each hand tile; its hit area reaches above the tile for fingers.
 	const buttons = handSlots(question.scene).map((slot) => {
@@ -94,10 +88,6 @@ export async function board(question: Question): Promise<Board> {
 		element,
 		overlay: (layer) => overlayBox.replaceChildren(layer),
 		prompt: (content) => promptBox.replaceChildren(...(content ? [content] : [])),
-		answer(content) {
-			answerBox.replaceChildren(...(content ? [content] : []));
-			answerBox.hidden = !content;
-		},
 		setHand(view) {
 			hand = view;
 			buttons.forEach((button, index) => {

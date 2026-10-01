@@ -28,8 +28,8 @@ def test_best_action_tie_is_deterministic():
     ("q", "expected"),
     [
         # Two candidates: p_max = 1 / (1 + e^-gap); gap = log(p / (1 - p)) gives p_max = p.
-        ({"a": 0.0, "b": -(math.log(49) + 1e-9)}, None),  # 0.98: too obvious to be a problem
-        ({"a": 0.0, "b": -(math.log(49) - 1e-9)}, "easy"),
+        ({"a": 0.0, "b": -(math.log(24) + 1e-9)}, None),  # 0.96: too obvious to be a problem
+        ({"a": 0.0, "b": -(math.log(24) - 1e-9)}, "easy"),
         ({"a": 0.0, "b": -(math.log(9) + 1e-9)}, "easy"),
         ({"a": 0.0, "b": -(math.log(9) - 1e-9)}, "normal"),
         ({"a": 0.0, "b": 0.0}, "normal"),  # p_max = 0.5

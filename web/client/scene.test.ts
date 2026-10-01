@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Scene } from "../shared/types";
-import { RAISE, SCENE_WIDTH, handBand, handSlots, meldTiles, questionText, sceneHeight } from "./scene";
+import { RAISE, SCENE_WIDTH, callableSlots, handBand, handSlots, meldTiles, questionText, sceneHeight, targetCentre } from "./scene";
 
 describe("meldTiles", () => {
 	const pon = (target: number) => meldTiles({ type: "pon", pai: "5p", consumed: ["5pr", "5p"], target }, 0);
@@ -66,5 +66,28 @@ describe("band above the hand", () => {
 			expect(band.bottom).toBeLessThan(slot.y - RAISE);
 			expect(slot.y + slot.h).toBeLessThan(sceneHeight());
 		}
+	});
+});
+
+describe("call marks", () => {
+	const river = (n: number) => Array.from({ length: n }, () => ({ pai: "1m", tsumogiri: false, riichi: false, called: false }));
+	const scene = (actor: number, hand = ["4s", "5s", "5sr", "6s", "9s"]) =>
+		({ seat: 0, hand, drawn: null, melds: [[], [], [], []], rivers: [river(3), river(4), river(5), river(7)], target: { actor, pai: "4s" } }) as unknown as Scene;
+
+	it("finds the discard on the side of the player who made it", () => {
+		const centre = { x: SCENE_WIDTH / 2, y: targetCentre(scene(2))!.y };
+		const right = targetCentre(scene(1))!;
+		const across = targetCentre(scene(2))!;
+		const left = targetCentre(scene(3))!;
+		expect(right.x).toBeGreaterThan(centre.x);
+		expect(left.x).toBeLessThan(centre.x);
+		expect(across.y).toBeLessThan(right.y);
+		expect(across.y).toBeLessThan(left.y);
+		expect(targetCentre({ ...scene(1), target: null })).toBeNull();
+	});
+
+	it("marks every hand tile of a kind the choices use, a red five as a five", () => {
+		const choices = [{ action: "chi_low", consumed: ["5sr", "6s"] }, { action: "pass" }];
+		expect(callableSlots(scene(3), choices).map((slot) => slot.pai)).toEqual(["5s", "5sr", "6s"]);
 	});
 });

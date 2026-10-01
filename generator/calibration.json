@@ -1,9 +1,9 @@
 {
   "callThresholds": [
-    0.9577,
-    0.6535
+    0.8877,
+    0.719
   ],
   "callProbability": 0.18,
-  "riichiProbability": 0.37,
+  "riichiProbability": 0.41,
   "games": 100
 }

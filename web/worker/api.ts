@@ -10,6 +10,7 @@ import {
 } from "../shared/rules";
 import type {
 	AnswerResult,
+	Breakdown,
 	Choice,
 	DailyStats,
 	Evaluation,
@@ -143,23 +144,38 @@ interface PlayerAnswers {
 	all: Stats;
 	today: Stats;
 	daily: DailyStats[];
+	breakdown: Breakdown | null;
 	history: Profile["history"];
 }
 
-/** A player's stats and recent answers, counted from their answers (always up to date). */
-async function playerAnswers(db: D1Database, playerId: number, now: Date, includeHistory = true): Promise<PlayerAnswers> {
+const emptyStats = (): Stats => ({ answers: 0, scoreSum: 0, pitari: 0 });
+
+/**
+ * A player's stats counted from their answers (always up to date). `detail` adds the breakdown and
+ * the recent answers, read with the problems' current kind and difficulty: the difficulty is never
+ * copied into answers or aggregates, so a threshold change only relabels the problems (generator.relabel).
+ */
+async function playerAnswers(db: D1Database, playerId: number, now: Date, detail = true): Promise<PlayerAnswers> {
 	const today = jstDate(now);
 	const { results } = await db
-		.prepare("SELECT id, problem_id, score, pitari, answered_at, jst_date FROM answers WHERE player_id = ?")
+		.prepare(
+			detail
+				? "SELECT a.id, a.problem_id, a.score, a.pitari, a.answered_at, a.jst_date, p.kind, p.difficulty FROM answers a JOIN problems p ON p.id = a.problem_id WHERE a.player_id = ?"
+				: "SELECT id, problem_id, score, pitari, answered_at, jst_date FROM answers WHERE player_id = ?",
+		)
 		.bind(playerId)
-		.all<{ id: number; problem_id: number; score: number; pitari: number; answered_at: string; jst_date: string }>();
-	const empty = (): Stats => ({ answers: 0, scoreSum: 0, pitari: 0 });
-	const all = empty();
+		.all<{ id: number; problem_id: number; score: number; pitari: number; answered_at: string; jst_date: string } & Partial<Pick<ProblemRow, "kind" | "difficulty">>>();
+	const all = emptyStats();
 	const days = new Map<string, Stats>();
+	const breakdown: Breakdown | null = detail
+		? { kind: { discard: emptyStats(), riichi: emptyStats(), call: emptyStats() }, difficulty: { easy: emptyStats(), normal: emptyStats(), hard: emptyStats() } }
+		: null;
 	for (const r of results) {
 		let day = days.get(r.jst_date);
-		if (!day) days.set(r.jst_date, (day = empty()));
-		for (const stats of [all, day]) {
+		if (!day) days.set(r.jst_date, (day = emptyStats()));
+		const counted = [all, day];
+		if (breakdown && r.kind && r.difficulty) counted.push(breakdown.kind[r.kind], breakdown.difficulty[r.difficulty]);
+		for (const stats of counted) {
 			stats.answers++;
 			stats.scoreSum += r.score;
 			stats.pitari += r.pitari;
@@ -169,17 +185,9 @@ async function playerAnswers(db: D1Database, playerId: number, now: Date, includ
 		.sort(([a], [b]) => a.localeCompare(b))
 		.slice(-DAILY_CHART_DAYS)
 		.map(([date, stats]) => ({ date, ...stats }));
-	const recent = includeHistory ? results.sort((a, b) => b.id - a.id).slice(0, 50) : [];
-	const difficulties = new Map<number, Result["difficulty"]>();
-	if (recent.length) {
-		const { results: problems } = await db
-			.prepare(`SELECT id, difficulty FROM problems WHERE id IN (${recent.map(() => "?").join(",")})`)
-			.bind(...recent.map((r) => r.problem_id))
-			.all<{ id: number; difficulty: Result["difficulty"] }>();
-		for (const problem of problems) difficulties.set(problem.id, problem.difficulty);
-	}
-	const history = recent.map((r) => ({ id: r.problem_id, difficulty: difficulties.get(r.problem_id) ?? null, score: r.score, pitari: r.pitari === 1, answeredAt: r.answered_at }));
-	return { all, today: days.get(today) ?? empty(), daily, history };
+	const recent = detail ? results.sort((a, b) => b.id - a.id).slice(0, 50) : [];
+	const history = recent.map((r) => ({ id: r.problem_id, difficulty: r.difficulty ?? null, score: r.score, pitari: r.pitari === 1, answeredAt: r.answered_at }));
+	return { all, today: days.get(today) ?? emptyStats(), daily, breakdown, history };
 }
 
 async function getMe(ctx: Ctx): Promise<Response> {
@@ -199,15 +207,16 @@ async function putName(ctx: Ctx): Promise<Response> {
 
 // ---- problems ----
 
-// Problems are swapped rarely (a trial set for the real one), so a few minutes of staleness is fine.
-const PROBLEM_COUNT_TTL_MS = 10 * 60_000;
+// Problems are swapped (a trial set for the real one) or relabelled (generator.relabel) rarely,
+// so a few minutes of staleness is fine.
+const PROBLEM_CACHE_TTL_MS = 10 * 60_000;
 let problemCountCache: { count: number; expires: number } | null = null;
 
 async function problemCount(db: D1Database): Promise<number> {
 	if (problemCountCache && problemCountCache.expires > Date.now()) return problemCountCache.count;
 	const count = (await db.prepare("SELECT MAX(id) AS n FROM problems").first<number>("n")) ?? 0;
 	// An empty table (before the problems are loaded) is not remembered.
-	problemCountCache = count ? { count, expires: Date.now() + PROBLEM_COUNT_TTL_MS } : null;
+	problemCountCache = count ? { count, expires: Date.now() + PROBLEM_CACHE_TTL_MS } : null;
 	return count;
 }
 
@@ -229,7 +238,7 @@ function questionOf(row: ProblemRow): Question {
 	return { id: row.id, kind: row.kind, scene: JSON.parse(row.scene), choices: JSON.parse(row.choices) };
 }
 
-async function resultOf(db: D1Database, row: ProblemRow, answer: AnswerResult, sharerId: string | null): Promise<Result> {
+async function resultOf(db: D1Database, player: PlayerRow, row: ProblemRow, answer: AnswerResult, sharerId: string | null): Promise<Result> {
 	let sharer: Result["sharer"] = null;
 	if (sharerId) {
 		const found = await db
@@ -257,6 +266,7 @@ async function resultOf(db: D1Database, row: ProblemRow, answer: AnswerResult, s
 				? { answers: row.answer_count, average: row.score_sum / row.answer_count }
 				: null,
 		sharer,
+		playerName: displayName(player.name, player.public_id),
 	};
 }
 
@@ -336,7 +346,7 @@ async function getProblem(ctx: Ctx): Promise<Response> {
 	const row = await loadProblem(db, id);
 	const answer = await loadAnswer(db, player.id, id);
 	if (answer) {
-		const result = await resultOf(db, row, answer, ctx.url.searchParams.get("from"));
+		const result = await resultOf(db, player, row, answer, ctx.url.searchParams.get("from"));
 		return json({ state: "result", result } satisfies ProblemResponse);
 	}
 	const pending = await pendingProblem(db, player);
@@ -359,7 +369,7 @@ async function postAnswer(ctx: Ctx): Promise<Response> {
 
 	const sharerId = ctx.url.searchParams.get("from");
 	const existing = await loadAnswer(db, player.id, id);
-	if (existing) return json({ state: "result", result: await resultOf(db, row, existing, sharerId) } satisfies ProblemResponse);
+	if (existing) return json({ state: "result", result: await resultOf(db, player, row, existing, sharerId) } satisfies ProblemResponse);
 	if (player.current_problem_id !== id) throw new HttpError(409, "not_assigned");
 	const now = new Date();
 	const choices: Choice[] = JSON.parse(row.choices);
@@ -378,9 +388,9 @@ async function postAnswer(ctx: Ctx): Promise<Response> {
 		// A concurrent submission already stored the answer; return that one.
 		const stored = await loadAnswer(db, player.id, id);
 		if (!stored) throw error;
-		return json({ state: "result", result: await resultOf(db, row, stored, sharerId) } satisfies ProblemResponse);
+		return json({ state: "result", result: await resultOf(db, player, row, stored, sharerId) } satisfies ProblemResponse);
 	}
-	const result = await resultOf(db, row, { action, score, pitari: pitari === 1 }, sharerId);
+	const result = await resultOf(db, player, row, { action, score, pitari: pitari === 1 }, sharerId);
 	return json({ state: "result", result } satisfies ProblemResponse);
 }
 
@@ -403,18 +413,16 @@ function theme(text: string | null | undefined): SetTheme {
 	return text as SetTheme;
 }
 
-const themeSizeCache = new Map<SetTheme, number>();
+const themeSizeCache = new Map<SetTheme, { size: number; expires: number }>();
 
-/** Number of problems in a theme (problems never change after loading). */
+/** Number of problems in a theme. */
 async function themeSize(db: D1Database, t: SetTheme): Promise<number> {
-	let size = themeSizeCache.get(t);
-	if (size === undefined) {
-		const filter = THEME_FILTERS[t];
-		size = filter
-			? ((await db.prepare(`SELECT MAX(${filter.column}_pos) AS n FROM problems WHERE ${filter.column} = ?`).bind(filter.value).first<number>("n")) ?? 0)
-			: await problemCount(db);
-		themeSizeCache.set(t, size);
-	}
+	const filter = THEME_FILTERS[t];
+	if (!filter) return problemCount(db);
+	const cached = themeSizeCache.get(t);
+	if (cached && cached.expires > Date.now()) return cached.size;
+	const size = (await db.prepare(`SELECT MAX(${filter.column}_pos) AS n FROM problems WHERE ${filter.column} = ?`).bind(filter.value).first<number>("n")) ?? 0;
+	themeSizeCache.set(t, { size, expires: Date.now() + PROBLEM_CACHE_TTL_MS });
 	return size;
 }
 
@@ -473,13 +481,13 @@ async function getSet(ctx: Ctx): Promise<Response> {
 		const row = results.find((r) => r.problem_id === id);
 		return { id, difficulty, answer: row ? { action: row.action, score: row.score, pitari: row.pitari === 1 } : null };
 	});
-	return json({ theme: t, set, problems });
+	return json({ theme: t, set, problems, playerName: displayName(player.name, player.public_id) });
 }
 
 // ---- public pages ----
 
 /** Aggregated stats (up to 10 minutes old): at most DAILY_CHART_DAYS + 1 rows, whatever the player's history. */
-async function aggregatedStats(db: D1Database, playerId: number, now: Date): Promise<Omit<PlayerAnswers, "history">> {
+async function aggregatedStats(db: D1Database, playerId: number, now: Date): Promise<Omit<PlayerAnswers, "breakdown" | "history">> {
 	const today = jstDate(now);
 	// In descending order 'all' comes before every date ('a' > digits), then the latest days.
 	const { results } = await db
@@ -511,7 +519,7 @@ async function getProfile(ctx: Ctx): Promise<Response> {
 	const profile: Profile =
 		viewer?.id === player.id
 			? { publicId: player.public_id, name: player.name, ...(await playerAnswers(db, player.id, now)) }
-			: { publicId: player.public_id, name: player.name, ...(await aggregatedStats(db, player.id, now)), history: [] };
+			: { publicId: player.public_id, name: player.name, ...(await aggregatedStats(db, player.id, now)), breakdown: null, history: [] };
 	return json(profile);
 }
 

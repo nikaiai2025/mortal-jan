@@ -1,30 +1,19 @@
 // Synthesized sounds (no audio files): pen strokes follow the drawn line exactly.
 
-const STORAGE_KEY = "mortal-jan.sound";
+import { setting } from "./settings";
 
 class Sound {
 	private context: AudioContext | null = null;
 	private noise: AudioBuffer | null = null;
 	private active = new Set<AudioScheduledSourceNode>();
-	enabled: boolean;
+	private readonly preference = setting("mortal-jan.sound");
 
-	constructor() {
-		let stored: string | null = null;
-		try {
-			stored = localStorage.getItem(STORAGE_KEY);
-		} catch {
-			// storage unavailable
-		}
-		this.enabled = stored !== "off";
+	get enabled(): boolean {
+		return this.preference.enabled;
 	}
 
 	setEnabled(enabled: boolean): void {
-		this.enabled = enabled;
-		try {
-			localStorage.setItem(STORAGE_KEY, enabled ? "on" : "off");
-		} catch {
-			// storage unavailable
-		}
+		this.preference.set(enabled);
 		if (!enabled) this.stop();
 	}
 

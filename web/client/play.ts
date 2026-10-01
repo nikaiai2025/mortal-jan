@@ -6,14 +6,15 @@ import { currentPublicId, post } from "./api";
 import { answerWindow } from "./answer";
 import { board, type Board } from "./board";
 import { h, replace } from "./dom";
-import { Sequence, markLayer, reveal } from "./effects";
+import { Sequence, effectsSetting, markLayer, reveal } from "./effects";
 import { hanamaruFor } from "./marks";
 import { DIFFICULTY_LABELS, actionElement } from "./labels";
 import { chosenSlot, handBars } from "./evaluation";
-import { HASHTAG, SITE_NAME, openShare, problemCard } from "./share";
+import { openShare, problemCard } from "./share";
 
 export interface PlayOptions {
-	/** Extra heading content, e.g. set progress. */
+	/** Shown after the answer, never between the board and it: a message to the player, and set progress. */
+	notice?: string;
 	progress?: string;
 	from: string | null;
 	nextLabel: string;
@@ -47,7 +48,7 @@ const rulesNote = () =>
 	h(
 		"p",
 		{ class: "rules-note" },
-		"東南戦（半荘戦）　4人ともガチレベルの打ち手",
+		"東南戦（半荘戦）・天鳳準拠　4人ともガチレベルの打ち手",
 		h("br"),
 		"赤ドラあり（5萬・5筒・5索に各1枚）。喰いタン・後付けあり。一発・裏ドラ・槓ドラあり。",
 		h("br"),
@@ -56,12 +57,19 @@ const rulesNote = () =>
 		h("a", { href: "/rules" }, "詳細ルール"),
 	);
 
-function heading(options: PlayOptions): HTMLElement | null {
-	return options.progress ? h("header", { class: "sheet__head" }, h("span", { class: "sheet__progress" }, options.progress)) : null;
+function info(options: PlayOptions): HTMLElement | null {
+	if (!options.notice && !options.progress) return null;
+	return h(
+		"p",
+		{ class: "play__info" },
+		options.notice ? h("span", { class: "play__notice" }, options.notice) : null,
+		options.progress ? h("span", { class: "play__progress" }, options.progress) : null,
+	);
 }
 
-/** The board, under it the answer or the result, then the rules. */
-const play = (view: Board, below: HTMLElement) => h("div", { class: "play" }, view.element, below, rulesNote());
+/** The board first, so that nothing pushes it down; under it the answer or the result, then the info and the rules. */
+const play = (view: Board, below: HTMLElement, options: PlayOptions) =>
+	h("div", { class: "play" }, view.element, below, info(options), rulesNote());
 
 async function showQuestion(root: HTMLElement, question: Question, options: PlayOptions): Promise<void> {
 	const view = await board(question);
@@ -72,27 +80,22 @@ async function showQuestion(root: HTMLElement, question: Question, options: Play
 		options.onAnswered?.(response.result);
 		await grade(root, view, below, response.result, options, true);
 	});
-	const below = h("div");
-	if (question.kind === "call") {
-		view.prompt(h("div", { class: "answer answer--call" }, answer.querySelector<HTMLElement>(".answer__prompt")));
-		view.answer(answer);
-	} else {
-		view.prompt(answer);
-	}
-	replace(root, heading(options), play(view, below));
+	// The question stays above the hand; call choices and confirmation go under the board.
+	const below = question.kind === "call" ? answer : h("div");
+	view.prompt(question.kind === "call" ? h("div", { class: "answer answer--call" }, answer.querySelector<HTMLElement>(".answer__prompt")) : answer);
+	replace(root, play(view, below, options));
 }
 
 async function showResult(root: HTMLElement, result: Result, options: PlayOptions): Promise<void> {
 	const view = await board(result);
 	const placeholder = h("div");
-	replace(root, heading(options), play(view, placeholder));
+	replace(root, play(view, placeholder, options));
 	await grade(root, view, placeholder, result, options, false);
 }
 
 async function grade(root: HTMLElement, view: Board, replaced: HTMLElement, result: Result, options: PlayOptions, animate: boolean): Promise<void> {
 	// The hand shows the answer only, also right after answering (not the dimmed state of the question).
 	view.prompt(null);
-	view.answer(null);
 	view.setHand({ selected: chosenSlot(result) });
 	const sequence = new Sequence();
 	if (!animate || matchMedia("(prefers-reduced-motion: reduce)").matches) sequence.skip();
@@ -107,7 +110,7 @@ async function grade(root: HTMLElement, view: Board, replaced: HTMLElement, resu
 
 	const skip = () => sequence.skip();
 	root.addEventListener("pointerdown", skip);
-	await layer.play(sequence);
+	await layer.play(sequence, effectsSetting.enabled);
 	if (result.kind !== "call") {
 		// The marks stay where they were written; the evaluation rises from the hand below them.
 		await sequence.pause(250);
@@ -179,13 +182,12 @@ function resultCard(result: Result, options: PlayOptions): HTMLElement {
 	const share = async () => {
 		const publicId = currentPublicId();
 		const problemUrl = `${location.origin}/q/${result.id}`;
-		const shareText = (includeResult: boolean) => `${SITE_NAME} 第${result.id}問${includeResult ? ` ${result.answer.score}点${result.answer.pitari ? "（ピタリ！）" : ""}` : ""}\nあなたならどうする？ ${HASHTAG}`;
 		await openShare(
 			await problemCard(result, result),
-			shareText(true),
+			`第${result.id}問`,
 			`${problemUrl}${publicId ? `?from=${publicId}` : ""}`,
 			`mortal-nanikiru-${result.id}.png`,
-			async () => ({ element: await problemCard(result, result, false), text: shareText(false), url: problemUrl }),
+			async () => ({ element: await problemCard(result, result, false), url: problemUrl }),
 		);
 	};
 

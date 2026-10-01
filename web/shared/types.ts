@@ -92,6 +92,8 @@ export interface Result extends Question {
 	human: { answers: number; average: number } | null;
 	/** The answer of the player who shared the link, when requested. */
 	sharer: (AnswerResult & { name: string }) | null;
+	/** The answering player's display name, for their share image. */
+	playerName: string;
 }
 
 export type ProblemResponse =
@@ -137,6 +139,12 @@ export interface DailyStats extends Stats {
 	date: string;
 }
 
+/** Answers by problem kind and by difficulty; each answer counts once in each. */
+export interface Breakdown {
+	kind: Record<ProblemKind, Stats>;
+	difficulty: Record<Difficulty, Stats>;
+}
+
 export interface Profile {
 	publicId: string;
 	name: string | null;
@@ -144,6 +152,8 @@ export interface Profile {
 	today: Stats;
 	/** Days with answers, oldest first: the latest DAILY_CHART_DAYS of them. */
 	daily: DailyStats[];
+	/** The owner only, by the problems' current kind and difficulty. */
+	breakdown: Breakdown | null;
 	history: { id: number; difficulty: Difficulty | null; score: number; pitari: boolean; answeredAt: string }[];
 }
 

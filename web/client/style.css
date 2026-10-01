@@ -95,7 +95,12 @@ button {
 	border-bottom-color: var(--red);
 }
 
-.sound-toggle {
+.settings {
+	display: flex;
+	gap: 6px;
+}
+
+.setting-toggle {
 	padding: 3px 8px;
 	font-size: 0.75rem;
 	font-weight: 700;
@@ -106,7 +111,7 @@ button {
 	cursor: pointer;
 }
 
-.sound-toggle[aria-pressed="false"] {
+.setting-toggle[aria-pressed="false"] {
 	color: var(--muted);
 	border-color: var(--muted);
 }
@@ -190,17 +195,19 @@ button {
 
 /* ---- problem sheet ---- */
 
-.sheet__head {
+.play__info {
 	display: flex;
-	align-items: baseline;
 	flex-wrap: wrap;
-	gap: 10px 14px;
-	margin-bottom: 12px;
+	gap: 4px 14px;
+	margin: 8px 0 0;
+	font-weight: 700;
 }
 
-.sheet__progress {
-	margin-left: auto;
-	font-weight: 700;
+.play__notice {
+	color: var(--red);
+}
+
+.play__progress {
 	color: var(--muted);
 }
 
@@ -219,18 +226,17 @@ button {
 	margin-bottom: 10px;
 }
 
-/* Fit the scene in the window's height; call choices can extend it below the hand.
-   0.982 ≈ SCENE_WIDTH / sceneHeight; 120px for the header and optional set progress. */
+/* The board fills the window's height: --board is its width with its 7px padding.
+   0.982 ≈ SCENE_WIDTH / sceneHeight; 100px: the site header and padding above the board, and 12px below it. */
 .sheet:has(.play) {
-	max-width: min(760px, max(360px, calc((100svh - 120px) * 0.982 + 46px)));
+	--board: max(328px, calc((100svh - 100px) * 0.982 + 14px));
+	max-width: calc(var(--board) + 32px);
 }
 
-.board__surface,
 .board__scene {
 	position: relative;
 }
 
-/* The canvas grows with the call controls; the scene and its overlay keep their aspect ratio. */
 .board__canvas {
 	position: absolute;
 	inset: 0;
@@ -250,33 +256,6 @@ button {
 .board__scene .board__overlay,
 .board__scene .board__controls {
 	inset: 0;
-}
-
-.board__answer {
-	position: relative;
-}
-
-.board__answer .answer {
-	padding: 8px 12px 12px;
-	color: #f6efdc;
-	background: none;
-	border: none;
-}
-
-.board__answer .answer__actions {
-	display: flex;
-	justify-content: flex-end;
-}
-
-.board__answer .answer__message {
-	margin: 0;
-	padding: 2px 8px;
-	background: #fffdf6;
-	border-radius: 4px;
-}
-
-.board__answer .option {
-	color: var(--ink);
 }
 
 /* The band above the hand: the question, plus confirmation for discard/riichi problems. */
@@ -508,6 +487,11 @@ button {
 		"actions";
 }
 
+.answer--call .answer__actions {
+	display: flex;
+	justify-content: flex-end;
+}
+
 .answer__prompt {
 	grid-area: prompt;
 }
@@ -655,6 +639,23 @@ button {
 	margin-top: 16px;
 }
 
+/* A problem's result: the two buttons share the card's width, equally sized. */
+.result .result__actions {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+}
+
+.result .result__actions > * {
+	min-width: 0;
+	min-height: 56px;
+	padding-inline: 8px;
+}
+
+/* Long labels (問題集の結果へ) stay on one line in half the card. */
+.result .result__actions .stamp-button {
+	letter-spacing: 0.04em;
+}
+
 /* ---- result ---- */
 
 .result > :first-child,
@@ -765,36 +766,6 @@ button {
 .rules__section ul {
 	margin: 0;
 	padding-left: 1.2em;
-}
-
-.assort {
-	margin: 14px 0;
-	padding: 12px 16px;
-	border: 2px dashed var(--paper-edge);
-	border-radius: var(--radius);
-	color: var(--muted);
-}
-
-.assort h2 {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	margin: 0 0 4px;
-	font-size: 1.05rem;
-	color: var(--ink);
-}
-
-.assort p {
-	margin: 0;
-	font-size: 0.85rem;
-}
-
-.assort__badge {
-	padding: 1px 8px;
-	font-size: 0.75rem;
-	color: #fff6ea;
-	background: #8a7f64;
-	border-radius: 4px;
 }
 
 /* ---- notices ---- */
@@ -992,6 +963,50 @@ button {
 	text-align: right;
 }
 
+.breakdown {
+	padding: 6px 16px 10px;
+	background: #fffdf6;
+	border: 2px solid var(--ink);
+	border-radius: var(--radius);
+}
+
+.breakdown table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.breakdown th,
+.breakdown td {
+	padding: 3px 0 3px 12px;
+	text-align: right;
+	white-space: nowrap;
+}
+
+.breakdown th {
+	font-weight: 700;
+	color: var(--muted);
+}
+
+.breakdown thead th {
+	font-size: 0.8rem;
+}
+
+.breakdown tbody th {
+	padding-left: 0;
+	text-align: left;
+}
+
+.breakdown tbody td {
+	font-family: var(--hand);
+	font-size: 1.25rem;
+	font-variant-numeric: tabular-nums;
+	color: var(--red);
+}
+
+.breakdown tbody + tbody tr:first-child > * {
+	border-top: 1px dashed var(--paper-edge);
+}
+
 .profile__name {
 	font-size: 1.2rem;
 	font-weight: 700;
@@ -1063,12 +1078,58 @@ button {
 	text-align: center;
 }
 
+.ranking__who {
+	display: grid;
+	justify-items: start;
+	min-width: 0;
+}
+
 .ranking__name {
+	max-width: 100%;
 	font-weight: 700;
 	text-decoration: none;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+
+/* Gold, silver and bronze crowns for the top three, with the title under the name. */
+.ranking__crown {
+	justify-self: center;
+	width: 1.9em;
+	height: 1.55em;
+	background: var(--medal);
+	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 20'%3E%3Cpath d='M2 7l5 4 5-8 5 8 5-4-2 10H4z'/%3E%3Crect x='4' y='17' width='16' height='3' rx='1'/%3E%3Ccircle cx='2' cy='6' r='2'/%3E%3Ccircle cx='12' cy='2.5' r='2'/%3E%3Ccircle cx='22' cy='6' r='2'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.ranking__crown--gold,
+.ranking__title--gold {
+	--medal: #d9a300;
+	--medal-ink: #8a6500;
+}
+
+.ranking__crown--silver,
+.ranking__title--silver {
+	--medal: #a7afba;
+	--medal-ink: #5d6672;
+}
+
+.ranking__crown--bronze,
+.ranking__title--bronze {
+	--medal: #c27a3e;
+	--medal-ink: #7a4519;
+}
+
+.ranking__title {
+	margin-top: 2px;
+	padding: 0 6px;
+	font-family: var(--mincho);
+	font-size: 0.72rem;
+	font-weight: 800;
+	letter-spacing: 0.04em;
+	color: var(--medal-ink);
+	border: 1.5px solid var(--medal);
+	border-radius: 4px;
 }
 
 .ranking__value {
@@ -1100,7 +1161,7 @@ button {
 .share__toggle {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
+	gap: 12px;
 	min-height: 44px;
 	margin-bottom: 10px;
 	font-weight: 700;
@@ -1141,13 +1202,15 @@ button {
 	display: none;
 }
 
+/* A fixed 3:4 frame, top-aligned: the shorter image without the result keeps the same width. */
 .share__preview {
 	display: block;
-	width: 100%;
-	max-height: 58vh;
+	width: min(100%, calc(58vh * 3 / 4));
+	aspect-ratio: 3 / 4;
+	margin: 0 auto;
 	object-fit: contain;
-	border-radius: 4px;
-	box-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.5);
+	object-position: top;
+	filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
 }
 
 .share__note {
@@ -1176,7 +1239,7 @@ button {
 		margin-left: 0;
 	}
 
-	.sound-toggle {
+	.settings {
 		margin-left: auto;
 	}
 
@@ -1204,20 +1267,6 @@ button {
 		padding: 10px 10px;
 	}
 
-	.board__answer .answer {
-		padding: 6px 8px 10px;
-		gap: 8px;
-	}
-
-	.answer--call .option {
-		min-height: 48px;
-		padding: 6px 8px;
-	}
-
-	.answer--call .tile--option {
-		width: 26px;
-	}
-
 	.result {
 		padding: 14px 8px 16px;
 	}
@@ -1228,17 +1277,61 @@ button {
 	}
 }
 
+/* The settings stay beside the site name on the narrowest phones. */
 @media (max-width: 360px) {
-	.board__answer .option {
-		padding-inline: 6px;
+	.result .result__actions .stamp-button {
+		font-size: 1rem;
 	}
 
-	.board__answer .tile--option {
-		width: 24px;
+	.site-header {
+		gap: 6px 8px;
+		padding-inline: max(10px, env(safe-area-inset-left));
 	}
 
-	.board__answer .action__tag {
-		margin-right: 4px;
+	.setting-toggle {
+		padding-inline: 5px;
+	}
+}
+
+/* ---- landscape windows: the answer, the result and the rules beside the board ---- */
+
+/* Nothing waits below the board, so a PC window needs no scrolling; the board keeps its size. */
+@media (min-width: 900px) and (min-aspect-ratio: 3 / 2) {
+	.sheet:has(.play) {
+		max-width: calc(var(--board) + 24px + 360px + 32px);
+	}
+
+	/* The rules and the info line up with the board's top edge. The call choices and the result end at
+	   its lower edge, beside the hand and the confirm button; the flexible row between takes the rest. */
+	.play {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 360px;
+		grid-template-rows: auto auto 1fr auto;
+		column-gap: 24px;
+	}
+
+	.play > .board {
+		grid-row: 1 / -1;
+		align-self: start;
+		margin: 0;
+	}
+
+	.play > :not(.board) {
+		grid-column: 2;
+	}
+
+	.play > .rules-note {
+		grid-row: 1;
+		margin: 0;
+	}
+
+	.play > .play__info {
+		grid-row: 2;
+		margin-top: 12px;
+	}
+
+	.play > :not(.board, .rules-note, .play__info) {
+		grid-row: 4;
 	}
 }
 

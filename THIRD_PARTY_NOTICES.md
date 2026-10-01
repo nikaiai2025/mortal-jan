@@ -16,6 +16,12 @@
 - Declared license: AGPL-3.0
 - Not included in this repository; `tools/mortal/setup.ps1` downloads and verifies the pinned file.
 
+## Favicon glyph (`assets/favicon.svg`)
+
+- The hiragana も is the outline of Zen Kaku Gothic New Bold, converted to a path
+- Source: Zen Kaku Gothic <https://github.com/googlefonts/zen-kakugothic> (Copyright 2022 The Zen Project Authors)
+- License: SIL Open Font License 1.1
+
 ## Tile images (`assets/tiles/`)
 
 - Source: FluffyStuff/riichi-mahjong-tiles <https://github.com/FluffyStuff/riichi-mahjong-tiles> (Regular style)

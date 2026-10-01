@@ -142,6 +142,8 @@ describe("answers", () => {
 		await call(`/api/problems/7?from=${sharer.publicId}`, friend);
 		const solved = result(await answer(friend, 7, "d:1m", `?from=${sharer.publicId}`));
 		expect(solved.sharer).toMatchObject({ action: "d:2m", score: 63, pitari: false });
+		// Each result names its own player for the share image.
+		expect(solved.playerName).toBe(`名無し#${friend.publicId}`);
 	});
 
 	it("give concurrent requests the same assigned problem", async () => {
@@ -278,6 +280,24 @@ describe("aggregation", () => {
 		expect(shared).toMatchObject({ all: { answers: 0 }, history: [] });
 		await aggregate(env.DB);
 		expect((await call<{ all: { answers: number } }>(`/api/players/${player.publicId}`)).body.all.answers).toBe(1);
+	});
+
+	it("breaks the owner's stats down by the problems' current kind and difficulty", async () => {
+		const player = await newPlayer();
+		for (const [id, action] of [[11, "d:1m"], [12, "d:2m"]] as const) {
+			await call(`/api/problems/${id}`, player);
+			await answer(player, id, action);
+		}
+		const breakdown = async () => (await call<Profile>(`/api/players/${player.publicId}`, player)).body.breakdown;
+		expect(await breakdown()).toMatchObject({
+			kind: { discard: { answers: 2, scoreSum: 163, pitari: 1 }, call: { answers: 0 } },
+			difficulty: { easy: { answers: 1, scoreSum: 100, pitari: 1 }, normal: { answers: 0 }, hard: { answers: 1, scoreSum: 63, pitari: 0 } },
+		});
+		// Relabelling a problem (generator.relabel) moves its answers; nothing else stores the difficulty.
+		await env.DB.prepare("UPDATE problems SET difficulty = 'normal' WHERE id = 12").run();
+		expect((await breakdown())?.difficulty).toMatchObject({ normal: { answers: 1, scoreSum: 63 }, hard: { answers: 0 } });
+		await env.DB.prepare("UPDATE problems SET difficulty = 'hard' WHERE id = 12").run();
+		expect((await call<Profile>(`/api/players/${player.publicId}`)).body.breakdown).toBeNull();
 	});
 
 	it("lists the days with answers, oldest first: live for the owner, aggregated for others", async () => {
