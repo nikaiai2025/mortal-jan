@@ -16,7 +16,7 @@ export interface MarkDrawing {
 export const MARK_BOX = 200;
 export const RED_INK = "#d62a1e";
 /** One pen for every mark. */
-const STROKE_WIDTH = 7;
+const STROKE_WIDTH = 9;
 
 /** Hanamaru designs and how often each one appears (percent). */
 export const HANAMARU_ODDS = { crayon: 30, loop: 30, swirl: 30, smile: 8, bloom: 2 } as const;

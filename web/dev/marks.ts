@@ -19,7 +19,7 @@ const layers = cases.map(([mark, score, style]) => {
 		h(
 			"figure",
 			{ class: "board", style: { margin: "0" } },
-			h("div", { style: { aspectRatio: "1", background: "#1b5741" } }),
+			h("div", { style: { aspectRatio: "1000 / 1068", background: "#1b5741" } }),
 			h("div", { class: "board__overlay" }, layer.element),
 			h("figcaption", { style: { position: "absolute", left: "8px", bottom: "6px", color: "#fff", fontSize: "12px" } }, label),
 		),

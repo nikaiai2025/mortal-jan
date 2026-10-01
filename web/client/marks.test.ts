@@ -42,7 +42,7 @@ describe("markDrawing", () => {
 	});
 
 	it("keeps every mark, with its sway and the pen's width, inside the box (bloom above the seal)", () => {
-		const half = 7 / 2;
+		const half = 9 / 2;
 		for (let seed = 1; seed <= 40; seed++) {
 			for (const [mark, style] of MARKS) {
 				const numbers = paths(mark, style, seeded(seed)).flatMap((d) => d.match(/-?\d+(\.\d+)?/g)?.map(Number) ?? []);
