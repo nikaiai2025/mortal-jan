@@ -194,11 +194,16 @@ async function putName(ctx: Ctx): Promise<Response> {
 
 // ---- problems ----
 
-let problemCountCache: number | null = null;
+// Problems are swapped rarely (a trial set for the real one), so a few minutes of staleness is fine.
+const PROBLEM_COUNT_TTL_MS = 10 * 60_000;
+let problemCountCache: { count: number; expires: number } | null = null;
 
 async function problemCount(db: D1Database): Promise<number> {
-	problemCountCache ??= (await db.prepare("SELECT MAX(id) AS n FROM problems").first<number>("n")) ?? 0;
-	return problemCountCache;
+	if (problemCountCache && problemCountCache.expires > Date.now()) return problemCountCache.count;
+	const count = (await db.prepare("SELECT MAX(id) AS n FROM problems").first<number>("n")) ?? 0;
+	// An empty table (before the problems are loaded) is not remembered.
+	problemCountCache = count ? { count, expires: Date.now() + PROBLEM_COUNT_TTL_MS } : null;
+	return count;
 }
 
 async function loadProblem(db: D1Database, id: number): Promise<ProblemRow> {

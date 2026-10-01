@@ -32,7 +32,7 @@ npm run dev                 # http://localhost:5173
 npm test; npm run typecheck
 ```
 
-配信はGitHub Actionsの「Deploy」ワークフローを手動で実行する（リポジトリのSecretに `CLOUDFLARE_API_TOKEN` が必要）。本番D1への問題投入は一度だけ `npx wrangler d1 execute DB --remote --file ../generated/problems.sql` で行う。
+配信はGitHub Actionsの「Deploy」ワークフローを手動で実行する（リポジトリのSecretに `CLOUDFLARE_API_TOKEN` が必要）。本番D1への問題投入は `npx wrangler d1 execute DB --remote --file ../generated/problems.sql` で行う。すでに問題が入っているDB（試験配信の問題など）を入れ替えるときは、`generator.load --replace` で作ったSQLを使う（問題・回答・成績をすべて消してから入れる。プレイヤーと名前は残る）。
 
 ## ライセンス
 

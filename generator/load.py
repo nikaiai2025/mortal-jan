@@ -4,7 +4,8 @@
     cd web; npx wrangler d1 execute DB --remote --file ../generated/problems.sql
 
 Plain INSERTs: loading into a database that already has problems fails instead of
-replacing problems that players may have answered.
+replacing problems that players may have answered. `--replace` first deletes every
+problem and every answer and record on them (for swapping a trial set for the real one).
 """
 
 from __future__ import annotations
@@ -45,18 +46,31 @@ def insert_statement(problem: dict, positions: dict[str, int]) -> str:
     return f"INSERT INTO problems ({', '.join(columns)}) VALUES ({', '.join(values)});"
 
 
+# Clears the problems and everything that refers to them; players and their names stay.
+REPLACE_PRELUDE = (
+    "DELETE FROM answers;",
+    "DELETE FROM player_stats;",
+    "DELETE FROM problems;",
+    "UPDATE aggregation SET last_answer_id = 0 WHERE id = 1;",
+    "UPDATE players SET current_problem_id = NULL, assigned_day = NULL, assigned_count = 0;",
+)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--problems", type=Path, default=runtime.GENERATED_ROOT / "problems.jsonl")
     parser.add_argument("--out", type=Path, default=runtime.GENERATED_ROOT / "problems.sql")
+    parser.add_argument("--replace", action="store_true", help="delete all problems, answers and records first")
     args = parser.parse_args()
 
     with args.problems.open(encoding="utf-8") as source:
         problems = [json.loads(line) for line in source]
     with args.out.open("w", encoding="utf-8", newline="\n") as out:
+        if args.replace:
+            out.write("\n".join(REPLACE_PRELUDE) + "\n")
         for problem, positions in with_positions(problems):
             out.write(insert_statement(problem, positions) + "\n")
-    print(f"{len(problems)} problems -> {args.out}")
+    print(f"{len(problems)} problems -> {args.out}{' (replacing everything)' if args.replace else ''}")
 
 
 if __name__ == "__main__":
