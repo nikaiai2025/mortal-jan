@@ -7,7 +7,6 @@ import { errorMessage } from "./errors";
 import { actionElement } from "./labels";
 import { handTiles, questionText } from "./scene";
 import { sound } from "./sound";
-import { tileLabel } from "./tiles";
 
 /** `onConfirm` sends the answer; if it rejects, the window becomes usable again. */
 export function answerWindow(question: Question, view: Board, onConfirm: (action: string) => Promise<void>): HTMLElement {
@@ -16,7 +15,7 @@ export function answerWindow(question: Question, view: Board, onConfirm: (action
 	let locked = false;
 
 	const confirm = h("button", { class: "stamp-button", type: "button", disabled: true }, "確定");
-	const message = h("p", { class: "form-message", role: "alert" });
+	const message = h("p", { class: "form-message answer__message", role: "alert" });
 	const body = h("div", { class: "answer__body" });
 
 	const showSelection = () => {
@@ -34,12 +33,15 @@ export function answerWindow(question: Question, view: Board, onConfirm: (action
 	let enable: () => void;
 	let hint: string;
 	if (question.kind === "call") {
-		hint = "選択肢を選んでください";
+		hint = "選んで確定を押す";
 		const options = h("div", { class: "answer__options" });
 		const buttons = question.choices.map((choice) => {
-			const button = h("button", { class: "option", type: "button" }, actionElement(choice.action, question, "tile tile--option"));
+			const button = h("button", { class: "option", type: "button", "aria-pressed": "false" }, actionElement(choice.action, question, "tile tile--option"));
 			button.addEventListener("click", () => {
-				for (const other of buttons) other.classList.toggle("is-selected", other === button);
+				for (const other of buttons) {
+					other.classList.toggle("is-selected", other === button);
+					other.setAttribute("aria-pressed", String(other === button));
+				}
 				choose(choice.action);
 			});
 			return button;
@@ -50,26 +52,19 @@ export function answerWindow(question: Question, view: Board, onConfirm: (action
 			for (const button of buttons) button.disabled = false;
 		};
 	} else {
-		hint = "盤面の自分の手牌をタップして、切る牌を選んでください";
+		hint = question.kind === "riichi" ? "リーチするなら押してから、手牌をタップして選ぶ" : "手牌をタップして選ぶ";
 		const tiles = handTiles(question.scene);
 		let riichi = false;
 		let selectedIndex: number | null = null;
 		const actionFor = (index: number) => `${riichi ? "r" : "d"}:${tiles[index]}`;
 		const enabled = () => tiles.map((_, index) => legal.has(actionFor(index)));
-		const redraw = () => view.setHand({ selected: selectedIndex, enabled: locked ? tiles.map(() => false) : enabled() });
+		const redraw = () => view.setHand({ selected: selectedIndex, enabled: enabled() });
 		const pick = (index: number) => {
 			if (locked || !legal.has(actionFor(index))) return;
 			selectedIndex = selectedIndex === index ? null : index;
 			choose(selectedIndex === null ? null : actionFor(selectedIndex));
 			redraw();
 		};
-		// The same choice for keyboards and screen readers.
-		const accessible = h(
-			"div",
-			{ class: "sr-only" },
-			...tiles.map((pai, index) => h("button", { type: "button", onclick: () => pick(index) }, `${tileLabel(pai)}を選ぶ`)),
-		);
-		body.append(accessible);
 		if (question.kind === "riichi") {
 			const toggle = h("button", { class: "riichi-toggle", type: "button", "aria-pressed": "false" }, "リーチ");
 			toggle.addEventListener("click", () => {
@@ -82,7 +77,7 @@ export function answerWindow(question: Question, view: Board, onConfirm: (action
 				choose(selectedIndex === null ? null : actionFor(selectedIndex));
 				redraw();
 			});
-			body.append(h("div", { class: "answer__riichi" }, toggle, h("span", {}, "リーチするなら押してから牌を選ぶ")));
+			body.append(toggle);
 		}
 		enable = () => {
 			view.onHandTap(pick);
@@ -113,11 +108,15 @@ export function answerWindow(question: Question, view: Board, onConfirm: (action
 
 	return h(
 		"section",
-		{ class: "answer", "aria-label": "回答" },
-		h("h2", { class: "answer__question" }, questionText(question.kind, question.choices)),
-		h("p", { class: "answer__hint" }, hint),
-		body,
-		message,
+		{ class: `answer answer--${question.kind}`, "aria-label": "回答" },
+		h(
+			"div",
+			{ class: "answer__prompt" },
+			h("h2", { class: "answer__question" }, questionText(question.kind)),
+			h("p", { class: "answer__hint" }, hint),
+		),
+		body.childElementCount ? body : null,
 		h("div", { class: "answer__actions" }, confirm),
+		message,
 	);
 }

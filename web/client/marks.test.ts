@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Mark } from "../shared/rules";
+import type { Difficulty } from "../shared/types";
 import { HANAMARU_ODDS, type HanamaruStyle, hanamaruFor, markDrawing } from "./marks";
 
 /** A small seeded random source (mulberry32), so that a drawing can be repeated. */
@@ -18,17 +19,36 @@ const paths = (mark: Mark, style: HanamaruStyle, random: () => number) => markDr
 
 describe("hanamaruFor", () => {
 	it("gives the same design for the same answer", () => {
-		expect(hanamaruFor("abc", 12)).toBe(hanamaruFor("abc", 12));
+		for (const difficulty of ["easy", "normal", "hard"] as const) {
+			expect(hanamaruFor("abc", 12, difficulty)).toBe(hanamaruFor("abc", 12, difficulty));
+		}
 	});
 
-	it("follows the odds across players and problems", () => {
-		const counts = Object.fromEntries(STYLES.map((style) => [style, 0])) as Record<HanamaruStyle, number>;
+	it("follows the odds by difficulty and replaces the hard-only flower with smile", () => {
+		const difficulties: Difficulty[] = ["easy", "normal", "hard"];
+		const counts = Object.fromEntries(difficulties.map((difficulty) => [difficulty, Object.fromEntries(STYLES.map((style) => [style, 0]))])) as Record<Difficulty, Record<HanamaruStyle, number>>;
 		const total = 200 * 500;
 		for (let player = 0; player < 200; player++) {
-			for (let problem = 1; problem <= 500; problem++) counts[hanamaruFor(`p${player}x`, problem)]++;
+			for (let problem = 1; problem <= 500; problem++) {
+				const hard = hanamaruFor(`p${player}x`, problem, "hard");
+				counts.hard[hard]++;
+				for (const difficulty of ["easy", "normal"] as const) {
+					const style = hanamaruFor(`p${player}x`, problem, difficulty);
+					if (style !== (hard === "bloom" ? "smile" : hard)) throw new Error("difficulty changed a regular mark or failed to replace bloom");
+					counts[difficulty][style]++;
+				}
+			}
 		}
-		for (const [style, odds] of Object.entries(HANAMARU_ODDS) as [HanamaruStyle, number][]) {
-			expect(counts[style] / total).toBeCloseTo(odds / 100, 2);
+		for (const difficulty of difficulties) {
+			const expected = { crayon: 30, loop: 30, swirl: 30, smile: difficulty === "hard" ? 6 : 10, bloom: difficulty === "hard" ? 4 : 0 };
+			for (const style of STYLES) expect(counts[difficulty][style] / total, `${difficulty}/${style}`).toBeCloseTo(expected[style] / 100, 2);
+			if (difficulty !== "hard") expect(counts[difficulty].bloom).toBe(0);
+		}
+	});
+
+	it("does not award the hard-only flower when difficulty is unavailable", () => {
+		for (let problem = 1; problem <= 500; problem++) {
+			expect(hanamaruFor("abc", problem, null)).toBe(hanamaruFor("abc", problem, "normal"));
 		}
 	});
 });

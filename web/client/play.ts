@@ -8,7 +8,7 @@ import { board, type Board } from "./board";
 import { h, replace } from "./dom";
 import { Sequence, markLayer, reveal } from "./effects";
 import { hanamaruFor } from "./marks";
-import { DIFFICULTY_LABELS, KIND_LABELS, actionElement } from "./labels";
+import { DIFFICULTY_LABELS, actionElement } from "./labels";
 import { chosenSlot, handBars } from "./evaluation";
 import { HASHTAG, SITE_NAME, openShare, problemCard } from "./share";
 
@@ -51,18 +51,17 @@ const rulesNote = () =>
 		h("br"),
 		"赤ドラあり（5萬・5筒・5索に各1枚）。喰いタン・後付けあり。一発・裏ドラ・槓ドラあり。",
 		h("br"),
+		"暗い表示はツモ切り",
+		h("br"),
 		h("a", { href: "/rules" }, "詳細ルール"),
 	);
 
-function heading(question: Question, options: PlayOptions): HTMLElement {
-	return h(
-		"header",
-		{ class: "sheet__head" },
-		h("h1", { class: "sheet__title" }, h("small", {}, "第"), String(question.id), h("small", {}, "問")),
-		h("span", { class: `kind kind--${question.kind}` }, KIND_LABELS[question.kind]),
-		options.progress ? h("span", { class: "sheet__progress" }, options.progress) : null,
-	);
+function heading(options: PlayOptions): HTMLElement | null {
+	return options.progress ? h("header", { class: "sheet__head" }, h("span", { class: "sheet__progress" }, options.progress)) : null;
 }
+
+/** The board, under it the answer or the result, then the rules. */
+const play = (view: Board, below: HTMLElement) => h("div", { class: "play" }, view.element, below, rulesNote());
 
 async function showQuestion(root: HTMLElement, question: Question, options: PlayOptions): Promise<void> {
 	const view = await board(question);
@@ -71,23 +70,33 @@ async function showQuestion(root: HTMLElement, question: Question, options: Play
 		const response = await post<ProblemResponse>(`/api/problems/${question.id}/answer${from}`, { action });
 		if (response.state !== "result") return showProblem(root, response, options);
 		options.onAnswered?.(response.result);
-		await grade(root, view, answer, response.result, options, true);
+		await grade(root, view, below, response.result, options, true);
 	});
-	replace(root, heading(question, options), h("div", { class: "play" }, h("div", {}, view.element, rulesNote()), answer));
+	const below = h("div");
+	if (question.kind === "call") {
+		view.prompt(h("div", { class: "answer answer--call" }, answer.querySelector<HTMLElement>(".answer__prompt")));
+		view.answer(answer);
+	} else {
+		view.prompt(answer);
+	}
+	replace(root, heading(options), play(view, below));
 }
 
 async function showResult(root: HTMLElement, result: Result, options: PlayOptions): Promise<void> {
 	const view = await board(result);
-	view.setHand({ selected: chosenSlot(result) });
 	const placeholder = h("div");
-	replace(root, heading(result, options), h("div", { class: "play" }, h("div", {}, view.element, rulesNote()), placeholder));
+	replace(root, heading(options), play(view, placeholder));
 	await grade(root, view, placeholder, result, options, false);
 }
 
 async function grade(root: HTMLElement, view: Board, replaced: HTMLElement, result: Result, options: PlayOptions, animate: boolean): Promise<void> {
+	// The hand shows the answer only, also right after answering (not the dimmed state of the question).
+	view.prompt(null);
+	view.answer(null);
+	view.setHand({ selected: chosenSlot(result) });
 	const sequence = new Sequence();
 	if (!animate || matchMedia("(prefers-reduced-motion: reduce)").matches) sequence.skip();
-	const layer = markLayer(markOf(result.answer.score, result.answer.pitari), result.answer.score, hanamaruFor(currentPublicId(), result.id));
+	const layer = markLayer(markOf(result.answer.score, result.answer.pitari), result.answer.score, hanamaruFor(currentPublicId(), result.id, result.difficulty));
 	view.overlay(layer.element);
 	const card = resultCard(result, options);
 	const rows = Array.from(card.children);
@@ -152,8 +161,10 @@ function resultCard(result: Result, options: PlayOptions): HTMLElement {
 		h("dd", {}, result.human ? `${result.human.average.toFixed(1)}点（${result.human.answers}人）` : "集計中"),
 	);
 	if (result.kind === "riichi") {
-		// The bars over the hand: one per way of discarding the tile.
+		// The board shows the chosen tile, not whether it was a riichi; the bars over the hand: one per way of discarding the tile.
 		meta.append(
+			h("dt", {}, "あなた"),
+			h("dd", {}, answer.action.startsWith("r:") ? "リーチ" : "ダマ"),
 			h("dt", {}, "グラフ"),
 			h("dd", { class: "bars-legend" }, h("i", { class: "bars-legend__dama" }), "ダマ", h("i", { class: "bars-legend__riichi" }), "リーチ"),
 		);
@@ -167,20 +178,20 @@ function resultCard(result: Result, options: PlayOptions): HTMLElement {
 
 	const share = async () => {
 		const publicId = currentPublicId();
-		const url = `${location.origin}/q/${result.id}${publicId ? `?from=${publicId}` : ""}`;
-		const text = `${SITE_NAME} 第${result.id}問 ${result.answer.score}点${result.answer.pitari ? "（ピタリ！）" : ""}\nあなたならどうする？ ${HASHTAG}`;
-		await openShare(await problemCard(result, result), text, url, `mortal-nanikiru-${result.id}.png`);
+		const problemUrl = `${location.origin}/q/${result.id}`;
+		const shareText = (includeResult: boolean) => `${SITE_NAME} 第${result.id}問${includeResult ? ` ${result.answer.score}点${result.answer.pitari ? "（ピタリ！）" : ""}` : ""}\nあなたならどうする？ ${HASHTAG}`;
+		await openShare(
+			await problemCard(result, result),
+			shareText(true),
+			`${problemUrl}${publicId ? `?from=${publicId}` : ""}`,
+			`mortal-nanikiru-${result.id}.png`,
+			async () => ({ element: await problemCard(result, result, false), text: shareText(false), url: problemUrl }),
+		);
 	};
 
 	return h(
 		"section",
 		{ class: "result", "aria-label": "結果" },
-		h(
-			"div",
-			{ class: "result__answers" },
-			h("div", { class: "result__line" }, h("span", { class: "result__label" }, "あなた"), actionElement(answer.action, result, "tile tile--result")),
-			h("div", { class: "result__line" }, h("span", { class: "result__label" }, "AI"), actionElement(evaluation.best, result, "tile tile--result")),
-		),
 		result.kind === "call" ? h("div", { class: "result__list" }, h("h3", {}, "候補ごとのAI評価"), list) : null,
 		meta,
 		h(

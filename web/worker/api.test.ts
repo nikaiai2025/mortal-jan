@@ -1,6 +1,6 @@
 import { SELF, applyD1Migrations, env } from "cloudflare:test";
 import { beforeAll, describe, expect, it } from "vitest";
-import type { Me, ProblemResponse, Profile, Result, Session } from "../shared/types";
+import type { Me, ProblemResponse, Profile, Result, Session, SetProblem } from "../shared/types";
 import { DAILY_ANSWER_LIMIT } from "../shared/rules";
 import { aggregate, fold, readCursor } from "./aggregate";
 
@@ -171,7 +171,7 @@ describe("answers", () => {
 });
 
 describe("problem sets", () => {
-	type SetBody = { problems: { id: number; answer: unknown }[] };
+	type SetBody = { problems: SetProblem[] };
 
 	it("chunk all problems by number", async () => {
 		const player = await newPlayer();
@@ -179,6 +179,7 @@ describe("problem sets", () => {
 		await answer(player, 12, "d:1m");
 		const set = await call<SetBody>("/api/sets/all/2", player);
 		expect(set.body.problems.map((p) => p.id)).toEqual([11, 12, 13, 14, 15, 16, 17, 18, 19, 20]);
+		expect(set.body.problems.map((p) => p.difficulty)).toEqual(["easy", "hard", "easy", "hard", "easy", "hard", "easy", "hard", "easy", "hard"]);
 		expect(set.body.problems[1].answer).toEqual({ action: "d:1m", score: 100, pitari: true });
 		const sets = await call<{ totalSets: number; sets: unknown[] }>("/api/sets?theme=all&page=1", player);
 		expect(sets.body.totalSets).toBe(2);
@@ -189,6 +190,7 @@ describe("problem sets", () => {
 		const player = await newPlayer();
 		const easy = await call<SetBody>("/api/sets/easy/1", player);
 		expect(easy.body.problems.map((p) => p.id)).toEqual([1, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
+		expect(easy.body.problems.every((p) => p.difficulty === "easy")).toBe(true);
 		await call(`/api/problems/5`, player);
 		await answer(player, 5, "d:2m");
 		const sets = await call<{ totalSets: number; sets: unknown[] }>("/api/sets?theme=easy", player);
@@ -269,8 +271,9 @@ describe("aggregation", () => {
 		await answer(player, 17, "d:1m");
 		const me = (await call<Me>("/api/me", player)).body;
 		expect(me.all).toEqual({ answers: 1, scoreSum: 100, pitari: 1 });
-		const own = (await call<{ all: unknown; history: unknown[] }>(`/api/players/${player.publicId}`, player)).body;
+		const own = (await call<Profile>(`/api/players/${player.publicId}`, player)).body;
 		expect(own.history).toHaveLength(1);
+		expect(own.history[0]).toMatchObject({ id: 17, difficulty: "easy", score: 100, pitari: true });
 		const shared = (await call<{ all: { answers: number }; history: unknown[] }>(`/api/players/${player.publicId}`)).body;
 		expect(shared).toMatchObject({ all: { answers: 0 }, history: [] });
 		await aggregate(env.DB);

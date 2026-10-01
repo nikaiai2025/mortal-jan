@@ -121,6 +121,7 @@ export interface Me {
 
 export interface SetProblem {
 	id: number;
+	difficulty: Difficulty;
 	answer: AnswerResult | null;
 }
 
@@ -143,7 +144,7 @@ export interface Profile {
 	today: Stats;
 	/** Days with answers, oldest first: the latest DAILY_CHART_DAYS of them. */
 	daily: DailyStats[];
-	history: { id: number; score: number; pitari: boolean; answeredAt: string }[];
+	history: { id: number; difficulty: Difficulty | null; score: number; pitari: boolean; answeredAt: string }[];
 }
 
 export type RankingPeriod = "all" | "today";

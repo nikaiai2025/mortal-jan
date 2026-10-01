@@ -4,29 +4,53 @@
 import type { Choice, Meld, Pai, ProblemKind, Scene } from "../shared/types";
 import { BACK_URL, FRONT_URL, faceUrl, preloadTiles, tileImage } from "./tiles";
 
-/** The table is a square of SCENE_WIDTH; below it a strip holds the own hand, so the evaluation bars fit between the own river and the hand. */
-export const SCENE_WIDTH = 1000;
-export const SCENE_HEIGHT = 1068;
-
 const RIVER_W = 44;
 const RIVER_H = 59;
 const HAND_W = 66;
 const HAND_H = 88;
 // The centre panel is wider than tall: the side players' scores stand upright in it.
 const PANEL_HALF_X = 175;
-const PANEL_HALF_Y = 105;
+const PANEL_HALF_Y = 95;
+const SCORE_SIZE = 32;
 const RIVER_GAP = 26; // room for a riichi stick between the panel and a river
 const RIVER_X = -3 * RIVER_W;
 const RIVER_ROW = 6;
-const EDGE = SCENE_WIDTH / 2; // the table's centre, on both axes
-const OPPONENT_ROW_HALF = 320; // keeps the side rows clear of the corners and of the evaluation bars
-const SELF_ROW_HALF = 490;
-const SELF_BOTTOM = SCENE_HEIGHT - 11;
-const RAISE = 16; // a selected hand tile rises by this much
+const RIVER_DEPTH = 3 * RIVER_H; // rows of six; the third row takes the rest
+const OPPONENT_GAP = 10; // between a river and its owner's row
+const MARGIN = 8;
+export const RAISE = 16; // a selected hand tile rises by this much
+
+/** Each opponent's row sits just outside the river; the side rows reach furthest across. */
+export const SCENE_WIDTH = 2 * (PANEL_HALF_X + RIVER_GAP + RIVER_DEPTH + OPPONENT_GAP + RIVER_H + MARGIN);
+const CENTRE_X = SCENE_WIDTH / 2;
+const CENTRE_Y = PANEL_HALF_Y + RIVER_GAP + RIVER_DEPTH + OPPONENT_GAP + RIVER_H + MARGIN;
+// Half lengths of the opponents' rows: clear of the problem number in the top-left corner and of the own hand (also of a kakan on it).
+const ACROSS_ROW_HALF = 340;
+const SIDE_ROW_HALF = 285;
+const SELF_ROW_HALF = CENTRE_X - 10;
+const RIVER_END = CENTRE_Y + PANEL_HALF_Y + RIVER_GAP + RIVER_DEPTH; // the own river's lower edge
+// The evaluation bars rise from just above a raised tile, with up to two percentages (riichi) above the tallest.
+const BAR_GAP = 12;
+const BAR_MAX = 83;
+const LABEL_GAP = 6;
+const LABEL_LINE = 16;
+/**
+ * Between the own river and the hand: the question and its confirm button before answering, the
+ * evaluation bars with their labels after it. Call choices stay under the board.
+ */
+const BAND = RAISE + BAR_GAP + BAR_MAX + LABEL_GAP + 2 * LABEL_LINE + 6;
+const HAND_TOP = RIVER_END + BAND;
+
+export function sceneHeight(): number {
+	return HAND_TOP + HAND_H + 11;
+}
+
+/** The band above the hand (see BAND), clear of the river and of a raised tile. */
+export function handBand(): { top: number; bottom: number } {
+	return { top: RIVER_END + 6, bottom: HAND_TOP - RAISE - 6 };
+}
 
 const COLORS = {
-	felt: "#1b5741",
-	feltEdge: "#123d2e",
 	panel: "#0e2a21",
 	panelLine: "#c9a45c",
 	text: "#f1e8d0",
@@ -42,12 +66,10 @@ const BAKAZE: Record<string, string> = { E: "東", S: "南", W: "西", N: "北" 
 // Relative seat → rotation (0 bottom, 1 right, 2 top, 3 left).
 const ROTATIONS = [0, -Math.PI / 2, Math.PI, Math.PI / 2];
 
-export function questionText(kind: ProblemKind, choices: Choice[]): string {
+export function questionText(kind: ProblemKind): string {
 	if (kind === "discard") return "何を切る？";
 	if (kind === "riichi") return "リーチする？ 何を切る？";
-	const chi = choices.some((c) => c.action.startsWith("chi"));
-	const pon = choices.some((c) => c.action === "pon");
-	return chi && pon ? "鳴く？" : chi ? "チーする？" : "ポンする？";
+	return "鳴く？";
 }
 
 /** Load all tile images the scene needs. Call before drawScene. */
@@ -89,17 +111,11 @@ export function handSlots(scene: Scene): HandSlot[] {
 	return tiles.map((pai, index) => ({
 		index,
 		pai,
-		x: EDGE - SELF_ROW_HALF + index * w + (scene.drawn && index === tiles.length - 1 ? drawGap * scale : 0),
-		y: SELF_BOTTOM - h,
+		x: CENTRE_X - SELF_ROW_HALF + index * w + (scene.drawn && index === tiles.length - 1 ? drawGap * scale : 0),
+		y: HAND_TOP,
 		w,
 		h,
 	}));
-}
-
-/** The hand tile under a point in scene coordinates (generous upward, for fingers). */
-export function handSlotAt(scene: Scene, x: number, y: number): number | null {
-	const slot = handSlots(scene).find((s) => x >= s.x && x < s.x + s.w && y >= s.y - 60 && y <= s.y + s.h + 10);
-	return slot ? slot.index : null;
 }
 
 /** Interaction and result state of the own hand. */
@@ -107,6 +123,8 @@ export interface HandView {
 	selected: number | null;
 	/** Per slot; false dims a tile that cannot be chosen now. */
 	enabled?: boolean[];
+	/** The tile under the mouse pointer, lifted a little. */
+	hovered?: number | null;
 	/** Evaluation bars shown above the hand after answering. */
 	bars?: HandBar[];
 	/** Growth of the bars, 0-1. */
@@ -123,16 +141,20 @@ export interface HandBar {
 
 export interface SceneOptions {
 	problemId: number;
+	kind: ProblemKind;
+	/** Extend only the felt for call controls; scene coordinates stay fixed. */
+	height?: number;
 	hand?: HandView;
 }
 
-/** Draw `width` pixels wide (and width × SCENE_HEIGHT / SCENE_WIDTH tall) at the current origin. Tiles must be preloaded. */
+/** Draw `width` pixels wide (and width × sceneHeight / SCENE_WIDTH tall) at the current origin. Tiles must be preloaded. */
 export function drawScene(ctx: CanvasRenderingContext2D, scene: Scene, width: number, options: SceneOptions): void {
 	ctx.save();
 	ctx.scale(width / SCENE_WIDTH, width / SCENE_WIDTH);
-	drawFelt(ctx);
+	drawFelt(ctx, options.height ?? sceneHeight(), options.kind);
+	const labelRight = drawCornerLabel(ctx, options.problemId);
 	ctx.save();
-	ctx.translate(EDGE, EDGE);
+	ctx.translate(CENTRE_X, CENTRE_Y);
 	for (let relative = 0; relative < 4; relative++) {
 		const seat = (scene.seat + relative) % 4;
 		ctx.save();
@@ -140,24 +162,28 @@ export function drawScene(ctx: CanvasRenderingContext2D, scene: Scene, width: nu
 		// Distance from the centre to the panel's edge on this seat's side.
 		const panelEdge = relative % 2 === 0 ? PANEL_HALF_Y : PANEL_HALF_X;
 		if (scene.riichi[seat]) drawRiichi(ctx, panelEdge);
-		drawRiver(ctx, scene, seat, panelEdge + RIVER_GAP);
-		if (relative > 0) drawOpponentRow(ctx, scene, seat);
+		drawRiver(ctx, scene, seat, panelEdge + RIVER_GAP, ROTATIONS[relative]);
+		if (relative > 0) {
+			const half = relative === 2 ? ACROSS_ROW_HALF : SIDE_ROW_HALF;
+			// After rotation, the across row's end is beside the problem number on the left.
+			const end = relative === 2 ? Math.min(half, CENTRE_X - labelRight - 14) : half;
+			drawOpponentRow(ctx, scene, seat, half, panelEdge + RIVER_GAP + RIVER_DEPTH + OPPONENT_GAP, end);
+		}
 		ctx.restore();
 	}
 	drawPanel(ctx, scene);
 	ctx.restore();
 	drawOwnRow(ctx, scene, options.hand);
 	if (options.hand?.bars) drawBars(ctx, scene, options.hand.bars, options.hand.barProgress ?? 1);
-	drawCornerLabel(ctx, options.problemId);
 	ctx.restore();
 }
 
-function drawFelt(ctx: CanvasRenderingContext2D): void {
-	const gradient = ctx.createRadialGradient(EDGE, EDGE, 80, EDGE, EDGE, EDGE * 1.45);
-	gradient.addColorStop(0, COLORS.felt);
-	gradient.addColorStop(1, COLORS.feltEdge);
+function drawFelt(ctx: CanvasRenderingContext2D, height: number, kind: ProblemKind): void {
+	const gradient = ctx.createRadialGradient(CENTRE_X, CENTRE_Y, 80, CENTRE_X, CENTRE_Y, CENTRE_X * 1.45);
+	gradient.addColorStop(0, kind === "discard" ? "#1b5741" : "#327fa3");
+	gradient.addColorStop(1, kind === "discard" ? "#123d2e" : "#20536f");
 	ctx.fillStyle = gradient;
-	ctx.fillRect(0, 0, SCENE_WIDTH, SCENE_HEIGHT);
+	ctx.fillRect(0, 0, SCENE_WIDTH, height);
 }
 
 // ---- tiles ----
@@ -212,33 +238,48 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 
 // ---- rivers and riichi ----
 
-function drawRiver(ctx: CanvasRenderingContext2D, scene: Scene, seat: number, riverY: number): void {
+/** `turn` is the seat's rotation, which the mark on a called tile undoes so that it stands upright. */
+function drawRiver(ctx: CanvasRenderingContext2D, scene: Scene, seat: number, riverY: number, turn: number): void {
 	const river = scene.rivers[seat];
 	const isTarget = scene.target?.actor === seat;
-	let sidewaysPending = false;
-	let slot = 0;
 	let x = RIVER_X;
 	river.forEach((tile, index) => {
-		// A called tile leaves the river; a called riichi tile passes its sideways mark on.
-		if (tile.called) {
-			sidewaysPending ||= tile.riichi;
-			return;
-		}
-		const sideways = tile.riichi || sidewaysPending;
-		sidewaysPending = false;
 		// Rows of six; the third row takes the rest.
-		const row = Math.min(Math.floor(slot / RIVER_ROW), 2);
-		if (slot === RIVER_ROW || slot === 2 * RIVER_ROW) x = RIVER_X;
+		const row = Math.min(Math.floor(index / RIVER_ROW), 2);
+		if (index === RIVER_ROW || index === 2 * RIVER_ROW) x = RIVER_X;
 		const y = riverY + row * RIVER_H;
-		const width = sideways ? RIVER_H : RIVER_W;
-		drawTile(ctx, tile.pai, x, sideways ? y + (RIVER_H - RIVER_W) : y, RIVER_W, RIVER_H, {
-			sideways,
+		const width = tile.riichi ? RIVER_H : RIVER_W;
+		const top = tile.riichi ? y + (RIVER_H - RIVER_W) : y;
+		drawTile(ctx, tile.pai, x, top, RIVER_W, RIVER_H, {
+			sideways: tile.riichi,
 			dim: tile.tsumogiri,
 			highlight: isTarget && index === river.length - 1,
 		});
+		// A called tile stays in the river, marked.
+		if (tile.called) drawCalledMark(ctx, x + width / 2, top + (tile.riichi ? RIVER_W : RIVER_H) / 2, turn);
 		x += width;
-		slot++;
 	});
+}
+
+/** 鳴 in a circle, upright on the screen. */
+function drawCalledMark(ctx: CanvasRenderingContext2D, x: number, y: number, turn: number): void {
+	const r = 15;
+	ctx.save();
+	ctx.translate(x, y);
+	ctx.rotate(-turn);
+	ctx.beginPath();
+	ctx.arc(0, 0, r, 0, Math.PI * 2);
+	ctx.fillStyle = "rgba(255, 253, 246, 0.92)";
+	ctx.fill();
+	ctx.strokeStyle = COLORS.red;
+	ctx.lineWidth = 2.5;
+	ctx.stroke();
+	ctx.fillStyle = COLORS.red;
+	ctx.font = `700 19px ${FONT}`;
+	ctx.textAlign = "center";
+	ctx.textBaseline = "middle";
+	ctx.fillText("鳴", 0, 1);
+	ctx.restore();
 }
 
 /** A riichi player: a lit stick, a label, and a red wash under the river. */
@@ -334,36 +375,36 @@ function drawOwnRow(ctx: CanvasRenderingContext2D, scene: Scene, view?: HandView
 	const slots = handSlots(scene);
 	for (const slot of slots) {
 		const selected = view?.selected === slot.index;
-		drawTile(ctx, slot.pai, slot.x, slot.y - (selected ? RAISE : 0), slot.w, slot.h, {
+		const hovered = !selected && view?.hovered === slot.index;
+		drawTile(ctx, slot.pai, slot.x, slot.y - (selected ? RAISE : hovered ? RAISE / 2 : 0), slot.w, slot.h, {
 			selected,
+			highlight: hovered,
 			dim: view?.enabled ? !view.enabled[slot.index] : false,
 		});
 	}
 	const { w, h } = slots[0] ?? { w: HAND_W, h: HAND_H };
-	drawMelds(ctx, scene.melds[scene.seat], scene.seat, EDGE + SELF_ROW_HALF, SELF_BOTTOM, w, h);
+	drawMelds(ctx, scene.melds[scene.seat], scene.seat, CENTRE_X + SELF_ROW_HALF, HAND_TOP + h, w, h);
 }
 
-function drawOpponentRow(ctx: CanvasRenderingContext2D, scene: Scene, seat: number): void {
+/** An opponent's row, from `-half` to `end`, at `top` away from the centre. */
+function drawOpponentRow(ctx: CanvasRenderingContext2D, scene: Scene, seat: number, half: number, top: number, end: number): void {
 	const melds = scene.melds[seat];
 	const concealed = scene.concealedCounts[seat];
 	const natural = concealed * RIVER_W + RIVER_W * 0.4 + meldsTotalWidth(melds, seat, RIVER_W, RIVER_H);
-	const scale = Math.min(1, (2 * OPPONENT_ROW_HALF) / natural);
+	const scale = Math.min(1, (half + end) / natural);
 	const w = RIVER_W * scale;
 	const h = RIVER_H * scale;
-	const bottom = EDGE - 8;
-	for (let i = 0; i < concealed; i++) drawTile(ctx, null, -OPPONENT_ROW_HALF + i * w, bottom - h, w, h, { back: true });
-	drawMelds(ctx, melds, seat, OPPONENT_ROW_HALF, bottom, w, h);
+	for (let i = 0; i < concealed; i++) drawTile(ctx, null, -half + i * w, top, w, h, { back: true });
+	drawMelds(ctx, melds, seat, end, top + h, w, h);
 }
 
 // ---- evaluation bars ----
 
-const BAR_MAX = 83;
-
-/** AI evaluation of each hand tile as bars rising from the hand into the strip below the own river (after answering). */
+/** AI evaluation of each hand tile as bars rising from the hand into the room below the own river (after answering). */
 function drawBars(ctx: CanvasRenderingContext2D, scene: Scene, bars: HandBar[], progress: number): void {
 	const slots = handSlots(scene);
 	// Clear of a selected tile, which rises by RAISE.
-	const base = slots[0].y - RAISE - 12;
+	const base = slots[0].y - RAISE - BAR_GAP;
 	ctx.textAlign = "center";
 	ctx.textBaseline = "alphabetic";
 	for (const slot of slots) {
@@ -388,7 +429,7 @@ function drawBars(ctx: CanvasRenderingContext2D, scene: Scene, bars: HandBar[], 
 		labels.forEach((column, i) => {
 			ctx.fillStyle = column.color === COLORS.red ? "#ffb4a8" : column.color;
 			ctx.font = `700 ${columns.length > 1 ? 15 : 19}px ${FONT}`;
-			ctx.fillText(`${Math.round(column.value * 100)}%`, slot.x + slot.w / 2, base - tallest - 6 - (labels.length - 1 - i) * 16);
+			ctx.fillText(`${Math.round(column.value * 100)}%`, slot.x + slot.w / 2, base - tallest - LABEL_GAP - (labels.length - 1 - i) * LABEL_LINE);
 		});
 	}
 }
@@ -404,7 +445,7 @@ function drawPanel(ctx: CanvasRenderingContext2D, scene: Scene): void {
 	roundRect(ctx, -PANEL_HALF_X + 6, -PANEL_HALF_Y + 6, PANEL_HALF_X * 2 - 12, PANEL_HALF_Y * 2 - 12, 11);
 	ctx.stroke();
 
-	drawRound(ctx, scene, -40);
+	drawRound(ctx, scene, -38);
 	drawDeadWall(ctx, scene, -14);
 	ctx.textAlign = "center";
 	ctx.textBaseline = "middle";
@@ -414,9 +455,9 @@ function drawPanel(ctx: CanvasRenderingContext2D, scene: Scene): void {
 
 	// Every score stands upright, on its player's side: one line above and below, two lines left and right.
 	const sides: [relative: number, x: number, y: number][] = [
-		[0, 0, PANEL_HALF_Y - 24],
+		[0, 0, PANEL_HALF_Y - 30],
 		[1, PANEL_HALF_X - 56, 0],
-		[2, 0, -(PANEL_HALF_Y - 24)],
+		[2, 0, -(PANEL_HALF_Y - 18)],
 		[3, -(PANEL_HALF_X - 56), 0],
 	];
 	for (const [relative, x, y] of sides) {
@@ -425,7 +466,7 @@ function drawPanel(ctx: CanvasRenderingContext2D, scene: Scene): void {
 		const windColor = seat === scene.oya ? COLORS.oya : COLORS.text;
 		const score = scene.scores[seat].toLocaleString("en-US");
 		ctx.textBaseline = "middle";
-		ctx.font = `800 28px ${FONT}`;
+		ctx.font = `800 ${SCORE_SIZE}px ${FONT}`;
 		if (relative % 2 === 0) {
 			const scoreWidth = ctx.measureText(score).width;
 			ctx.font = `700 24px ${FONT}`;
@@ -434,13 +475,13 @@ function drawPanel(ctx: CanvasRenderingContext2D, scene: Scene): void {
 			ctx.textAlign = "left";
 			ctx.fillStyle = windColor;
 			ctx.fillText(wind, left, y);
-			ctx.font = `800 28px ${FONT}`;
+			ctx.font = `800 ${SCORE_SIZE}px ${FONT}`;
 			ctx.fillStyle = COLORS.text;
 			ctx.fillText(score, left + windWidth, y);
 		} else {
 			ctx.textAlign = "center";
 			ctx.fillStyle = COLORS.text;
-			ctx.fillText(score, x, y + 16);
+			ctx.fillText(score, x, y + 16, 90);
 			ctx.font = `700 24px ${FONT}`;
 			ctx.fillStyle = windColor;
 			ctx.fillText(wind, x, y - 16);
@@ -450,10 +491,13 @@ function drawPanel(ctx: CanvasRenderingContext2D, scene: Scene): void {
 
 /** "東1局" in a framed box; beside it the deposited 1000-point sticks and the honba (100-point sticks). */
 function drawRound(ctx: CanvasRenderingContext2D, scene: Scene, y: number): void {
-	const label = `${BAKAZE[scene.bakaze]}${scene.kyoku}局`;
+	const wind = BAKAZE[scene.bakaze];
+	const label = `${scene.kyoku}局`;
+	ctx.font = `800 30px ${FONT}`;
+	const windWidth = ctx.measureText(wind).width + 2;
 	ctx.font = `800 22px ${FONT}`;
-	const boxW = ctx.measureText(label).width + 14;
-	const boxH = 36;
+	const boxW = windWidth + ctx.measureText(label).width + 16;
+	const boxH = 40;
 	const left = -(boxW + 8 + 62) / 2;
 	ctx.fillStyle = "#121b18";
 	roundRect(ctx, left, y - boxH / 2, boxW, boxH, 7);
@@ -461,10 +505,14 @@ function drawRound(ctx: CanvasRenderingContext2D, scene: Scene, y: number): void
 	ctx.strokeStyle = "#e9e2cf";
 	ctx.lineWidth = 2;
 	ctx.stroke();
-	ctx.fillStyle = COLORS.text;
 	ctx.textAlign = "left";
 	ctx.textBaseline = "middle";
-	ctx.fillText(label, left + 8, y + 1);
+	ctx.fillStyle = scene.bakaze === "S" ? COLORS.accent : COLORS.text;
+	ctx.font = `800 30px ${FONT}`;
+	ctx.fillText(wind, left + 8, y + 1);
+	ctx.fillStyle = COLORS.text;
+	ctx.font = `800 22px ${FONT}`;
+	ctx.fillText(label, left + 8 + windWidth, y + 1);
 
 	const x = left + boxW + 8;
 	ctx.font = `700 16px ${FONT}`;
@@ -502,14 +550,20 @@ function drawDeadWall(ctx: CanvasRenderingContext2D, scene: Scene, top: number):
 	}
 }
 
-function drawCornerLabel(ctx: CanvasRenderingContext2D, problemId: number): void {
+function drawCornerLabel(ctx: CanvasRenderingContext2D, problemId: number): number {
+	ctx.save();
 	ctx.textAlign = "left";
-	ctx.textBaseline = "top";
-	ctx.fillStyle = COLORS.panelLine;
-	ctx.font = `700 15px ${FONT}`;
-	ctx.fillText("第", 26, 24);
-	ctx.font = `700 30px ${FONT}`;
-	ctx.fillText(String(problemId), 26, 44);
-	ctx.font = `700 15px ${FONT}`;
-	ctx.fillText("問", 26, 80);
+	ctx.textBaseline = "alphabetic";
+	ctx.fillStyle = "#fff6df";
+	ctx.shadowColor = "rgba(0, 0, 0, 0.45)";
+	ctx.shadowBlur = 3;
+	ctx.shadowOffsetY = 2;
+	let right = 16;
+	for (const [text, size] of [["第", 22], [String(problemId), 44], ["問", 22]] as const) {
+		ctx.font = `${size === 44 ? 800 : 700} ${size}px ${FONT}`;
+		ctx.fillText(text, right, 50);
+		right += ctx.measureText(text).width + 2;
+	}
+	ctx.restore();
+	return right - 2;
 }

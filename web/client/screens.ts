@@ -124,7 +124,7 @@ function setSummary(root: HTMLElement, theme: SetTheme, set: number, problems: S
 	const title = setTitle(theme, set);
 	const list = h("ol", { class: "set-result" });
 	for (const problem of problems) {
-		const icon = problem.answer ? markIcon(markOf(problem.answer.score, problem.answer.pitari), "set-result__mark", hanamaruFor(currentPublicId(), problem.id)) : null;
+		const icon = problem.answer ? markIcon(markOf(problem.answer.score, problem.answer.pitari), "set-result__mark", hanamaruFor(currentPublicId(), problem.id, problem.difficulty)) : null;
 		list.append(
 			h(
 				"li",
@@ -134,8 +134,15 @@ function setSummary(root: HTMLElement, theme: SetTheme, set: number, problems: S
 		);
 	}
 	const share = async () => {
-		const text = `${SITE_NAME} ${title} ${total.toFixed(1)}点（ピタリ${pitari}/10）\n同じ10問に挑戦してみて ${HASHTAG}`;
-		await openShare(await setCard(title, problems), text, `${location.origin}/sets/${theme}/${set}`, `mortal-nanikiru-${theme}-${set}.png`);
+		const url = `${location.origin}/sets/${theme}/${set}`;
+		const shareText = (includeResult: boolean) => `${SITE_NAME} ${title}${includeResult ? ` ${total.toFixed(1)}点（ピタリ${pitari}/10）` : ""}\n同じ10問に挑戦してみて ${HASHTAG}`;
+		await openShare(
+			await setCard(title, problems),
+			shareText(true),
+			url,
+			`mortal-nanikiru-${theme}-${set}.png`,
+			async () => ({ element: await setCard(title, problems, false), text: shareText(false), url }),
+		);
 	};
 	replace(
 		root,
@@ -231,7 +238,7 @@ export async function profilePage(root: HTMLElement, publicId: string, app: App)
 	const recent = h("ol", { class: "history" });
 	for (const item of profile.history) {
 		recent.append(
-			h("li", {}, h("a", { href: `/q/${item.id}` }, markIcon(markOf(item.score, item.pitari), "history__mark", hanamaruFor(profile.publicId, item.id)), h("span", {}, `第${item.id}問（問題集 第${setOf(item.id)}集）`), h("strong", {}, `${item.score}点`))),
+			h("li", {}, h("a", { href: `/q/${item.id}` }, markIcon(markOf(item.score, item.pitari), "history__mark", hanamaruFor(profile.publicId, item.id, item.difficulty)), h("span", {}, `第${item.id}問（問題集 第${setOf(item.id)}集）`), h("strong", {}, `${item.score}点`))),
 		);
 	}
 	const share = async () => {

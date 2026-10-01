@@ -1,8 +1,7 @@
-import type { Difficulty, ProblemKind, Question } from "../shared/types";
+import type { Difficulty, Question } from "../shared/types";
 import { h } from "./dom";
 import { tileElement, tileLabel, tileOrder } from "./tiles";
 
-export const KIND_LABELS: Record<ProblemKind, string> = { discard: "何切る", riichi: "リーチ判断", call: "鳴き判断" };
 export const DIFFICULTY_LABELS: Record<Difficulty, string> = { easy: "かんたん", normal: "ふつう", hard: "むずかしい" };
 const CALL_LABELS: Record<string, string> = { chi_low: "チー", chi_mid: "チー", chi_high: "チー", pon: "ポン", pass: "スルー" };
 

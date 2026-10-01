@@ -1,6 +1,7 @@
 // Red-pen marks drawn stroke by stroke (回答後の演出). Paths live in a 200×200 box.
 
 import type { Mark } from "../shared/rules";
+import type { Difficulty } from "../shared/types";
 
 export interface Stroke {
 	d: string;
@@ -18,12 +19,12 @@ export const RED_INK = "#d62a1e";
 /** One pen for every mark. */
 const STROKE_WIDTH = 9;
 
-/** Hanamaru designs and how often each one appears (percent). */
-export const HANAMARU_ODDS = { crayon: 30, loop: 30, swirl: 30, smile: 8, bloom: 2 } as const;
+/** Hanamaru odds for hard problems; other difficulties replace bloom with smile. */
+export const HANAMARU_ODDS = { crayon: 30, loop: 30, swirl: 30, smile: 6, bloom: 4 } as const;
 export type HanamaruStyle = keyof typeof HANAMARU_ODDS;
 
 /** The hanamaru a player gets for a problem: fixed per answer, so every screen and share image agree. */
-export function hanamaruFor(publicId: string | null, problemId: number): HanamaruStyle {
+export function hanamaruFor(publicId: string | null, problemId: number, difficulty: Difficulty | null): HanamaruStyle {
 	let hash = 0x811c9dc5;
 	for (const char of `${publicId ?? ""}:${problemId}`) hash = Math.imul(hash ^ char.charCodeAt(0), 0x01000193);
 	// Finalise (murmur3) so that neighbouring problem ids land far apart.
@@ -31,7 +32,7 @@ export function hanamaruFor(publicId: string | null, problemId: number): Hanamar
 	hash = Math.imul(hash ^ (hash >>> 13), 0xc2b2ae35);
 	let roll = ((hash ^ (hash >>> 16)) >>> 0) % 100;
 	for (const [style, odds] of Object.entries(HANAMARU_ODDS) as [HanamaruStyle, number][]) {
-		if (roll < odds) return style;
+		if (roll < odds) return style === "bloom" && difficulty !== "hard" ? "smile" : style;
 		roll -= odds;
 	}
 	return "loop";
@@ -74,7 +75,7 @@ function curves(runs: Knot[][]): string {
  * longer and shrinks on shorter ones; it also eases off where the line bends tighter than
  * `tightRadius` and vanishes at sharp corners, so small parts, knots and joints keep their shape.
  */
-const SWAY = { min: 1.5, max: 2, fullLength: 80, waves: 3, wavelength: [26, 120], tightRadius: 12 } as const;
+const SWAY = { min: 1.25, max: 1.75, fullLength: 80, waves: 3, wavelength: [26, 120], tightRadius: 12 } as const;
 
 /** Draws lines that wander a little across their traced path, differently on every drawing. */
 function drawer(random: () => number): Draw {

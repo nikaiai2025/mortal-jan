@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Scene } from "../shared/types";
-import { handSlotAt, handSlots, meldTiles, questionText } from "./scene";
+import { RAISE, SCENE_WIDTH, handBand, handSlots, meldTiles, questionText, sceneHeight } from "./scene";
 
 describe("meldTiles", () => {
 	const pon = (target: number) => meldTiles({ type: "pon", pai: "5p", consumed: ["5pr", "5p"], target }, 0);
@@ -28,10 +28,10 @@ describe("meldTiles", () => {
 });
 
 describe("questionText", () => {
-	it("asks about the available calls", () => {
-		expect(questionText("call", [{ action: "chi_low" }, { action: "pass" }])).toBe("チーする？");
-		expect(questionText("call", [{ action: "pon" }, { action: "pass" }])).toBe("ポンする？");
-		expect(questionText("call", [{ action: "chi_mid" }, { action: "pon" }, { action: "pass" }])).toBe("鳴く？");
+	it("uses one prompt per problem kind", () => {
+		expect(questionText("discard")).toBe("何を切る？");
+		expect(questionText("riichi")).toBe("リーチする？ 何を切る？");
+		expect(questionText("call")).toBe("鳴く？");
 	});
 });
 
@@ -46,20 +46,25 @@ describe("hand slots", () => {
 		expect(slots[1].x - (slots[0].x + slots[0].w)).toBeCloseTo(0);
 	});
 
-	it("maps a tap to the tile under it, also a little above a raised tile", () => {
-		const slots = handSlots(scene());
-		const middle = (i: number) => slots[i].x + slots[i].w / 2;
-		expect(handSlotAt(scene(), middle(2), slots[2].y + 10)).toBe(2);
-		expect(handSlotAt(scene(), middle(4), slots[4].y - 20)).toBe(4);
-		expect(handSlotAt(scene(), (slots[3].x + slots[3].w + slots[4].x) / 2, slots[4].y + 10)).toBeNull(); // the gap
-		expect(handSlotAt(scene(), middle(0), slots[0].y - 200)).toBeNull();
-	});
-
 	it("keeps the row inside the table when melds need room", () => {
 		const pon = { type: "pon" as const, pai: "E", consumed: ["E", "E"], target: 1 };
 		const many = { seat: 0, hand: Array(13).fill("1m"), drawn: "2m", melds: [[pon, pon, pon, pon], [], [], []] } as unknown as Scene;
 		const slots = handSlots(many);
 		expect(slots[0].x).toBeGreaterThanOrEqual(0);
-		expect(slots.at(-1)!.x + slots.at(-1)!.w).toBeLessThan(1000);
+		expect(slots.at(-1)!.x + slots.at(-1)!.w).toBeLessThan(SCENE_WIDTH);
+	});
+});
+
+describe("band above the hand", () => {
+	const scene = (target: Scene["target"]) => ({ seat: 0, hand: ["1m"], drawn: null, melds: [[], [], [], []], target }) as unknown as Scene;
+
+	it("leaves the same room above call and discard hands, clear of raised tiles", () => {
+		const band = handBand();
+		expect(band.bottom).toBeGreaterThan(band.top);
+		for (const target of [null, { actor: 1, pai: "3m" }]) {
+			const slot = handSlots(scene(target))[0];
+			expect(band.bottom).toBeLessThan(slot.y - RAISE);
+			expect(slot.y + slot.h).toBeLessThan(sceneHeight());
+		}
 	});
 });

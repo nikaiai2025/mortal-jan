@@ -7,7 +7,6 @@ import {
 	displayName,
 	jstDate,
 	setOf,
-	setProblemIds,
 } from "../shared/rules";
 import type {
 	AnswerResult,
@@ -148,7 +147,7 @@ interface PlayerAnswers {
 }
 
 /** A player's stats and recent answers, counted from their answers (always up to date). */
-async function playerAnswers(db: D1Database, playerId: number, now: Date): Promise<PlayerAnswers> {
+async function playerAnswers(db: D1Database, playerId: number, now: Date, includeHistory = true): Promise<PlayerAnswers> {
 	const today = jstDate(now);
 	const { results } = await db
 		.prepare("SELECT id, problem_id, score, pitari, answered_at, jst_date FROM answers WHERE player_id = ?")
@@ -170,16 +169,22 @@ async function playerAnswers(db: D1Database, playerId: number, now: Date): Promi
 		.sort(([a], [b]) => a.localeCompare(b))
 		.slice(-DAILY_CHART_DAYS)
 		.map(([date, stats]) => ({ date, ...stats }));
-	const history = results
-		.sort((a, b) => b.id - a.id)
-		.slice(0, 50)
-		.map((r) => ({ id: r.problem_id, score: r.score, pitari: r.pitari === 1, answeredAt: r.answered_at }));
+	const recent = includeHistory ? results.sort((a, b) => b.id - a.id).slice(0, 50) : [];
+	const difficulties = new Map<number, Result["difficulty"]>();
+	if (recent.length) {
+		const { results: problems } = await db
+			.prepare(`SELECT id, difficulty FROM problems WHERE id IN (${recent.map(() => "?").join(",")})`)
+			.bind(...recent.map((r) => r.problem_id))
+			.all<{ id: number; difficulty: Result["difficulty"] }>();
+		for (const problem of problems) difficulties.set(problem.id, problem.difficulty);
+	}
+	const history = recent.map((r) => ({ id: r.problem_id, difficulty: difficulties.get(r.problem_id) ?? null, score: r.score, pitari: r.pitari === 1, answeredAt: r.answered_at }));
 	return { all, today: days.get(today) ?? empty(), daily, history };
 }
 
 async function getMe(ctx: Ctx): Promise<Response> {
 	const player = await authenticate(ctx);
-	const { all, today } = await playerAnswers(ctx.env.DB, player.id, new Date());
+	const { all, today } = await playerAnswers(ctx.env.DB, player.id, new Date(), false);
 	const me: Me = { publicId: player.public_id, name: player.name, all, today };
 	return json(me);
 }
@@ -453,21 +458,20 @@ async function getSet(ctx: Ctx): Promise<Response> {
 	const set = positiveInt(ctx.params[1]);
 	if (set > Math.floor((await themeSize(db, t)) / SET_SIZE)) throw new HttpError(404, "not_found");
 	const filter = THEME_FILTERS[t];
-	const ids = filter
-		? (
-				await db
-					.prepare(`SELECT id FROM problems WHERE ${filter.column} = ? AND ${filter.column}_pos BETWEEN ? AND ? ORDER BY ${filter.column}_pos`)
-					.bind(filter.value, (set - 1) * SET_SIZE + 1, set * SET_SIZE)
-					.all<{ id: number }>()
-			).results.map((r) => r.id)
-		: setProblemIds(set);
+	const { results: entries } = await (filter
+		? db
+				.prepare(`SELECT id, difficulty FROM problems WHERE ${filter.column} = ? AND ${filter.column}_pos BETWEEN ? AND ? ORDER BY ${filter.column}_pos`)
+				.bind(filter.value, (set - 1) * SET_SIZE + 1, set * SET_SIZE)
+		: db.prepare("SELECT id, difficulty FROM problems WHERE id BETWEEN ? AND ? ORDER BY id").bind((set - 1) * SET_SIZE + 1, set * SET_SIZE)
+	).all<Pick<SetProblem, "id" | "difficulty">>();
+	const ids = entries.map((p) => p.id);
 	const { results } = await db
 		.prepare(`SELECT problem_id, action, score, pitari FROM answers WHERE player_id = ? AND problem_id IN (${ids.map(() => "?").join(",")})`)
 		.bind(player.id, ...ids)
 		.all<AnswerRow & { problem_id: number }>();
-	const problems: SetProblem[] = ids.map((id) => {
+	const problems: SetProblem[] = entries.map(({ id, difficulty }) => {
 		const row = results.find((r) => r.problem_id === id);
-		return { id, answer: row ? { action: row.action, score: row.score, pitari: row.pitari === 1 } : null };
+		return { id, difficulty, answer: row ? { action: row.action, score: row.score, pitari: row.pitari === 1 } : null };
 	});
 	return json({ theme: t, set, problems });
 }

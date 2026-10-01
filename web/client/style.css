@@ -198,29 +198,6 @@ button {
 	margin-bottom: 12px;
 }
 
-.sheet__title {
-	margin: 0;
-	font-family: var(--mincho);
-	font-size: 2.3rem;
-	font-weight: 800;
-	line-height: 1;
-}
-
-.sheet__title small {
-	font-size: 0.5em;
-	margin: 0 0.15em;
-}
-
-.kind {
-	padding: 1px 10px;
-	font-weight: 700;
-	font-size: 0.85rem;
-	color: var(--red);
-	border: 2px solid var(--red);
-	border-radius: 4px;
-	transform: rotate(-2deg);
-}
-
 .sheet__progress {
 	margin-left: auto;
 	font-weight: 700;
@@ -238,17 +215,200 @@ button {
 		0 10px 24px -12px rgba(40, 30, 10, 0.45);
 }
 
+.play .board {
+	margin-bottom: 10px;
+}
+
+/* Fit the scene in the window's height; call choices can extend it below the hand.
+   0.982 ≈ SCENE_WIDTH / sceneHeight; 120px for the header and optional set progress. */
+.sheet:has(.play) {
+	max-width: min(760px, max(360px, calc((100svh - 120px) * 0.982 + 46px)));
+}
+
+.board__surface,
+.board__scene {
+	position: relative;
+}
+
+/* The canvas grows with the call controls; the scene and its overlay keep their aspect ratio. */
 .board__canvas {
+	position: absolute;
+	inset: 0;
 	display: block;
 	width: 100%;
-	aspect-ratio: 1000 / 1068; /* SCENE_WIDTH / SCENE_HEIGHT */
+	height: 100%;
 	border-radius: 2px;
 }
 
-.board__overlay {
+.board__overlay,
+.board__controls {
 	position: absolute;
 	inset: 7px;
 	pointer-events: none;
+}
+
+.board__scene .board__overlay,
+.board__scene .board__controls {
+	inset: 0;
+}
+
+.board__answer {
+	position: relative;
+}
+
+.board__answer .answer {
+	padding: 8px 12px 12px;
+	color: #f6efdc;
+	background: none;
+	border: none;
+}
+
+.board__answer .answer__actions {
+	display: flex;
+	justify-content: flex-end;
+}
+
+.board__answer .answer__message {
+	margin: 0;
+	padding: 2px 8px;
+	background: #fffdf6;
+	border-radius: 4px;
+}
+
+.board__answer .option {
+	color: var(--ink);
+}
+
+/* The band above the hand: the question, plus confirmation for discard/riichi problems. */
+.board__prompt {
+	position: absolute;
+	left: 2%;
+	right: 2%;
+	display: flex;
+	align-items: center;
+	color: #f6efdc;
+	pointer-events: auto;
+}
+
+.board__prompt .answer {
+	position: relative;
+	flex: 1;
+	grid-template-columns: 1fr auto auto;
+	grid-template-areas: "prompt body actions";
+	gap: 0 10px;
+	padding: 0;
+	color: #f6efdc;
+	background: none;
+	border: none;
+}
+
+/* "リーチする？ 何を切る？" breaks only at its space. */
+.board__prompt .answer__question {
+	font-size: clamp(1rem, 3.6vw, 1.6rem);
+	word-break: keep-all;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.board__prompt .answer__hint {
+	font-size: clamp(0.7rem, 2.6vw, 0.9rem);
+	color: #d7e7dc;
+}
+
+.board__prompt .riichi-toggle {
+	min-height: 44px;
+	padding: 4px 8px;
+	font-size: clamp(0.875rem, 3.2vw, 1.1rem);
+	letter-spacing: 0;
+	white-space: nowrap;
+	color: #f6efdc;
+	border-color: #f6efdc;
+}
+
+.board__prompt .answer--riichi {
+	gap: 0 6px;
+}
+
+.board__prompt .riichi-toggle.is-on {
+	color: #fff6ea;
+	border-color: var(--red);
+}
+
+.board__prompt .answer .stamp-button {
+	min-width: 6.5em;
+	min-height: 44px;
+	padding: 4px 14px;
+	font-size: clamp(0.95rem, 3.4vw, 1.15rem);
+}
+
+.board__prompt .tile--confirm {
+	width: clamp(22px, 6vw, 30px);
+}
+
+/* The lit riichi toggle beside it already says so. */
+.board__prompt .answer--riichi .stamp-button .action__tag {
+	display: none;
+}
+
+/* An error floats above the band, over the river. */
+.board__prompt .answer__message {
+	position: absolute;
+	right: 0;
+	bottom: 100%;
+	margin-bottom: 4px;
+	padding: 2px 8px;
+	background: #fffdf6;
+	border-radius: 4px;
+}
+
+/* A button over each hand tile. A gold glow runs along the hand until a tile is chosen. */
+.board__tile {
+	position: absolute;
+	padding: 0;
+	background: none;
+	border: none;
+	border-radius: 12% / 9%;
+	pointer-events: auto;
+	cursor: pointer;
+	animation: tile-invite 2.6s ease-in-out calc(var(--order) * 60ms) infinite;
+	-webkit-tap-highlight-color: transparent;
+}
+
+/* Reach above the tile, where a raised tile is and fingers land. */
+.board__tile::before {
+	content: "";
+	position: absolute;
+	inset: -30% 0 -8%;
+}
+
+.board__tile[aria-pressed="true"] {
+	transform: translateY(var(--raise));
+}
+
+.board__tile:disabled {
+	cursor: default;
+}
+
+.board.is-picked .board__tile,
+.board__tile:disabled {
+	animation: none;
+}
+
+/* The tile lights up and a gold ring passes over it. */
+@keyframes tile-invite {
+	0%,
+	40%,
+	100% {
+		box-shadow:
+			inset 0 0 0 99px rgba(255, 236, 170, 0),
+			0 0 0 0 rgba(255, 209, 102, 0),
+			0 0 0 0 rgba(255, 209, 102, 0);
+	}
+	14% {
+		box-shadow:
+			inset 0 0 0 99px rgba(255, 236, 170, 0.28),
+			0 0 0 3px rgba(255, 209, 102, 0.95),
+			0 0 16px 5px rgba(255, 209, 102, 0.6);
+	}
 }
 
 /* ---- grading ---- */
@@ -266,20 +426,7 @@ button {
 	opacity: 0.12;
 }
 
-.sr-only {
-	position: absolute;
-	width: 1px;
-	height: 1px;
-	overflow: hidden;
-	clip-path: inset(50%);
-	white-space: nowrap;
-}
-
-.board.is-choosing .board__canvas {
-	cursor: pointer;
-}
-
-/* Mark, score and seal stay where they are written, above the evaluation bars (bottom 23% of the board). */
+/* Mark, score and seal stay where they are written, above the evaluation bars (bottom 27% of the board). */
 .grade__mark {
 	position: absolute;
 	left: 16%;
@@ -293,7 +440,7 @@ button {
 .grade__score {
 	position: absolute;
 	right: 4%;
-	bottom: 25%;
+	bottom: 27%;
 	font-family: var(--hand);
 	font-weight: 600;
 	font-size: clamp(3rem, 14vw, 6.4rem);
@@ -339,52 +486,66 @@ button {
 	border-radius: var(--radius);
 }
 
+.answer {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	grid-template-areas: "prompt actions";
+	align-items: center;
+	gap: 10px 12px;
+	padding: 12px 14px;
+}
+
+.answer--riichi {
+	grid-template-areas:
+		"prompt prompt"
+		"body actions";
+}
+
+.answer--call {
+	grid-template-columns: minmax(0, 1fr);
+	grid-template-areas:
+		"body"
+		"actions";
+}
+
+.answer__prompt {
+	grid-area: prompt;
+}
+
+.answer__body {
+	grid-area: body;
+}
+
+.answer__actions {
+	grid-area: actions;
+}
+
+/* An extra row below, only while there is an error to show. */
+.answer__message {
+	grid-column: 1 / -1;
+}
+
+.answer__message:empty {
+	display: none;
+}
+
+/* The same height with or without the chosen tile in it. */
+.answer .stamp-button {
+	min-height: 56px;
+}
+
 .answer__question {
 	margin: 0;
 	font-family: var(--mincho);
 	font-size: 1.35rem;
 	font-weight: 800;
+	line-height: 1.3;
 }
 
 .answer__hint {
-	margin: 2px 0 12px;
+	margin: 0;
 	font-size: 0.85rem;
 	color: var(--muted);
-}
-
-.answer__hand {
-	display: flex;
-	align-items: flex-end;
-	padding-top: 14px;
-}
-
-.hand-tile {
-	flex: 1 1 0;
-	max-width: 50px;
-	padding: 0;
-	background: none;
-	border: none;
-	cursor: pointer;
-	transition: transform 0.12s ease-out;
-}
-
-.hand-tile--drawn {
-	margin-left: 2.5%;
-}
-
-.hand-tile:disabled {
-	cursor: default;
-	opacity: 0.38;
-}
-
-.hand-tile.is-selected {
-	transform: translateY(-12px);
-}
-
-.hand-tile.is-selected .tile {
-	box-shadow:
-		0 0 0 3px var(--red),
-		0 8px 12px -4px rgba(0, 0, 0, 0.45);
 }
 
 .tile {
@@ -414,10 +575,6 @@ button {
 	width: 38px;
 }
 
-.tile--result {
-	width: 34px;
-}
-
 .tile--called {
 	box-shadow: 0 0 0 2px #e8b83a;
 }
@@ -430,15 +587,6 @@ button {
 .stamp-button .action__tag {
 	margin-right: 4px;
 	font-size: 0.85rem;
-}
-
-.answer__riichi {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	margin-bottom: 4px;
-	font-size: 0.85rem;
-	color: var(--muted);
 }
 
 .riichi-toggle {
@@ -459,8 +607,9 @@ button {
 }
 
 .answer__options {
-	display: grid;
-	gap: 10px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
 }
 
 .option {
@@ -498,7 +647,6 @@ button {
 	border-radius: 4px;
 }
 
-.answer__actions,
 .result__actions {
 	display: flex;
 	flex-wrap: wrap;
@@ -509,21 +657,9 @@ button {
 
 /* ---- result ---- */
 
-.result__answers {
-	display: grid;
-	gap: 8px;
-}
-
-.result__line {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-}
-
-.result__label {
-	min-width: 4.5em;
-	font-weight: 700;
-	color: var(--muted);
+.result > :first-child,
+.result > :first-child h3 {
+	margin-top: 0;
 }
 
 .result__list h3 {
@@ -961,6 +1097,50 @@ button {
 	background: rgba(20, 24, 22, 0.55);
 }
 
+.share__toggle {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	min-height: 44px;
+	margin-bottom: 10px;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.share__toggle input {
+	position: relative;
+	width: 44px;
+	height: 26px;
+	margin: 0;
+	appearance: none;
+	background: var(--muted);
+	border-radius: 999px;
+	cursor: pointer;
+}
+
+.share__toggle input::before {
+	position: absolute;
+	top: 3px;
+	left: 3px;
+	width: 20px;
+	height: 20px;
+	content: "";
+	background: #fffdf6;
+	border-radius: 50%;
+}
+
+.share__toggle input:checked {
+	background: var(--red);
+}
+
+.share__toggle input:checked::before {
+	transform: translateX(18px);
+}
+
+.share__message:empty {
+	display: none;
+}
+
 .share__preview {
 	display: block;
 	width: 100%;
@@ -1004,21 +1184,40 @@ button {
 		padding: 14px 10px 40px;
 	}
 
-	.sheet__title {
-		font-size: 1.9rem;
-	}
-
 	.board {
 		margin-left: -6px;
 		margin-right: -6px;
 		padding: 5px;
 	}
 
-	.board__overlay {
+	.board__overlay,
+	.board__controls {
 		inset: 5px;
 	}
 
-	.answer,
+	/* No room for the riichi hint beside the toggle; the glowing tiles show where to tap. */
+	.board__prompt .answer--riichi .answer__hint {
+		display: none;
+	}
+
+	.answer {
+		padding: 10px 10px;
+	}
+
+	.board__answer .answer {
+		padding: 6px 8px 10px;
+		gap: 8px;
+	}
+
+	.answer--call .option {
+		min-height: 48px;
+		padding: 6px 8px;
+	}
+
+	.answer--call .tile--option {
+		width: 26px;
+	}
+
 	.result {
 		padding: 14px 8px 16px;
 	}
@@ -1029,34 +1228,28 @@ button {
 	}
 }
 
-/* ---- wide screens: board and answer side by side ---- */
-
-@media (min-width: 1000px) {
-	.sheet:has(.play) {
-		max-width: 1200px;
+@media (max-width: 360px) {
+	.board__answer .option {
+		padding-inline: 6px;
 	}
 
-	.play {
-		display: grid;
-		grid-template-columns: minmax(0, 1.2fr) minmax(360px, 1fr);
-		gap: 24px;
-		align-items: start;
+	.board__answer .tile--option {
+		width: 24px;
 	}
 
-	.play .board {
-		margin: 0;
-	}
-
-	.play .answer,
-	.play .result {
-		position: sticky;
-		top: 76px;
+	.board__answer .action__tag {
+		margin-right: 4px;
 	}
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.hand-tile {
-		transition: none;
+	/* A still ring instead of the moving glow. */
+	.board__tile {
+		animation: none;
+	}
+
+	.board:not(.is-picked) .board__tile:not(:disabled) {
+		box-shadow: 0 0 0 2px rgba(255, 209, 102, 0.7);
 	}
 }
 

@@ -5,7 +5,7 @@ import type { Profile, Question, Result, SetProblem } from "../shared/types";
 import { currentPublicId } from "./api";
 import { h } from "./dom";
 import { hanamaruFor, paintMark, RED_INK } from "./marks";
-import { SCENE_HEIGHT, SCENE_WIDTH, drawScene, preloadScene, questionText } from "./scene";
+import { SCENE_WIDTH, drawScene, preloadScene, questionText, sceneHeight } from "./scene";
 
 export const SITE_NAME = "もーたる何切る教室";
 export const HASHTAG = "#もーたる何切る教室";
@@ -65,28 +65,33 @@ function handScore(ctx: CanvasRenderingContext2D, score: string, x: number, y: n
 }
 
 /** Problem image on top; below it the mark and score, without revealing any answer. */
-export async function problemCard(question: Question, result: Result): Promise<HTMLCanvasElement> {
+export async function problemCard(question: Question, result: Result, includeResult = true): Promise<HTMLCanvasElement> {
 	await Promise.all([preloadScene(question.scene, question.choices), document.fonts.ready]);
 	const [element, ctx] = canvas();
-	// The scene is drawn SCENE_WIDTH wide with a paper margin, which leaves the bottom for the result.
+	// The scene is drawn with a paper margin, which leaves the bottom for the result.
 	paper(ctx, 0);
-	const margin = (WIDTH - SCENE_WIDTH) / 2;
+	const margin = 40;
+	const sceneWidth = WIDTH - 2 * margin;
 	ctx.save();
 	ctx.translate(margin, margin);
-	drawScene(ctx, question.scene, SCENE_WIDTH, { problemId: question.id });
+	drawScene(ctx, question.scene, sceneWidth, { problemId: question.id, kind: question.kind });
 	ctx.restore();
-	const bottom = margin + SCENE_HEIGHT;
-	paintMark(ctx, markOf(result.answer.score, result.answer.pitari), 56, bottom + 30, 220, hanamaruFor(currentPublicId(), result.id));
-	handScore(ctx, String(result.answer.score), 318, bottom + 168, 150);
-	ctx.textAlign = "left";
+	// The mark (220 tall) with the score and the question beside it, centred between the scene and the footer.
+	const bottom = margin + (sceneHeight() * sceneWidth) / SCENE_WIDTH;
+	const top = bottom + (HEIGHT - 70 - bottom - 220) / 2;
+	if (includeResult) {
+		paintMark(ctx, markOf(result.answer.score, result.answer.pitari), 56, top, 220, hanamaruFor(currentPublicId(), result.id, result.difficulty));
+		handScore(ctx, String(result.answer.score), 318, top + 138, 150);
+	}
+	ctx.textAlign = includeResult ? "left" : "center";
 	ctx.fillStyle = INK;
 	ctx.font = `700 40px ${GOTHIC}`;
-	ctx.fillText(`あなたなら？ ${questionText(question.kind, question.choices)}`, 318, bottom + 238);
+	ctx.fillText(questionText(question.kind), includeResult ? 318 : WIDTH / 2, top + (includeResult ? 208 : 125));
 	footer(ctx);
 	return element;
 }
 
-export async function setCard(title: string, problems: SetProblem[]): Promise<HTMLCanvasElement> {
+export async function setCard(title: string, problems: SetProblem[], includeResult = true): Promise<HTMLCanvasElement> {
 	await document.fonts.ready;
 	const [element, ctx] = canvas();
 	paper(ctx, 0);
@@ -98,24 +103,33 @@ export async function setCard(title: string, problems: SetProblem[]): Promise<HT
 	ctx.fillStyle = INK;
 	ctx.font = `800 64px ${MINCHO}`;
 	ctx.fillText(title, 72, 150);
-	handScore(ctx, total.toFixed(1), 72, 380, 190);
-	ctx.fillStyle = INK;
-	ctx.font = `700 44px ${GOTHIC}`;
-	ctx.fillText(`ピタリ ${pitari} / ${problems.length}`, 80, 470);
+	if (includeResult) {
+		handScore(ctx, total.toFixed(1), 72, 380, 190);
+		ctx.fillStyle = INK;
+		ctx.font = `700 44px ${GOTHIC}`;
+		ctx.fillText(`ピタリ ${pitari} / ${problems.length}`, 80, 470);
+	} else {
+		ctx.font = `700 44px ${GOTHIC}`;
+		ctx.fillText(`同じ${problems.length}問に挑戦`, 72, 270);
+	}
 
 	problems.forEach((problem, index) => {
 		const column = index % 2;
 		const row = Math.floor(index / 2);
 		const x = 80 + column * 480;
-		const y = 560 + row * 150;
-		const mark: Mark = problem.answer ? markOf(problem.answer.score, problem.answer.pitari) : "batsu";
-		paintMark(ctx, mark, x, y, 110, hanamaruFor(currentPublicId(), problem.id));
+		const y = includeResult ? 560 + row * 150 : 350 + row * 185;
+		if (includeResult) {
+			const mark: Mark = problem.answer ? markOf(problem.answer.score, problem.answer.pitari) : "batsu";
+			paintMark(ctx, mark, x, y, 110, hanamaruFor(currentPublicId(), problem.id, problem.difficulty));
+		}
 		ctx.fillStyle = INK;
-		ctx.font = `600 34px ${GOTHIC}`;
-		ctx.fillText(`第${problem.id}問`, x + 132, y + 50);
-		ctx.fillStyle = RED_INK;
-		ctx.font = `600 44px ${HAND}`;
-		ctx.fillText(`${problem.answer?.score ?? 0}点`, x + 132, y + 104);
+		ctx.font = `600 ${includeResult ? 34 : 44}px ${GOTHIC}`;
+		ctx.fillText(`第${problem.id}問`, x + (includeResult ? 132 : 0), y + 50);
+		if (includeResult) {
+			ctx.fillStyle = RED_INK;
+			ctx.font = `600 44px ${HAND}`;
+			ctx.fillText(`${problem.answer?.score ?? 0}点`, x + 132, y + 104);
+		}
 	});
 	footer(ctx);
 	return element;
@@ -161,12 +175,22 @@ async function toFile(element: HTMLCanvasElement, name: string): Promise<File> {
 }
 
 /** Preview dialog: OS share sheet when it accepts images, otherwise save + X post screen. */
-export async function openShare(element: HTMLCanvasElement, text: string, url: string, name: string): Promise<void> {
+export async function openShare(
+	element: HTMLCanvasElement,
+	text: string,
+	url: string,
+	name: string,
+	withoutResult?: () => Promise<{ element: HTMLCanvasElement; text: string; url: string }>,
+): Promise<void> {
 	const file = await toFile(element, name);
+	const initial = { file, text, url };
+	let current = initial;
+	let revision = 0;
 	const preview = h("img", { class: "share__preview", src: URL.createObjectURL(file), alt: "共有する画像" });
 	const dialog = h("dialog", { class: "share" }) as HTMLDialogElement;
 	const close = () => dialog.close();
 	dialog.addEventListener("close", () => {
+		revision++;
 		URL.revokeObjectURL(preview.src);
 		dialog.remove();
 	});
@@ -180,7 +204,7 @@ export async function openShare(element: HTMLCanvasElement, text: string, url: s
 					type: "button",
 					onclick: async () => {
 						try {
-							await navigator.share({ files: [file], text: `${text}\n${url}` });
+							await navigator.share({ files: [current.file], text: `${current.text}\n${current.url}` });
 							close();
 						} catch {
 							// cancelled
@@ -197,15 +221,51 @@ export async function openShare(element: HTMLCanvasElement, text: string, url: s
 	};
 	const postToX = () => {
 		save();
-		window.open(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank", "noopener");
+		window.open(`https://x.com/intent/post?text=${encodeURIComponent(current.text)}&url=${encodeURIComponent(current.url)}`, "_blank", "noopener");
 	};
+	const closeButton = h("button", { class: "ghost-button", type: "button", onclick: close }, "閉じる");
 	actions.append(
 		h("button", { class: "ghost-button", type: "button", onclick: save }, "画像を保存"),
 		h("button", { class: "ghost-button", type: "button", onclick: postToX }, "Xに投稿"),
-		h("button", { class: "ghost-button", type: "button", onclick: close }, "閉じる"),
+		closeButton,
 	);
+	const message = h("p", { class: "form-message share__message", role: "alert" });
+	const toggle = h("input", { type: "checkbox", role: "switch", checked: true });
+	if (withoutResult) {
+		toggle.addEventListener("change", async () => {
+			const update = ++revision;
+			const includeResult = toggle.checked;
+			const busy = (value: boolean) => {
+				dialog.setAttribute("aria-busy", String(value));
+				for (const button of actions.querySelectorAll("button")) if (button !== closeButton) button.disabled = value;
+			};
+			message.textContent = "";
+			busy(true);
+			try {
+				let next = initial;
+				if (!includeResult) {
+					const content = await withoutResult();
+					next = { file: await toFile(content.element, name), text: content.text, url: content.url };
+				}
+				if (update !== revision || !dialog.open) return;
+				const oldUrl = preview.src;
+				preview.src = URL.createObjectURL(next.file);
+				current = next;
+				URL.revokeObjectURL(oldUrl);
+			} catch (error) {
+				if (update !== revision || !dialog.open) return;
+				console.error(error);
+				toggle.checked = current === initial;
+				message.textContent = "画像を生成できませんでした。もう一度切り替えてください。";
+			} finally {
+				if (update === revision && dialog.open) busy(false);
+			}
+		});
+		dialog.append(h("label", { class: "share__toggle" }, "採点結果を含める", toggle));
+	}
 	dialog.append(
 		preview,
+		message,
 		h("p", { class: "share__note" }, "Xに投稿するときは、保存した画像を投稿画面で添付してください。"),
 		actions,
 	);
