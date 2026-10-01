@@ -12,8 +12,10 @@ const RIVER_W = 44;
 const RIVER_H = 59;
 const HAND_W = 66;
 const HAND_H = 88;
-const PANEL_HALF = 115;
-const RIVER_Y = PANEL_HALF + 26; // room for a riichi stick between the panel and the river
+// The centre panel is wider than tall: the side players' scores stand upright in it.
+const PANEL_HALF_X = 175;
+const PANEL_HALF_Y = 105;
+const RIVER_GAP = 26; // room for a riichi stick between the panel and a river
 const RIVER_X = -3 * RIVER_W;
 const RIVER_ROW = 6;
 const EDGE = SCENE_WIDTH / 2; // the table's centre, on both axes
@@ -135,8 +137,10 @@ export function drawScene(ctx: CanvasRenderingContext2D, scene: Scene, width: nu
 		const seat = (scene.seat + relative) % 4;
 		ctx.save();
 		ctx.rotate(ROTATIONS[relative]);
-		if (scene.riichi[seat]) drawRiichi(ctx);
-		drawRiver(ctx, scene, seat);
+		// Distance from the centre to the panel's edge on this seat's side.
+		const panelEdge = relative % 2 === 0 ? PANEL_HALF_Y : PANEL_HALF_X;
+		if (scene.riichi[seat]) drawRiichi(ctx, panelEdge);
+		drawRiver(ctx, scene, seat, panelEdge + RIVER_GAP);
 		if (relative > 0) drawOpponentRow(ctx, scene, seat);
 		ctx.restore();
 	}
@@ -208,7 +212,7 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 
 // ---- rivers and riichi ----
 
-function drawRiver(ctx: CanvasRenderingContext2D, scene: Scene, seat: number): void {
+function drawRiver(ctx: CanvasRenderingContext2D, scene: Scene, seat: number, riverY: number): void {
 	const river = scene.rivers[seat];
 	const isTarget = scene.target?.actor === seat;
 	let sidewaysPending = false;
@@ -225,7 +229,7 @@ function drawRiver(ctx: CanvasRenderingContext2D, scene: Scene, seat: number): v
 		// Rows of six; the third row takes the rest.
 		const row = Math.min(Math.floor(slot / RIVER_ROW), 2);
 		if (slot === RIVER_ROW || slot === 2 * RIVER_ROW) x = RIVER_X;
-		const y = RIVER_Y + row * RIVER_H;
+		const y = riverY + row * RIVER_H;
 		const width = sideways ? RIVER_H : RIVER_W;
 		drawTile(ctx, tile.pai, x, sideways ? y + (RIVER_H - RIVER_W) : y, RIVER_W, RIVER_H, {
 			sideways,
@@ -238,9 +242,10 @@ function drawRiver(ctx: CanvasRenderingContext2D, scene: Scene, seat: number): v
 }
 
 /** A riichi player: a lit stick, a label, and a red wash under the river. */
-function drawRiichi(ctx: CanvasRenderingContext2D): void {
+function drawRiichi(ctx: CanvasRenderingContext2D, panelEdge: number): void {
+	const riverY = panelEdge + RIVER_GAP;
 	ctx.fillStyle = "rgba(214, 42, 30, 0.3)";
-	roundRect(ctx, RIVER_X - 10, RIVER_Y - 8, RIVER_W * 6 + 20, RIVER_H * 3 + 16, 12);
+	roundRect(ctx, RIVER_X - 10, riverY - 8, RIVER_W * 6 + 20, RIVER_H * 3 + 16, 12);
 	ctx.fill();
 	ctx.strokeStyle = "rgba(255, 120, 100, 0.7)";
 	ctx.lineWidth = 3;
@@ -248,7 +253,7 @@ function drawRiichi(ctx: CanvasRenderingContext2D): void {
 
 	const w = 150;
 	const h = 13;
-	const y = PANEL_HALF + 8;
+	const y = panelEdge + 8;
 	ctx.save();
 	ctx.shadowColor = COLORS.accent;
 	ctx.shadowBlur = 16;
@@ -357,7 +362,8 @@ const BAR_MAX = 83;
 /** AI evaluation of each hand tile as bars rising from the hand into the strip below the own river (after answering). */
 function drawBars(ctx: CanvasRenderingContext2D, scene: Scene, bars: HandBar[], progress: number): void {
 	const slots = handSlots(scene);
-	const base = slots[0].y - RAISE - 6;
+	// Clear of a selected tile, which rises by RAISE.
+	const base = slots[0].y - RAISE - 12;
 	ctx.textAlign = "center";
 	ctx.textBaseline = "alphabetic";
 	for (const slot of slots) {
@@ -391,44 +397,62 @@ function drawBars(ctx: CanvasRenderingContext2D, scene: Scene, bars: HandBar[], 
 
 function drawPanel(ctx: CanvasRenderingContext2D, scene: Scene): void {
 	ctx.fillStyle = COLORS.panel;
-	roundRect(ctx, -PANEL_HALF, -PANEL_HALF, PANEL_HALF * 2, PANEL_HALF * 2, 16);
+	roundRect(ctx, -PANEL_HALF_X, -PANEL_HALF_Y, PANEL_HALF_X * 2, PANEL_HALF_Y * 2, 16);
 	ctx.fill();
 	ctx.strokeStyle = COLORS.panelLine;
 	ctx.lineWidth = 2;
-	roundRect(ctx, -PANEL_HALF + 6, -PANEL_HALF + 6, PANEL_HALF * 2 - 12, PANEL_HALF * 2 - 12, 11);
+	roundRect(ctx, -PANEL_HALF_X + 6, -PANEL_HALF_Y + 6, PANEL_HALF_X * 2 - 12, PANEL_HALF_Y * 2 - 12, 11);
 	ctx.stroke();
 
-	drawRound(ctx, scene, -54);
-	drawDeadWall(ctx, scene, -22);
+	drawRound(ctx, scene, -40);
+	drawDeadWall(ctx, scene, -14);
 	ctx.textAlign = "center";
 	ctx.textBaseline = "middle";
 	ctx.fillStyle = COLORS.dim;
 	ctx.font = `500 17px ${FONT}`;
-	ctx.fillText(`残り${scene.tilesLeft}`, 0, 44);
+	ctx.fillText(`残り${scene.tilesLeft}`, 0, 36);
 
-	// Each seat's score faces that seat, as on an automatic table.
-	for (let relative = 0; relative < 4; relative++) {
+	// Every score stands upright, on its player's side: one line above and below, two lines left and right.
+	const sides: [relative: number, x: number, y: number][] = [
+		[0, 0, PANEL_HALF_Y - 24],
+		[1, PANEL_HALF_X - 56, 0],
+		[2, 0, -(PANEL_HALF_Y - 24)],
+		[3, -(PANEL_HALF_X - 56), 0],
+	];
+	for (const [relative, x, y] of sides) {
 		const seat = (scene.seat + relative) % 4;
-		const wind = (seat - scene.oya + 4) % 4;
-		ctx.save();
-		ctx.rotate(ROTATIONS[relative]);
-		ctx.font = `700 22px ${FONT}`;
+		const wind = WINDS[(seat - scene.oya + 4) % 4];
+		const windColor = seat === scene.oya ? COLORS.oya : COLORS.text;
 		const score = scene.scores[seat].toLocaleString("en-US");
-		const scoreWidth = ctx.measureText(score).width;
-		ctx.textAlign = "left";
-		ctx.fillStyle = wind === 0 ? COLORS.oya : COLORS.text;
-		ctx.fillText(WINDS[wind], -(scoreWidth + 30) / 2, PANEL_HALF - 24);
-		ctx.fillStyle = COLORS.text;
-		ctx.fillText(score, -(scoreWidth + 30) / 2 + 30, PANEL_HALF - 24);
-		ctx.restore();
+		ctx.textBaseline = "middle";
+		ctx.font = `800 28px ${FONT}`;
+		if (relative % 2 === 0) {
+			const scoreWidth = ctx.measureText(score).width;
+			ctx.font = `700 24px ${FONT}`;
+			const windWidth = ctx.measureText(wind).width + 8;
+			const left = x - (windWidth + scoreWidth) / 2;
+			ctx.textAlign = "left";
+			ctx.fillStyle = windColor;
+			ctx.fillText(wind, left, y);
+			ctx.font = `800 28px ${FONT}`;
+			ctx.fillStyle = COLORS.text;
+			ctx.fillText(score, left + windWidth, y);
+		} else {
+			ctx.textAlign = "center";
+			ctx.fillStyle = COLORS.text;
+			ctx.fillText(score, x, y + 16);
+			ctx.font = `700 24px ${FONT}`;
+			ctx.fillStyle = windColor;
+			ctx.fillText(wind, x, y - 16);
+		}
 	}
 }
 
 /** "東1局" in a framed box; beside it the deposited 1000-point sticks and the honba (100-point sticks). */
 function drawRound(ctx: CanvasRenderingContext2D, scene: Scene, y: number): void {
 	const label = `${BAKAZE[scene.bakaze]}${scene.kyoku}局`;
-	ctx.font = `800 23px ${FONT}`;
-	const boxW = ctx.measureText(label).width + 16;
+	ctx.font = `800 22px ${FONT}`;
+	const boxW = ctx.measureText(label).width + 14;
 	const boxH = 36;
 	const left = -(boxW + 8 + 62) / 2;
 	ctx.fillStyle = "#121b18";

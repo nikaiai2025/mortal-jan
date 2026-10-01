@@ -44,7 +44,15 @@ export async function showProblem(root: HTMLElement, response: ProblemResponse, 
 }
 
 const rulesNote = () =>
-	h("p", { class: "rules-note" }, "天鳳段位戦準拠の東南戦。対戦相手の3人も同じAI（Mortal）です。", h("a", { href: "/rules" }, "ルール"));
+	h(
+		"p",
+		{ class: "rules-note" },
+		"東南戦（半荘戦）　4人ともガチレベルの打ち手",
+		h("br"),
+		"赤ドラあり（5萬・5筒・5索に各1枚）。喰いタン・後付けあり。一発・裏ドラ・槓ドラあり。",
+		h("br"),
+		h("a", { href: "/rules" }, "詳細ルール"),
+	);
 
 function heading(question: Question, options: PlayOptions): HTMLElement {
 	return h(
