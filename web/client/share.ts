@@ -87,12 +87,8 @@ function handScore(ctx: CanvasRenderingContext2D, score: string, x: number, y: n
 	ctx.fillText("点", x + width + 6, y);
 }
 
-/** The headline under a problem image shared without its result. */
-function headlineText(kind: ProblemKind): string {
-	if (kind === "discard") return "あなたなら、何を切る？";
-	if (kind === "riichi") return "あなたなら、リーチする？";
-	return "あなたなら、鳴く？";
-}
+/** The headline under a problem image shared without its result: the question itself. */
+const headlineText = (kind: ProblemKind): string => questionText(kind);
 
 /** Site name and host at the right end of a line (the problem card's headline or name line); returns the x where it starts. */
 function siteMark(ctx: CanvasRenderingContext2D, baseline: number): number {
@@ -236,9 +232,8 @@ export async function problemCard(question: Question, result: Result, includeRes
 		problemId: question.id,
 		kind: question.kind,
 		choices: question.choices,
+		// The question stays where the page shows it; the headline under the board carries it.
 		prompt: includeResult ? undefined : questionText(question.kind),
-		promptSize: 44,
-		promptColor: "#ffd166",
 		hand,
 	});
 	ctx.restore();
