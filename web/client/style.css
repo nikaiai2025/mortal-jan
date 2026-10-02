@@ -199,49 +199,72 @@ button {
 	font-size: 0.85rem;
 }
 
-/* ---- picking the next problem ---- */
+/* ---- segmented switch (ランダム | 番号順) ---- */
 
-.picker {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 6px 10px;
-	margin: 10px 0 0;
+.segmented {
+	display: inline-flex;
+	padding: 3px;
+	background: var(--paper-deep);
+	border-radius: 999px;
+}
+
+.segmented button {
+	min-height: 32px;
+	padding: 2px 16px;
 	font-size: 0.85rem;
+	font-weight: 700;
+	color: var(--muted);
+	background: none;
+	border: 0;
+	border-radius: 999px;
+	cursor: pointer;
+	transition:
+		background-color 0.15s,
+		color 0.15s;
 }
 
-.notice .picker {
-	justify-content: center;
-	margin: 16px 0;
+.segmented button[aria-pressed="true"] {
+	color: var(--paper);
+	background: var(--ink);
 }
 
-.picker__label {
+/* Above the result's buttons, beside "次の問題へ": how the next problem is chosen. */
+.result__next {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 10px;
+	margin-top: 14px;
+	font-size: 0.85rem;
 	font-weight: 700;
 	color: var(--muted);
 }
 
-.picker select,
-.picker input {
+.notice .result__next {
+	justify-content: center;
+	margin: 14px 0 18px;
+}
+
+/* Opening a problem by number, on the problem sets page. */
+.set-jump {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin: 0 0 14px;
+	font-size: 0.9rem;
+}
+
+.set-jump input {
+	width: 5.5em;
 	min-height: 32px;
+	margin: 0 4px;
 	padding: 2px 6px;
 	font: inherit;
-	font-size: 0.85rem;
+	font-size: 0.9rem;
 	color: var(--ink);
 	background: #fffdf6;
 	border: 1.5px solid var(--paper-edge);
 	border-radius: 6px;
-}
-
-.picker__jump {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	margin: 0;
-}
-
-.picker__jump input {
-	width: 5.5em;
-	margin: 0 2px;
 }
 
 /* ---- problem sheet ---- */
@@ -1422,12 +1445,6 @@ button {
 		grid-row: 4;
 	}
 
-	/* The picker sits at the bottom of the flexible row, just above the answer or the result. */
-	.play > .picker {
-		grid-row: 3;
-		align-self: end;
-		margin: 12px 0;
-	}
 }
 
 @media (prefers-reduced-motion: reduce) {

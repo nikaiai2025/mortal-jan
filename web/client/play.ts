@@ -16,8 +16,8 @@ export interface PlayOptions {
 	/** Shown after the answer, never between the board and it: a message to the player, and set progress. */
 	notice?: string;
 	progress?: string;
-	/** How the next problem is chosen (free play); under the info, above the rules. */
-	controls?: HTMLElement;
+	/** Beside "次の問題へ": the switch between random and number order (when the next problem is free play). */
+	nextSwitch?: HTMLElement;
 	from: string | null;
 	nextLabel: string;
 	onNext(): void;
@@ -58,9 +58,9 @@ function info(options: PlayOptions): HTMLElement | null {
 	);
 }
 
-/** The board first, so that nothing pushes it down; under it the answer or the result, then the info, the controls and the rules. */
+/** The board first, so that nothing pushes it down; under it the answer or the result, then the info and the rules. */
 const play = (view: Board, below: HTMLElement, options: PlayOptions) =>
-	h("div", { class: "play" }, view.element, below, info(options), options.controls ?? null, rulesNote());
+	h("div", { class: "play" }, view.element, below, info(options), rulesNote());
 
 async function showQuestion(root: HTMLElement, question: Question, options: PlayOptions): Promise<void> {
 	const view = await board(question);
@@ -187,6 +187,7 @@ function resultCard(result: Result, options: PlayOptions): HTMLElement {
 		{ class: "result", "aria-label": "結果" },
 		result.kind === "call" ? h("div", { class: "result__list" }, h("h3", {}, "候補ごとのAI評価"), list) : null,
 		meta,
+		options.nextSwitch ? h("div", { class: "result__next" }, h("span", {}, "次の問題"), options.nextSwitch) : null,
 		h(
 			"div",
 			{ class: "result__actions" },

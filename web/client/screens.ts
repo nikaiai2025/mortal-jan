@@ -27,7 +27,7 @@ import { h, replace } from "./dom";
 import { errorMessage } from "./errors";
 import { dailyChart } from "./chart";
 import { hanamaruFor, markIcon } from "./marks";
-import { advancePick, loadPick, pickPath, pickerControls, savePick } from "./picker";
+import { advancePick, loadPick, modeSwitch, pickPath, savePick } from "./picker";
 import { showProblem } from "./play";
 import { reviewNext, saveReview } from "./review";
 import { openShare, profileCard, setCard } from "./share";
@@ -44,10 +44,10 @@ export interface App {
 export async function freePlay(root: HTMLElement, app: App): Promise<void> {
 	const pick = loadPick();
 	const response = await api<ProblemResponse>(pickPath(pick));
-	const controls = pickerControls(app.navigate);
 	if (response.state === "finished") {
+		// Number order reached the last problem (random play ends only when every problem is answered).
 		const restart = () => {
-			savePick({ ...loadPick(), after: { ...pick.after, [pick.theme]: 0 } });
+			savePick({ ...loadPick(), after: 0 });
 			app.refresh();
 		};
 		replace(
@@ -55,22 +55,29 @@ export async function freePlay(root: HTMLElement, app: App): Promise<void> {
 			h(
 				"section",
 				{ class: "notice" },
-				h("h2", {}, pick.mode === "order" ? `${SET_THEME_LABELS[pick.theme]}の問題を番号順に最後まで解きました` : `${SET_THEME_LABELS[pick.theme]}の問題をすべて解きました`),
-				pick.mode === "order" ? h("button", { class: "stamp-button", type: "button", onclick: restart }, "最初から") : null,
-				controls,
-				h("button", { class: "ghost-button", type: "button", onclick: app.refresh }, "この設定で出題"),
+				h("h2", {}, pick.mode === "order" ? "番号順に最後まで解きました" : "全問解きました"),
+				h("div", { class: "result__next" }, h("span", {}, "次の問題"), modeSwitch()),
+				pick.mode === "order"
+					? h("button", { class: "stamp-button", type: "button", onclick: restart }, "最初から")
+					: h("p", {}, "すべての問題に回答済みです。"),
 			),
 		);
 		return;
 	}
-	await showProblem(root, response, { from: null, nextLabel: "次の問題へ", onNext: app.refresh, onAnswered: (result) => advancePick(pick, result.id), controls });
+	await showProblem(root, response, {
+		from: null,
+		nextLabel: "次の問題へ",
+		onNext: app.refresh,
+		onAnswered: (result) => advancePick(pick, result.id),
+		nextSwitch: modeSwitch(),
+	});
 }
 
 export async function problemPage(root: HTMLElement, id: number, app: App): Promise<void> {
 	const params = new URLSearchParams(location.search);
 	const from = params.get("from");
 	const response = await api<ProblemResponse>(`/api/problems/${id}${from ? `?from=${encodeURIComponent(from)}` : ""}`);
-	if (!params.has("review")) return showProblem(root, response, { from, nextLabel: "次の問題へ", onNext: () => app.navigate("/") });
+	if (!params.has("review")) return showProblem(root, response, { from, nextLabel: "次の問題へ", onNext: () => app.navigate("/"), nextSwitch: modeSwitch() });
 	// Reviewing misses from the profile: on to the next one in the list, or back to the profile.
 	const next = reviewNext(id);
 	await showProblem(root, response, {
@@ -85,7 +92,7 @@ export async function problemPage(root: HTMLElement, id: number, app: App): Prom
 const setTitle = (theme: SetTheme, set: number) =>
 	theme === "all" ? `問題集 第${set}集` : `問題集 ${SET_THEME_LABELS[theme]}編 第${set}集`;
 
-export async function setList(root: HTMLElement, theme: SetTheme, page: number): Promise<void> {
+export async function setList(root: HTMLElement, theme: SetTheme, page: number, app: App): Promise<void> {
 	const data = await api<{ page: number; totalSets: number; setsPerPage: number; sets: SetSummary[] }>(
 		`/api/sets?theme=${theme}&page=${page}`,
 	);
@@ -121,9 +128,24 @@ export async function setList(root: HTMLElement, theme: SetTheme, page: number):
 		{ class: "tabs", "aria-label": "テーマ" },
 		...SET_THEMES.map((t) => h("a", { class: t === theme ? "is-current" : "", href: `/sets?theme=${t}` }, SET_THEME_LABELS[t])),
 	);
+	// Opening a problem by number belongs with the lists, not on the question page.
+	const number = h("input", { type: "number", min: 1, step: 1, inputMode: "numeric", placeholder: "番号", "aria-label": "問題番号" });
+	const jump = h(
+		"form",
+		{
+			class: "set-jump",
+			onsubmit: (event: Event) => {
+				event.preventDefault();
+				const id = Number(number.value);
+				if (Number.isInteger(id) && id >= 1) app.navigate(`/q/${id}`);
+			},
+		},
+		h("label", {}, "第", number, "問を"),
+		h("button", { class: "ghost-button ghost-button--small", type: "submit" }, "開く"),
+	);
 	replace(
 		root,
-		h("header", { class: "page-head" }, h("h1", {}, "問題集"), h("p", {}, "10問ずつの問題集です。10問そろうと合計点（100点満点）が出ます。")),
+		h("header", { class: "page-head" }, h("h1", {}, "問題集"), h("p", {}, "10問ずつの問題集です。10問そろうと合計点（100点満点）が出ます。"), jump),
 		themes,
 		pager,
 		data.totalSets ? grid : h("p", { class: "empty" }, "このテーマの問題集はまだありません。"),
@@ -249,7 +271,7 @@ export function rulesPage(root: HTMLElement): Promise<void> {
 		),
 		section(
 			"遊び方",
-			"出題は「ランダム」か「番号順」を、テーマ（全問・難易度・種類）ごとに選べます。問題番号を指定して開くこともできます。",
+			"出題は「ランダム」か「番号順」を、回答後の「次の問題へ」の横で切り替えられます。難易度や種類で選ぶときと、番号を指定して開くときは問題集のページを使います。",
 			"「今日の10問」は全員に同じ10問が日替わり（日本時間0時）で出ます。別の画面で先に解いた問題は、その回答を使います。",
 			"同じ問題は1回だけ解けます。解き直しはできず、最初の回答が記録に残ります。回答済みの問題はいつでも見直せます（成績表の「間違い」から順にたどれます）。",
 			`出題は1日${DAILY_ANSWER_LIMIT.toLocaleString("ja-JP")}問までです（日本時間0時に戻ります）。`,
