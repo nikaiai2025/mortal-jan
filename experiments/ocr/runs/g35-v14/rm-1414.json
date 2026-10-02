@@ -1,0 +1,302 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 30.6,
+ "usage": {
+  "promptTokenCount": 2290,
+  "candidatesTokenCount": 1506,
+  "totalTokenCount": 9767,
+  "cachedContentTokenCount": 818,
+  "promptTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 1201
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1089
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 429
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 389
+   }
+  ],
+  "thoughtsTokenCount": 5971,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "S",
+   "number": 1,
+   "honba": 0,
+   "riichiSticks": 0
+  },
+  "dealer": "kamicha",
+  "doraIndicators": [
+   "2s",
+   "3s"
+  ],
+  "hand": {
+   "concealed": [
+    "8m",
+    "1p",
+    "2p",
+    "4p",
+    "5p",
+    "6p",
+    "8p",
+    "9p",
+    "9p",
+    "2s",
+    "6s",
+    "8s",
+    "W"
+   ],
+   "drawn": "3p"
+  },
+  "players": {
+   "self": {
+    "score": 26600,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "1m",
+       "sideways": false
+      },
+      {
+       "tile": "2s",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "C",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 30500,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "4p",
+       "sideways": false
+      },
+      {
+       "tile": "3m",
+       "sideways": false
+      },
+      {
+       "tile": "5p",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "N",
+       "N",
+       "N"
+      ],
+      "from": "shimocha"
+     },
+     {
+      "type": "pon",
+      "tiles": [
+       "4s",
+       "4s",
+       "4s"
+      ],
+      "from": "shimocha"
+     }
+    ]
+   },
+   "toimen": {
+    "score": 23500,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "3m",
+       "sideways": false
+      },
+      {
+       "tile": "3m",
+       "sideways": false
+      },
+      {
+       "tile": "5m",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "3m",
+       "sideways": false
+      },
+      {
+       "tile": "4p",
+       "sideways": false
+      },
+      {
+       "tile": "C",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "N",
+       "N",
+       "N"
+      ],
+      "from": "shimocha"
+     }
+    ]
+   },
+   "kamicha": {
+    "score": 19400,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "5s",
+       "sideways": false
+      },
+      {
+       "tile": "5s",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "5m",
+       "sideways": false
+      },
+      {
+       "tile": "4p",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "1p",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "3s",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "C",
+       "C",
+       "C"
+      ],
+      "from": "shimocha"
+     }
+    ]
+   }
+  },
+  "uncertainties": [
+   "Dora indicators could contain more than 2 tiles but only 2 are visible as face up.",
+   "The 5p in hand is considered normal 5p as it has typical coloring."
+  ]
+ }
+}

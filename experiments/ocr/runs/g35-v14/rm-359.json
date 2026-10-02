@@ -1,0 +1,143 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 24.8,
+ "usage": {
+  "promptTokenCount": 2290,
+  "candidatesTokenCount": 713,
+  "totalTokenCount": 7255,
+  "promptTokensDetails": [
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1089
+   },
+   {
+    "modality": "TEXT",
+    "tokenCount": 1201
+   }
+  ],
+  "thoughtsTokenCount": 4252,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "S",
+   "number": 1,
+   "honba": 0,
+   "riichiSticks": 0
+  },
+  "dealer": "self",
+  "doraIndicators": [],
+  "hand": {
+   "concealed": [
+    "5m",
+    "7m",
+    "5p",
+    "2s",
+    "3s",
+    "6s",
+    "5sr",
+    "8s",
+    "8s",
+    "P",
+    "C"
+   ],
+   "drawn": null
+  },
+  "players": {
+   "self": {
+    "score": 30500,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "S",
+       "S",
+       "S"
+      ],
+      "from": "shimocha"
+     }
+    ]
+   },
+   "shimocha": {
+    "score": 11100,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "9s",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "toimen": {
+    "score": 32500,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 25900,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "P",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   }
+  },
+  "uncertainties": [
+   "ドラ表示牌が画面上から確認できませんでした。",
+   "上家の河の2枚目は何も描かれていないため「白(P)」と判断しました。"
+  ]
+ }
+}

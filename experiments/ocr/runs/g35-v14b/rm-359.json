@@ -1,0 +1,140 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 17.7,
+ "usage": {
+  "promptTokenCount": 2290,
+  "candidatesTokenCount": 360,
+  "totalTokenCount": 5429,
+  "promptTokensDetails": [
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1089
+   },
+   {
+    "modality": "TEXT",
+    "tokenCount": 1201
+   }
+  ],
+  "thoughtsTokenCount": 2779,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "S",
+   "number": 1,
+   "honba": 0,
+   "riichiSticks": 0
+  },
+  "dealer": "self",
+  "doraIndicators": [],
+  "hand": {
+   "concealed": [
+    "5m",
+    "7m",
+    "5pr",
+    "2s",
+    "4s",
+    "6s",
+    "5sr",
+    "8s",
+    "8s",
+    "P",
+    "C"
+   ],
+   "drawn": null
+  },
+  "players": {
+   "self": {
+    "score": 30500,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "4p",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "S",
+       "S",
+       "S"
+      ],
+      "from": "shimocha"
+     }
+    ]
+   },
+   "shimocha": {
+    "score": 11100,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "1s",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "toimen": {
+    "score": 32500,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "S",
+       "sideways": false
+      },
+      {
+       "tile": "8s",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 25900,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "E",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   }
+  },
+  "uncertainties": [
+   "ドラ表示牌が画面上に見当たりません。",
+   "対面の最初の捨て牌（南）が緑色で表示されていますが、ツモ切り表示と判断しました。",
+   "手牌の5pおよび5sを赤ドラ（5pr, 5sr）として判定しています。"
+  ]
+ }
+}

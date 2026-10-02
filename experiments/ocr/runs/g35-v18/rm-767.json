@@ -1,0 +1,367 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 50.0,
+ "usage": {
+  "promptTokenCount": 2367,
+  "candidatesTokenCount": 1479,
+  "totalTokenCount": 13758,
+  "cachedContentTokenCount": 834,
+  "promptTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 1278
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1089
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 450
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 384
+   }
+  ],
+  "thoughtsTokenCount": 9912,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "E",
+   "number": 4,
+   "honba": 0,
+   "riichiSticks": 1
+  },
+  "dealer": "self",
+  "doraIndicators": [
+   "不明"
+  ],
+  "hand": {
+   "concealed": [
+    "3m",
+    "4m",
+    "4m",
+    "5m",
+    "8m",
+    "1p",
+    "5pr",
+    "5pr",
+    "1s",
+    "5s",
+    "5s",
+    "5s",
+    "9s"
+   ],
+   "drawn": "4m"
+  },
+  "players": {
+   "self": {
+    "score": 19500,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "8s",
+       "sideways": false
+      },
+      {
+       "tile": "1s",
+       "sideways": false
+      },
+      {
+       "tile": "5p",
+       "sideways": false
+      },
+      {
+       "tile": "7p",
+       "sideways": false
+      },
+      {
+       "tile": "8m",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "2s",
+       "sideways": false
+      },
+      {
+       "tile": "2s",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "8s",
+       "sideways": false
+      },
+      {
+       "tile": "C",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "3m",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 19000,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "3p",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "6p",
+       "sideways": false
+      },
+      {
+       "tile": "1m",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "W",
+       "W",
+       "W"
+      ],
+      "from": "kamicha"
+     },
+     {
+      "type": "pon",
+      "tiles": [
+       "5s",
+       "5s",
+       "5s"
+      ],
+      "from": "不明"
+     }
+    ]
+   },
+   "toimen": {
+    "score": 29700,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "9s",
+       "sideways": false
+      },
+      {
+       "tile": "5s",
+       "sideways": false
+      },
+      {
+       "tile": "1s",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "4s",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "C",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 29800,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "6m",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "1s",
+       "sideways": false
+      },
+      {
+       "tile": "C",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "C",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "chi",
+      "tiles": [
+       "5pr",
+       "6p",
+       "7p"
+      ],
+      "from": "kamicha"
+     },
+     {
+      "type": "pon",
+      "tiles": [
+       "F",
+       "F",
+       "F"
+      ],
+      "from": "不明"
+     },
+     {
+      "type": "pon",
+      "tiles": [
+       "8s",
+       "8s",
+       "8s"
+      ],
+      "from": "不明"
+     },
+     {
+      "type": "pon",
+      "tiles": [
+       "8p",
+       "8p",
+       "8p"
+      ],
+      "from": "不明"
+     }
+    ]
+   }
+  },
+  "uncertainties": [
+   "ドラ表示牌が画像内に見当たらないため「不明」としました。",
+   "下家の索子の副露が5sのポンであるか、チーであるか判別が困難なため、見えている牌をベースに5sポンと推測しました。",
+   "上家のいくつかのポンについて、鳴き元のプレイヤーが特定しづらいため「不明」としています。"
+  ]
+ }
+}

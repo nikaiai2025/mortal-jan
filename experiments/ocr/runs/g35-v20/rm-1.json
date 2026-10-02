@@ -1,0 +1,392 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 33.3,
+ "usage": {
+  "promptTokenCount": 3410,
+  "candidatesTokenCount": 1548,
+  "totalTokenCount": 10861,
+  "cachedContentTokenCount": 2039,
+  "promptTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 1201
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 2209
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 718
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1321
+   }
+  ],
+  "thoughtsTokenCount": 5903,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "S",
+   "number": 2,
+   "honba": 0,
+   "riichiSticks": 1
+  },
+  "dealer": "self",
+  "doraIndicators": [
+   "6p",
+   "3s",
+   "3s"
+  ],
+  "hand": {
+   "concealed": [
+    "1m",
+    "2m",
+    "3m",
+    "4p",
+    "4p",
+    "2s",
+    "2s",
+    "2s",
+    "4s",
+    "4s",
+    "4s",
+    "8s",
+    "8s"
+   ],
+   "drawn": "6m"
+  },
+  "players": {
+   "self": {
+    "score": 38300,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "1p",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "S",
+       "sideways": false
+      },
+      {
+       "tile": "1s",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "C",
+       "sideways": false
+      },
+      {
+       "tile": "3s",
+       "sideways": false
+      },
+      {
+       "tile": "3s",
+       "sideways": false
+      },
+      {
+       "tile": "3s",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "6m",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "3s",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 17200,
+    "riichi": "true",
+    "riverRows": [
+     [
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "6p",
+       "sideways": false
+      },
+      {
+       "tile": "1m",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "6m",
+       "sideways": true
+      },
+      {
+       "tile": "3s",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "3s",
+       "sideways": false
+      },
+      {
+       "tile": "C",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "F",
+       "F",
+       "F"
+      ],
+      "from": "不明"
+     },
+     {
+      "type": "pon",
+      "tiles": [
+       "9s",
+       "9s",
+       "9s"
+      ],
+      "from": "不明"
+     }
+    ]
+   },
+   "toimen": {
+    "score": 24400,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "P",
+       "sideways": false
+      },
+      {
+       "tile": "8m",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      },
+      {
+       "tile": "3p",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "1p",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "1m",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "1s",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 19100,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      },
+      {
+       "tile": "3s",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "2p",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "2p",
+       "sideways": false
+      },
+      {
+       "tile": "C",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "3m",
+       "sideways": false
+      },
+      {
+       "tile": "1m",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "7m",
+       "sideways": false
+      },
+      {
+       "tile": "不明",
+       "sideways": false
+      },
+      {
+       "tile": "不明",
+       "sideways": false
+      },
+      {
+       "tile": "不明",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "3s",
+       "3s",
+       "3s"
+      ],
+      "from": "不明"
+     }
+    ]
+   }
+  },
+  "uncertainties": [
+   "ドラ表示牌が3枚（6p, 3s, 3s）見えているが、正確な種類および仕様",
+   "上家の河の3段目の左下にある白い牌3枚の種類",
+   "下家および上家の副露（鳴き牌）の正確な鳴き元のプレイヤー情報"
+  ]
+ }
+}

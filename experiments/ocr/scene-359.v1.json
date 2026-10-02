@@ -1,0 +1,201 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 26.7,
+ "usage": {
+  "promptTokenCount": 1947,
+  "candidatesTokenCount": 498,
+  "totalTokenCount": 5692,
+  "promptTokensDetails": [
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1089
+   },
+   {
+    "modality": "TEXT",
+    "tokenCount": 858
+   }
+  ],
+  "thoughtsTokenCount": 3247,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "S",
+   "number": 1,
+   "honba": 1,
+   "riichiSticks": 3
+  },
+  "dealer": "kamicha",
+  "doraIndicators": [
+   "9m",
+   "5mr"
+  ],
+  "hand": {
+   "concealed": [
+    "5p",
+    "8p",
+    "9p",
+    "2s",
+    "3s",
+    "4s",
+    "5sr",
+    "不明",
+    "8m",
+    "8m",
+    "不明",
+    "5mr",
+    "3m"
+   ],
+   "drawn": "4m"
+  },
+  "players": {
+   "self": {
+    "score": 29300,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "W",
+      "sideways": false
+     },
+     {
+      "tile": "8p",
+      "sideways": false
+     },
+     {
+      "tile": "1p",
+      "sideways": false
+     },
+     {
+      "tile": "S",
+      "sideways": false
+     },
+     {
+      "tile": "1s",
+      "sideways": false
+     },
+     {
+      "tile": "1s",
+      "sideways": false
+     },
+     {
+      "tile": "8p",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 23400,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "C",
+      "sideways": false
+     },
+     {
+      "tile": "W",
+      "sideways": false
+     },
+     {
+      "tile": "1s",
+      "sideways": false
+     },
+     {
+      "tile": "9m",
+      "sideways": false
+     },
+     {
+      "tile": "8p",
+      "sideways": false
+     },
+     {
+      "tile": "N",
+      "sideways": false
+     },
+     {
+      "tile": "9m",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "toimen": {
+    "score": 16500,
+    "riichi": "true",
+    "river": [
+     {
+      "tile": "2s",
+      "sideways": true
+     },
+     {
+      "tile": "3m",
+      "sideways": false
+     },
+     {
+      "tile": "8p",
+      "sideways": false
+     },
+     {
+      "tile": "9s",
+      "sideways": false
+     },
+     {
+      "tile": "F",
+      "sideways": false
+     },
+     {
+      "tile": "7m",
+      "sideways": false
+     },
+     {
+      "tile": "9p",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 27800,
+    "riichi": "true",
+    "river": [
+     {
+      "tile": "9m",
+      "sideways": false
+     },
+     {
+      "tile": "W",
+      "sideways": false
+     },
+     {
+      "tile": "N",
+      "sideways": false
+     },
+     {
+      "tile": "9m",
+      "sideways": false
+     },
+     {
+      "tile": "9m",
+      "sideways": false
+     },
+     {
+      "tile": "C",
+      "sideways": true
+     },
+     {
+      "tile": "2s",
+      "sideways": false
+     },
+     {
+      "tile": "8p",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   }
+  },
+  "uncertainties": [
+   "手牌の中に裏向きの伏せ牌が2枚あり、牌の種類を判別できないため「不明」としました。"
+  ]
+ }
+}

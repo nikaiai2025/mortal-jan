@@ -1,0 +1,133 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 14.6,
+ "usage": {
+  "promptTokenCount": 2316,
+  "candidatesTokenCount": 591,
+  "totalTokenCount": 5201,
+  "cachedContentTokenCount": 823,
+  "promptTokensDetails": [
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1089
+   },
+   {
+    "modality": "TEXT",
+    "tokenCount": 1227
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 436
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 387
+   }
+  ],
+  "thoughtsTokenCount": 2294,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "E",
+   "number": 4,
+   "honba": 0,
+   "riichiSticks": 0
+  },
+  "dealer": "kamicha",
+  "doraIndicators": [],
+  "hand": {
+   "concealed": [
+    "5mr",
+    "1p",
+    "2p",
+    "3p",
+    "4p",
+    "5pr",
+    "2s",
+    "4s",
+    "5sr",
+    "6s",
+    "8s",
+    "9s",
+    "F"
+   ],
+   "drawn": "9s"
+  },
+  "players": {
+   "self": {
+    "score": 32300,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "P",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 28400,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "W",
+       "sideways": false
+      },
+      {
+       "tile": "6p",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "toimen": {
+    "score": 20600,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 18700,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   }
+  },
+  "uncertainties": [
+   "ドラ表示牌（王牌）が画面上に表示されていません。"
+  ]
+ }
+}

@@ -1,0 +1,362 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 50.1,
+ "usage": {
+  "promptTokenCount": 2481,
+  "candidatesTokenCount": 1827,
+  "totalTokenCount": 14165,
+  "cachedContentTokenCount": 857,
+  "promptTokensDetails": [
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1089
+   },
+   {
+    "modality": "TEXT",
+    "tokenCount": 1392
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 481
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 376
+   }
+  ],
+  "thoughtsTokenCount": 9857,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "E",
+   "number": 4,
+   "honba": 0,
+   "riichiSticks": 1
+  },
+  "dealer": "self",
+  "doraIndicators": [
+   "5s",
+   "E"
+  ],
+  "hand": {
+   "concealed": [
+    "3m",
+    "4m",
+    "4m",
+    "5m",
+    "8m",
+    "2p",
+    "8p",
+    "8p",
+    "1s",
+    "4s",
+    "4s",
+    "4s",
+    "6s"
+   ],
+   "drawn": "4m"
+  },
+  "players": {
+   "self": {
+    "score": 19500,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "1s",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "8m",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "2s",
+       "sideways": false
+      },
+      {
+       "tile": "2s",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "C",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "3m",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 19000,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "5p",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "W",
+       "W",
+       "W"
+      ],
+      "from": "toimen"
+     },
+     {
+      "type": "ankan",
+      "tiles": [
+       "不明",
+       "不明",
+       "不明",
+       "不明"
+      ],
+      "from": "なし"
+     }
+    ]
+   },
+   "toimen": {
+    "score": 29700,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "C",
+       "sideways": false
+      },
+      {
+       "tile": "2s",
+       "sideways": false
+      },
+      {
+       "tile": "P",
+       "sideways": false
+      },
+      {
+       "tile": "S",
+       "sideways": false
+      },
+      {
+       "tile": "S",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "3m",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "P",
+       "sideways": false
+      },
+      {
+       "tile": "S",
+       "sideways": false
+      },
+      {
+       "tile": "S",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 29800,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "6m",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "C",
+       "sideways": false
+      },
+      {
+       "tile": "1s",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "5p",
+       "5p",
+       "5p"
+      ],
+      "from": "toimen"
+     }
+    ]
+   }
+  },
+  "uncertainties": [
+   "ドラ表示牌が5sと東であるかどうか不確実（山の表示より推測）",
+   "下家の暗カンの元の牌の種類が読み取り不可のため不明",
+   "対面と上家の河にある西(W)と南(S)の区別が曖昧"
+  ]
+ }
+}

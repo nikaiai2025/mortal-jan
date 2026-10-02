@@ -1,0 +1,646 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 59.6,
+ "usage": {
+  "promptTokenCount": 2367,
+  "candidatesTokenCount": 1715,
+  "totalTokenCount": 11288,
+  "cachedContentTokenCount": 834,
+  "promptTokensDetails": [
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1089
+   },
+   {
+    "modality": "TEXT",
+    "tokenCount": 1278
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 450
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 384
+   }
+  ],
+  "thoughtsTokenCount": 7206,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "E",
+   "number": 4,
+   "honba": 0,
+   "riichiSticks": 1
+  },
+  "dealer": "shimocha",
+  "doraIndicators": [
+   "5pr",
+   "9p",
+   "9p"
+  ],
+  "hand": {
+   "concealed": [
+    "3m",
+    "4m",
+    "4m",
+    "5m",
+    "8m",
+    "2p",
+    "5pr",
+    "8p",
+    "1s",
+    "4s",
+    "4s",
+    "4s",
+    "4s",
+    "8s"
+   ],
+   "drawn": "4m"
+  },
+  "players": {
+   "self": {
+    "score": 19500,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "1s",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "8m",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "4s",
+       "sideways": false
+      },
+      {
+       "tile": "4s",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "8s",
+       "sideways": false
+      },
+      {
+       "tile": "C",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "3m",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 19000,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "2p",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "C",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "W",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "toimen": {
+    "score": 29700,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "P",
+       "sideways": false
+      },
+      {
+       "tile": "S",
+       "sideways": false
+      },
+      {
+       "tile": "S",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "C",
+       "sideways": false
+      },
+      {
+       "tile": "4s",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "1p",
+       "sideways": false
+      },
+      {
+       "tile": "1p",
+       "sideways": false
+      },
+      {
+       "tile": "8s",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 29800,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "C",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "6m",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "C",
+       "sideways": false
+      },
+      {
+       "tile": "1s",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "6m",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   }
+  },
+  "uncertainties": [
+   "手牌の合計枚数が15枚（伏せ牌14枚＋ツモ1枚）になっており、画像生成の不整合の可能性があります。",
+   "下家の河の3段目の牌は西(W)と見られますが、不鮮明です。"
+  ]
+ },
+ "first": {
+  "round": {
+   "wind": "E",
+   "number": 4,
+   "honba": 0,
+   "riichiSticks": 1
+  },
+  "dealer": "shimocha",
+  "doraIndicators": [
+   "5p",
+   "9p",
+   "9p"
+  ],
+  "hand": {
+   "concealed": [
+    "3m",
+    "4m",
+    "4m",
+    "5m",
+    "8m",
+    "2p",
+    "5pr",
+    "8p",
+    "1s",
+    "4s",
+    "4s",
+    "4s",
+    "4s",
+    "9s"
+   ],
+   "drawn": "4m"
+  },
+  "players": {
+   "self": {
+    "score": 19500,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "1s",
+       "sideways": false
+      },
+      {
+       "tile": "4p",
+       "sideways": false
+      },
+      {
+       "tile": "4p",
+       "sideways": false
+      },
+      {
+       "tile": "8m",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "4s",
+       "sideways": false
+      },
+      {
+       "tile": "4s",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "8s",
+       "sideways": false
+      },
+      {
+       "tile": "C",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "3m",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 19000,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "2p",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "C",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "2s",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "2m",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "toimen": {
+    "score": 29700,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "P",
+       "sideways": false
+      },
+      {
+       "tile": "S",
+       "sideways": false
+      },
+      {
+       "tile": "S",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "C",
+       "sideways": false
+      },
+      {
+       "tile": "4s",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "1p",
+       "sideways": false
+      },
+      {
+       "tile": "1p",
+       "sideways": false
+      },
+      {
+       "tile": "8s",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 29800,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "C",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "6m",
+       "sideways": false
+      },
+      {
+       "tile": "4s",
+       "sideways": false
+      },
+      {
+       "tile": "C",
+       "sideways": false
+      },
+      {
+       "tile": "1s",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "6m",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   }
+  },
+  "uncertainties": [
+   "手牌の合計枚数が15枚（伏せ牌14枚＋ツモ1枚）になっており、画像生成AI等の不整合の可能性があります。",
+   "王牌のドラ表示牌が重なって複数枚見えているため、読み取りに不確実性があります。"
+  ]
+ }
+}

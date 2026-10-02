@@ -1,0 +1,323 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 41.6,
+ "usage": {
+  "promptTokenCount": 2367,
+  "candidatesTokenCount": 1670,
+  "totalTokenCount": 12494,
+  "cachedContentTokenCount": 834,
+  "promptTokensDetails": [
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1089
+   },
+   {
+    "modality": "TEXT",
+    "tokenCount": 1278
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 450
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 384
+   }
+  ],
+  "thoughtsTokenCount": 8457,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "E",
+   "number": 1,
+   "honba": 0,
+   "riichiSticks": 0
+  },
+  "dealer": "shimocha",
+  "doraIndicators": [],
+  "hand": {
+   "concealed": [
+    "4m",
+    "5mr",
+    "3p",
+    "8p",
+    "8p",
+    "9p",
+    "2s",
+    "2s",
+    "4s",
+    "4s",
+    "5s",
+    "6s",
+    "F",
+    "C"
+   ],
+   "drawn": "3p"
+  },
+  "players": {
+   "self": {
+    "score": 25000,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "W",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "2p",
+       "sideways": false
+      },
+      {
+       "tile": "1s",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "8m",
+       "sideways": false
+      },
+      {
+       "tile": "2s",
+       "sideways": false
+      },
+      {
+       "tile": "2s",
+       "sideways": false
+      },
+      {
+       "tile": "7m",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "6p",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 25000,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "8m",
+       "sideways": false
+      },
+      {
+       "tile": "1m",
+       "sideways": false
+      },
+      {
+       "tile": "5p",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "1s",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "8s",
+       "sideways": false
+      },
+      {
+       "tile": "6p",
+       "sideways": false
+      },
+      {
+       "tile": "3s",
+       "sideways": false
+      },
+      {
+       "tile": "7m",
+       "sideways": false
+      },
+      {
+       "tile": "5p",
+       "sideways": false
+      },
+      {
+       "tile": "2s",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "E",
+       "E",
+       "E"
+      ],
+      "from": "不明"
+     },
+     {
+      "type": "chi",
+      "tiles": [
+       "1m",
+       "2m",
+       "3m"
+      ],
+      "from": "不明"
+     }
+    ]
+   },
+   "toimen": {
+    "score": 25000,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "1s",
+       "sideways": false
+      },
+      {
+       "tile": "1m",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "9p",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 25000,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "8m",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "5p",
+       "sideways": false
+      },
+      {
+       "tile": "3m",
+       "sideways": false
+      },
+      {
+       "tile": "2s",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "9p",
+       "sideways": false
+      },
+      {
+       "tile": "9p",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   }
+  },
+  "uncertainties": [
+   "The hand has 15 tiles (including drawn tile), which is physically anomalous but reflects the rendering in the image.",
+   "The four West tiles in the bottom-left and the East/1m-2m-3m tiles in the top-right are rendered vertically on the sidelines; they are treated as抜きドラ or melds respectively based on appearance.",
+   "Dora indicator is not visible on the board."
+  ]
+ }
+}

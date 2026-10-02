@@ -1,0 +1,350 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 55.8,
+ "usage": {
+  "promptTokenCount": 2290,
+  "candidatesTokenCount": 1793,
+  "totalTokenCount": 15672,
+  "cachedContentTokenCount": 818,
+  "promptTokensDetails": [
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1089
+   },
+   {
+    "modality": "TEXT",
+    "tokenCount": 1201
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 429
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 389
+   }
+  ],
+  "thoughtsTokenCount": 11589,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "E",
+   "number": 4,
+   "honba": 0,
+   "riichiSticks": 1
+  },
+  "dealer": "self",
+  "doraIndicators": [
+   "5p",
+   "8p",
+   "8p"
+  ],
+  "hand": {
+   "concealed": [
+    "3m",
+    "4m",
+    "4m",
+    "5m",
+    "8m",
+    "1p",
+    "4p",
+    "4p",
+    "1s",
+    "2s",
+    "2s",
+    "2s",
+    "3s"
+   ],
+   "drawn": "4m"
+  },
+  "players": {
+   "self": {
+    "score": 19500,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "8s",
+       "sideways": false
+      },
+      {
+       "tile": "1s",
+       "sideways": false
+      },
+      {
+       "tile": "4p",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "8m",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "2s",
+       "sideways": false
+      },
+      {
+       "tile": "2s",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "8s",
+       "sideways": false
+      },
+      {
+       "tile": "C",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "3m",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 19000,
+    "riichi": "true",
+    "riverRows": [
+     [
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "4p",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "1s",
+       "sideways": true
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "8s",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "2s",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "3s",
+       "3s",
+       "3s"
+      ],
+      "from": "toimen"
+     },
+     {
+      "type": "chi",
+      "tiles": [
+       "2s",
+       "3s",
+       "4s"
+      ],
+      "from": "kamicha"
+     }
+    ]
+   },
+   "toimen": {
+    "score": 29700,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "C",
+       "sideways": false
+      },
+      {
+       "tile": "2s",
+       "sideways": false
+      },
+      {
+       "tile": "P",
+       "sideways": false
+      },
+      {
+       "tile": "S",
+       "sideways": false
+      },
+      {
+       "tile": "S",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "P",
+       "sideways": false
+      },
+      {
+       "tile": "S",
+       "sideways": false
+      },
+      {
+       "tile": "S",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 29800,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "5p",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "6m",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "C",
+       "sideways": false
+      },
+      {
+       "tile": "1s",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   }
+  },
+  "uncertainties": [
+   "下家の副露のチーについて、1枚目が横向きであり、形状から2sと判断しましたが画質により確証はありません。",
+   "対面の河の2段目の構成が1段目と重複している部分があり、一部誤読の可能性があります。",
+   "ドラ表示牌が3枚表表示されているため、槓ドラが発生していると推測されます。"
+  ]
+ }
+}

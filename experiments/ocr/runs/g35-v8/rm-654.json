@@ -1,0 +1,149 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 12.7,
+ "usage": {
+  "promptTokenCount": 4100,
+  "candidatesTokenCount": 411,
+  "totalTokenCount": 6375,
+  "cachedContentTokenCount": 2249,
+  "promptTokensDetails": [
+   {
+    "modality": "IMAGE",
+    "tokenCount": 2178
+   },
+   {
+    "modality": "TEXT",
+    "tokenCount": 1922
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 1054
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1195
+   }
+  ],
+  "thoughtsTokenCount": 1864,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "S",
+   "number": 1,
+   "honba": null,
+   "riichiSticks": null
+  },
+  "dealer": "toimen",
+  "doraIndicators": [
+   "5m"
+  ],
+  "hand": {
+   "concealed": [
+    "2m",
+    "3m",
+    "4m",
+    "7m",
+    "7m",
+    "1p",
+    "2p",
+    "8p",
+    "8p",
+    "2s",
+    "3s",
+    "C",
+    "C"
+   ],
+   "drawn": "5p"
+  },
+  "players": {
+   "self": {
+    "score": 41600,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "N",
+      "sideways": false
+     },
+     {
+      "tile": "S",
+      "sideways": false
+     },
+     {
+      "tile": "4s",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 16600,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "9m",
+      "sideways": false
+     },
+     {
+      "tile": "F",
+      "sideways": false
+     },
+     {
+      "tile": "2s",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "toimen": {
+    "score": 19700,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "6s",
+      "sideways": false
+     },
+     {
+      "tile": "1s",
+      "sideways": false
+     },
+     {
+      "tile": "N",
+      "sideways": false
+     },
+     {
+      "tile": "N",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 22100,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "W",
+      "sideways": false
+     },
+     {
+      "tile": "N",
+      "sideways": false
+     },
+     {
+      "tile": "E",
+      "sideways": false
+     },
+     {
+      "tile": "F",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   }
+  },
+  "uncertainties": []
+ }
+}

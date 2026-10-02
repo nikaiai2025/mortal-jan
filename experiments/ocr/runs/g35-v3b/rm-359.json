@@ -1,0 +1,147 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 19.9,
+ "usage": {
+  "promptTokenCount": 2350,
+  "candidatesTokenCount": 713,
+  "totalTokenCount": 6464,
+  "cachedContentTokenCount": 842,
+  "promptTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 1261
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1089
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 452
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 390
+   }
+  ],
+  "thoughtsTokenCount": 3401,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "S",
+   "number": 1,
+   "honba": 0,
+   "riichiSticks": 0
+  },
+  "dealer": "self",
+  "doraIndicators": [],
+  "hand": {
+   "concealed": [
+    "5m",
+    "7m",
+    "5p",
+    "2s",
+    "3s",
+    "6s",
+    "8s",
+    "F",
+    "F",
+    "P",
+    "C"
+   ],
+   "drawn": null
+  },
+  "players": {
+   "self": {
+    "score": 30500,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "N",
+      "sideways": false
+     },
+     {
+      "tile": "8p",
+      "sideways": false
+     },
+     {
+      "tile": "8p",
+      "sideways": false
+     }
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "S",
+       "S",
+       "S"
+      ],
+      "from": "shimocha"
+     }
+    ]
+   },
+   "shimocha": {
+    "score": 11100,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "8s",
+      "sideways": false
+     },
+     {
+      "tile": "6s",
+      "sideways": false
+     },
+     {
+      "tile": "9m",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "toimen": {
+    "score": 32500,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "E",
+      "sideways": false
+     },
+     {
+      "tile": "6s",
+      "sideways": false
+     },
+     {
+      "tile": "S",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 25900,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "E",
+      "sideways": false
+     },
+     {
+      "tile": "P",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   }
+  },
+  "uncertainties": [
+   "対面の河にある緑色の牌はデザイン上の理由で着色された「南(S)」と判断しました。",
+   "上家の河の2枚目は、少し傾いていますが「白(P)」と判断しました。",
+   "ドラ表示牌は画面内に見当たらないため空にしています。"
+  ]
+ }
+}

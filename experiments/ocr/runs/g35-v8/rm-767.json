@@ -1,0 +1,307 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 21.3,
+ "usage": {
+  "promptTokenCount": 4100,
+  "candidatesTokenCount": 922,
+  "totalTokenCount": 8815,
+  "cachedContentTokenCount": 2249,
+  "promptTokensDetails": [
+   {
+    "modality": "IMAGE",
+    "tokenCount": 2178
+   },
+   {
+    "modality": "TEXT",
+    "tokenCount": 1922
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 1054
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1195
+   }
+  ],
+  "thoughtsTokenCount": 3793,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "E",
+   "number": 4,
+   "honba": 0,
+   "riichiSticks": 2
+  },
+  "dealer": "shimocha",
+  "doraIndicators": [
+   "3p",
+   "8p"
+  ],
+  "hand": {
+   "concealed": [
+    "3m",
+    "4m",
+    "4m",
+    "5m",
+    "8m",
+    "2p",
+    "7p",
+    "8p",
+    "1s",
+    "2s",
+    "3s",
+    "3s",
+    "4s"
+   ],
+   "drawn": "4m"
+  },
+  "players": {
+   "self": {
+    "score": 19500,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "8s",
+      "sideways": false
+     },
+     {
+      "tile": "1s",
+      "sideways": false
+     },
+     {
+      "tile": "P",
+      "sideways": false
+     },
+     {
+      "tile": "4p",
+      "sideways": false
+     },
+     {
+      "tile": "8m",
+      "sideways": false
+     },
+     {
+      "tile": "9m",
+      "sideways": false
+     },
+     {
+      "tile": "9m",
+      "sideways": false
+     },
+     {
+      "tile": "2s",
+      "sideways": false
+     },
+     {
+      "tile": "3s",
+      "sideways": false
+     },
+     {
+      "tile": "9m",
+      "sideways": false
+     },
+     {
+      "tile": "5s",
+      "sideways": false
+     },
+     {
+      "tile": "C",
+      "sideways": false
+     },
+     {
+      "tile": "3m",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 19000,
+    "riichi": "true",
+    "river": [
+     {
+      "tile": "W",
+      "sideways": false
+     },
+     {
+      "tile": "1m",
+      "sideways": false
+     },
+     {
+      "tile": "E",
+      "sideways": false
+     },
+     {
+      "tile": "2s",
+      "sideways": false
+     },
+     {
+      "tile": "5s",
+      "sideways": false
+     },
+     {
+      "tile": "1s",
+      "sideways": true
+     },
+     {
+      "tile": "8p",
+      "sideways": false
+     },
+     {
+      "tile": "F",
+      "sideways": false
+     },
+     {
+      "tile": "2p",
+      "sideways": false
+     },
+     {
+      "tile": "E",
+      "sideways": false
+     },
+     {
+      "tile": "8p",
+      "sideways": false
+     },
+     {
+      "tile": "8p",
+      "sideways": false
+     },
+     {
+      "tile": "W",
+      "sideways": false
+     }
+    ],
+    "melds": [
+     {
+      "type": "ankan",
+      "tiles": [
+       "不明",
+       "5p",
+       "5pr",
+       "不明"
+      ],
+      "from": "なし"
+     }
+    ]
+   },
+   "toimen": {
+    "score": 29700,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "E",
+      "sideways": false
+     },
+     {
+      "tile": "9s",
+      "sideways": false
+     },
+     {
+      "tile": "P",
+      "sideways": false
+     },
+     {
+      "tile": "N",
+      "sideways": false
+     },
+     {
+      "tile": "N",
+      "sideways": false
+     },
+     {
+      "tile": "9m",
+      "sideways": false
+     },
+     {
+      "tile": "C",
+      "sideways": false
+     },
+     {
+      "tile": "4s",
+      "sideways": false
+     },
+     {
+      "tile": "E",
+      "sideways": false
+     },
+     {
+      "tile": "8p",
+      "sideways": false
+     },
+     {
+      "tile": "8p",
+      "sideways": false
+     },
+     {
+      "tile": "6s",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 29800,
+    "riichi": "true",
+    "river": [
+     {
+      "tile": "3m",
+      "sideways": false
+     },
+     {
+      "tile": "2m",
+      "sideways": false
+     },
+     {
+      "tile": "E",
+      "sideways": false
+     },
+     {
+      "tile": "N",
+      "sideways": false
+     },
+     {
+      "tile": "W",
+      "sideways": false
+     },
+     {
+      "tile": "C",
+      "sideways": false
+     },
+     {
+      "tile": "6s",
+      "sideways": false
+     },
+     {
+      "tile": "F",
+      "sideways": false
+     },
+     {
+      "tile": "1p",
+      "sideways": true
+     },
+     {
+      "tile": "3s",
+      "sideways": false
+     },
+     {
+      "tile": "4p",
+      "sideways": false
+     },
+     {
+      "tile": "8p",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   }
+  },
+  "uncertainties": [
+   "下家の暗槓の伏せ牌2枚を不明と判定しました"
+  ]
+ }
+}

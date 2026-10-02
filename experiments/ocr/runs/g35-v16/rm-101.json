@@ -1,0 +1,187 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 28.8,
+ "usage": {
+  "promptTokenCount": 2290,
+  "candidatesTokenCount": 812,
+  "totalTokenCount": 8820,
+  "cachedContentTokenCount": 818,
+  "promptTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 1201
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1089
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 429
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 389
+   }
+  ],
+  "thoughtsTokenCount": 5718,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "E",
+   "number": 1,
+   "honba": 0,
+   "riichiSticks": 0
+  },
+  "dealer": "kamicha",
+  "doraIndicators": [],
+  "hand": {
+   "concealed": [
+    "1m",
+    "2m",
+    "3m",
+    "3m",
+    "4m",
+    "5m",
+    "2p",
+    "5p",
+    "8p",
+    "2s",
+    "S",
+    "S",
+    "S"
+   ],
+   "drawn": "7m"
+  },
+  "players": {
+   "self": {
+    "score": 25000,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "5mr",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "4s",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 25000,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "1s",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "toimen": {
+    "score": 25000,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 25000,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "W",
+       "sideways": false
+      },
+      {
+       "tile": "7m",
+       "sideways": false
+      },
+      {
+       "tile": "4m",
+       "sideways": false
+      },
+      {
+       "tile": "P",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   }
+  },
+  "uncertainties": [
+   "ドラ表示牌が画面内に見当たりません。",
+   "盤面上に8p（八筒）が合計7枚確認でき、AI生成による不自然な盤面の可能性があります（自分の手牌に1枚、自分の河に1枚、下家の河に1枚、対面の河に2枚、上家の河に2枚）。",
+   "自分の河の3枚目は赤五萬(5mr)として読み取りましたが、やや不鮮明です。"
+  ]
+ }
+}

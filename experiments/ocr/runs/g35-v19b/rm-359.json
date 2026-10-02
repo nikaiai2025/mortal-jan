@@ -1,0 +1,257 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 50.0,
+ "usage": {
+  "promptTokenCount": 2367,
+  "candidatesTokenCount": 690,
+  "totalTokenCount": 8160,
+  "cachedContentTokenCount": 834,
+  "promptTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 1278
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1089
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 450
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 384
+   }
+  ],
+  "thoughtsTokenCount": 5103,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "S",
+   "number": 1,
+   "honba": 0,
+   "riichiSticks": 0
+  },
+  "dealer": "self",
+  "doraIndicators": [
+   "S",
+   "6s",
+   "E"
+  ],
+  "hand": {
+   "concealed": [
+    "5m",
+    "7m",
+    "4p",
+    "2s",
+    "3s",
+    "6s",
+    "7s",
+    "8s",
+    "8s",
+    "P"
+   ],
+   "drawn": "C"
+  },
+  "players": {
+   "self": {
+    "score": 30500,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "4p",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "S",
+       "S",
+       "S"
+      ],
+      "from": "shimocha"
+     }
+    ]
+   },
+   "shimocha": {
+    "score": 11100,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "toimen": {
+    "score": 32500,
+    "riichi": "true",
+    "riverRows": [
+     [
+      {
+       "tile": "E",
+       "sideways": true
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 25900,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "W",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   }
+  },
+  "uncertainties": [
+   "自分の河の3枚目の牌は8筒（8p）ではなく4筒（4p）と判別しました。"
+  ]
+ },
+ "first": {
+  "round": {
+   "wind": "S",
+   "number": 1,
+   "honba": 0,
+   "riichiSticks": 0
+  },
+  "dealer": "self",
+  "doraIndicators": [
+   "S",
+   "6s",
+   "E"
+  ],
+  "hand": {
+   "concealed": [
+    "5m",
+    "7m",
+    "4p",
+    "2s",
+    "3s",
+    "6s",
+    "7s",
+    "8s",
+    "8s",
+    "P"
+   ],
+   "drawn": "C"
+  },
+  "players": {
+   "self": {
+    "score": 30500,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "S",
+       "S",
+       "S"
+      ],
+      "from": "shimocha"
+     }
+    ]
+   },
+   "shimocha": {
+    "score": 11100,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "toimen": {
+    "score": 32500,
+    "riichi": "true",
+    "riverRows": [
+     [
+      {
+       "tile": "E",
+       "sideways": true
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 25900,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "W",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   }
+  },
+  "uncertainties": [
+   "槓が行われていないにもかかわらずドラ表示牌が3枚（南・六索・東）表示されている点",
+   "対面の河の1枚目である東（横向き）の下に、別の牌（白）のようなテクスチャが重なって見えている点"
+  ]
+ }
+}

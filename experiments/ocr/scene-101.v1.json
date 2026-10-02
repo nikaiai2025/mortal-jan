@@ -1,0 +1,212 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 49.4,
+ "usage": {
+  "promptTokenCount": 1947,
+  "candidatesTokenCount": 1068,
+  "totalTokenCount": 8374,
+  "cachedContentTokenCount": 692,
+  "promptTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 858
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1089
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 305
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 387
+   }
+  ],
+  "thoughtsTokenCount": 5359,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "E",
+   "number": 3,
+   "honba": 0,
+   "riichiSticks": 0
+  },
+  "dealer": "self",
+  "doraIndicators": [
+   "8m"
+  ],
+  "hand": {
+   "concealed": [
+    "1m",
+    "2m",
+    "2m",
+    "4m",
+    "4m",
+    "E",
+    "E",
+    "N",
+    "W",
+    "P",
+    "W",
+    "2s",
+    "4s",
+    "4s"
+   ],
+   "drawn": null
+  },
+  "players": {
+   "self": {
+    "score": 22000,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "6s",
+      "sideways": false
+     },
+     {
+      "tile": "8p",
+      "sideways": false
+     },
+     {
+      "tile": "5p",
+      "sideways": false
+     },
+     {
+      "tile": "S",
+      "sideways": false
+     },
+     {
+      "tile": "4s",
+      "sideways": false
+     },
+     {
+      "tile": "7m",
+      "sideways": false
+     },
+     {
+      "tile": "9m",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 21000,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "4s",
+      "sideways": false
+     },
+     {
+      "tile": "8m",
+      "sideways": false
+     },
+     {
+      "tile": "F",
+      "sideways": false
+     },
+     {
+      "tile": "S",
+      "sideways": false
+     },
+     {
+      "tile": "6s",
+      "sideways": false
+     },
+     {
+      "tile": "N",
+      "sideways": false
+     },
+     {
+      "tile": "3p",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "toimen": {
+    "score": 36700,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "4s",
+      "sideways": false
+     },
+     {
+      "tile": "8p",
+      "sideways": false
+     },
+     {
+      "tile": "6s",
+      "sideways": false
+     },
+     {
+      "tile": "不明",
+      "sideways": false
+     },
+     {
+      "tile": "S",
+      "sideways": false
+     },
+     {
+      "tile": "1s",
+      "sideways": false
+     },
+     {
+      "tile": "1s",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 20300,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "W",
+      "sideways": false
+     },
+     {
+      "tile": "1s",
+      "sideways": false
+     },
+     {
+      "tile": "F",
+      "sideways": false
+     },
+     {
+      "tile": "不明",
+      "sideways": false
+     },
+     {
+      "tile": "4s",
+      "sideways": false
+     }
+    ],
+    "melds": [
+     {
+      "type": "不明",
+      "tiles": [
+       "2s",
+       "2s",
+       "2s",
+       "2s"
+      ],
+      "from": "不明"
+     }
+    ]
+   }
+  },
+  "uncertainties": [
+   "対面の河の4枚目、および上家の河の4枚目は鳴かれている（「鳴」マーク）ため、牌種を不明としました。",
+   "上家の2sの槓の種類および鳴き元が不明のため、meldsのtypeとfromを不明としました。"
+  ]
+ }
+}

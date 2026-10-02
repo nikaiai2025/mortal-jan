@@ -1,0 +1,266 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 25.8,
+ "usage": {
+  "promptTokenCount": 2418,
+  "candidatesTokenCount": 1094,
+  "totalTokenCount": 8323,
+  "cachedContentTokenCount": 855,
+  "promptTokensDetails": [
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1089
+   },
+   {
+    "modality": "TEXT",
+    "tokenCount": 1329
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 470
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 385
+   }
+  ],
+  "thoughtsTokenCount": 4811,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "S",
+   "number": 1,
+   "honba": 0,
+   "riichiSticks": 0
+  },
+  "dealer": "kamicha",
+  "doraIndicators": [],
+  "hand": {
+   "concealed": [
+    "8m",
+    "1p",
+    "2p",
+    "4p",
+    "5p",
+    "6p",
+    "7p",
+    "8p",
+    "8p",
+    "2s",
+    "6s",
+    "8s",
+    "W"
+   ],
+   "drawn": "3p"
+  },
+  "players": {
+   "self": {
+    "score": 26600,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "1m",
+      "sideways": false
+     },
+     {
+      "tile": "2s",
+      "sideways": false
+     },
+     {
+      "tile": "1s",
+      "sideways": false
+     },
+     {
+      "tile": "F",
+      "sideways": false
+     },
+     {
+      "tile": "N",
+      "sideways": false
+     },
+     {
+      "tile": "E",
+      "sideways": false
+     },
+     {
+      "tile": "E",
+      "sideways": false
+     },
+     {
+      "tile": "C",
+      "sideways": false
+     },
+     {
+      "tile": "2m",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 30500,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "7m",
+      "sideways": false
+     },
+     {
+      "tile": "5p",
+      "sideways": false
+     },
+     {
+      "tile": "8m",
+      "sideways": false
+     },
+     {
+      "tile": "5p",
+      "sideways": false
+     },
+     {
+      "tile": "E",
+      "sideways": false
+     },
+     {
+      "tile": "6p",
+      "sideways": false
+     },
+     {
+      "tile": "5p",
+      "sideways": false
+     },
+     {
+      "tile": "F",
+      "sideways": false
+     }
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "1s",
+       "1s",
+       "1s"
+      ],
+      "from": "不明"
+     },
+     {
+      "type": "pon",
+      "tiles": [
+       "4s",
+       "4s",
+       "4s"
+      ],
+      "from": "不明"
+     }
+    ]
+   },
+   "toimen": {
+    "score": 23500,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "3m",
+      "sideways": false
+     },
+     {
+      "tile": "2m",
+      "sideways": false
+     },
+     {
+      "tile": "5m",
+      "sideways": false
+     },
+     {
+      "tile": "E",
+      "sideways": false
+     },
+     {
+      "tile": "3m",
+      "sideways": false
+     },
+     {
+      "tile": "4p",
+      "sideways": false
+     },
+     {
+      "tile": "C",
+      "sideways": false
+     },
+     {
+      "tile": "F",
+      "sideways": false
+     }
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "N",
+       "N",
+       "N"
+      ],
+      "from": "不明"
+     }
+    ]
+   },
+   "kamicha": {
+    "score": 19400,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "4p",
+      "sideways": false
+     },
+     {
+      "tile": "S",
+      "sideways": false
+     },
+     {
+      "tile": "1s",
+      "sideways": false
+     },
+     {
+      "tile": "5m",
+      "sideways": false
+     },
+     {
+      "tile": "2m",
+      "sideways": false
+     },
+     {
+      "tile": "1s",
+      "sideways": false
+     },
+     {
+      "tile": "9m",
+      "sideways": false
+     },
+     {
+      "tile": "S",
+      "sideways": false
+     }
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "C",
+       "C",
+       "C"
+      ],
+      "from": "不明"
+     }
+    ]
+   }
+  },
+  "uncertainties": [
+   "ドラ表示牌が画面内に見当たりません。",
+   "赤ドラ（5m, 5p, 5s）の判別が困難なため、通常の牌として処理しています。",
+   "鳴き牌の横向きの牌が小さく判別しにくいため、鳴き元（from）をすべて不明としています。"
+  ]
+ }
+}

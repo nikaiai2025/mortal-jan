@@ -18,3 +18,6 @@ web/worker/worker-configuration.d.ts
 
 # 本番の問題集の乱数seed（公開すると問題と答えを再現できる）
 generator/seeds.local.json
+
+# OCR実験の牌シート画像（experiments/ocr/tiles で再生成）
+experiments/ocr/tiles/*.png

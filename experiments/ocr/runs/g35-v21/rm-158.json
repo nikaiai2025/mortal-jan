@@ -1,0 +1,353 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 95.3,
+ "usage": {
+  "promptTokenCount": 11853,
+  "candidatesTokenCount": 3281,
+  "totalTokenCount": 272333,
+  "cachedContentTokenCount": 192943,
+  "promptTokensDetails": [
+   {
+    "modality": "IMAGE",
+    "tokenCount": 2209
+   },
+   {
+    "modality": "TEXT",
+    "tokenCount": 9644
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 63800
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 129143
+   }
+  ],
+  "toolUsePromptTokenCount": 246633,
+  "toolUsePromptTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 75829
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 170804
+   }
+  ],
+  "thoughtsTokenCount": 10566,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "E",
+   "number": 1,
+   "honba": 0,
+   "riichiSticks": 0
+  },
+  "dealer": "shimocha",
+  "doraIndicators": [],
+  "hand": {
+   "concealed": [
+    "4m",
+    "5m",
+    "3p",
+    "5p",
+    "8p",
+    "7p",
+    "2s",
+    "3s",
+    "6s",
+    "5sr",
+    "7s",
+    "8s",
+    "C"
+   ],
+   "drawn": "3p"
+  },
+  "players": {
+   "self": {
+    "score": 25000,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "W",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "4p",
+       "sideways": false
+      },
+      {
+       "tile": "1s",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "8m",
+       "sideways": false
+      },
+      {
+       "tile": "2s",
+       "sideways": false
+      },
+      {
+       "tile": "2s",
+       "sideways": false
+      },
+      {
+       "tile": "7m",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 25000,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "8m",
+       "sideways": false
+      },
+      {
+       "tile": "1m",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "9s",
+       "sideways": false
+      },
+      {
+       "tile": "1s",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "9s",
+       "sideways": false
+      },
+      {
+       "tile": "3m",
+       "sideways": false
+      },
+      {
+       "tile": "6m",
+       "sideways": false
+      },
+      {
+       "tile": "7p",
+       "sideways": false
+      },
+      {
+       "tile": "2s",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "E",
+       "E",
+       "E"
+      ],
+      "from": "toimen"
+     },
+     {
+      "type": "chi",
+      "tiles": [
+       "2m",
+       "3m",
+       "4m"
+      ],
+      "from": "kamicha"
+     }
+    ]
+   },
+   "toimen": {
+    "score": 25000,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "1s",
+       "sideways": false
+      },
+      {
+       "tile": "1m",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "6p",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "8s",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "9s",
+       "sideways": false
+      },
+      {
+       "tile": "8s",
+       "sideways": false
+      },
+      {
+       "tile": "4s",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 25000,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "8m",
+       "sideways": false
+      },
+      {
+       "tile": "3s",
+       "sideways": false
+      },
+      {
+       "tile": "3s",
+       "sideways": false
+      },
+      {
+       "tile": "3m",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "9p",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "8s",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "7m",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "daiminkan",
+      "tiles": [
+       "W",
+       "W",
+       "W",
+       "W"
+      ],
+      "from": "shimocha"
+     }
+    ]
+   }
+  },
+  "uncertainties": [
+   "ドラ表示牌が画像内のどこにも確認できないため、doraIndicatorsは空配列にしています。",
+   "上家の西の槓は、大明槓(daiminkan)として処理しました。"
+  ]
+ },
+ "code": [
+  "import cv2\nimport matplotlib.pyplot as plt\n\n# 画像読み込み\nimg = cv2.imread('input_file_0.png')\nh, w, _ = img.shape\n\n# 自分の手牌\n# 自分の手牌は下部。y: [800, 950], x: [40, 950]\nhand_img = img[int(h*0.8):int(h*0.95), int(w*0.03):int(w*0.97)]\ncv2.imwrite('hand.png', hand_img)\n\n# 中央パネル（点数、局、本場、供託）\ncenter_img = img[int(h*0.4):int(h*0.6), int(w*0.4):int(w*0.6)]\ncv2.imwrite('center.png', center_img)\n\n# 鳴きなどの確認\n# 左下の西\nleft_bottom = img[int(h*0.6):int(h*0.81), int(w*0.05):int(w*0.17)]\ncv2.imwrite('left_bottom.png', left_bottom)\n\n# 右上の鳴きらしきもの\nright_top = img[int(h*0.25):int(h*0.46), int(w*0.78):int(w*0.88)]\ncv2.imwrite('right_top.png', right_top)\n\nprint(h, w)",
+  "# 各河を切り出す\n# 自分の河 (パネルの下側)\nriver_self = img[int(h*0.6):int(h*0.72), int(w*0.35):int(w*0.65)]\ncv2.imwrite('river_self.png', river_self)\n\n# 対面の河 (パネルの上側)\nriver_toimen = img[int(h*0.31):int(h*0.43), int(w*0.37):int(w*0.63)]\ncv2.imwrite('river_toimen.png', river_toimen)\n\n# 下家の河 (パネルの右側)\nriver_shimocha = img[int(h*0.38):int(h*0.64), int(w*0.61):int(w*0.78)]\ncv2.imwrite('river_shimocha.png', river_shimocha)\n\n# 上家の河 (パネルの左側)\nriver_kamicha = img[int(h*0.38):int(h*0.64), int(w*0.22):int(w*0.38)]\ncv2.imwrite('river_kamicha.png', river_kamicha)\n",
+  "# river_shimocha.png の各牌をより詳細に表示\n# 左列（パネル側）と右列（外側）の各6枚\n# 各牌の文字・数字をしっかり見るために拡大する\nimport numpy as np\n\n# 画像を12等分\nh_s, w_s, _ = river_shimocha.shape\ntiles = []\nfor col in range(2):\n    for row in range(6):\n        tile = river_shimocha[int(row*h_s/6):int((row+1)*h_s/6), int(col*w_s/2):int((col+1)*w_s/2)]\n        tiles.append(tile)\n\n# 12枚の牌を表示用に結合\ncombined = np.zeros((int(h_s/6)*6, int(w_s/2)*2, 3), dtype=np.uint8)\nfor i in range(12):\n    row = i % 6\n    col = i // 6\n    combined[row*int(h_s/6):(row+1)*int(h_s/6), col*int(w_s/2):(col+1)*int(w_s/2)] = tiles[i]\n\ncv2.imwrite('shimocha_tiles.png', combined)\n",
+  "# 修正版\ntile_h = h_s // 6\ntile_w = w_s // 2\ncombined = np.zeros((tile_h * 6, tile_w * 2, 3), dtype=np.uint8)\nfor col in range(2):\n    for row in range(6):\n        tile = river_shimocha[row*tile_h:(row+1)*tile_h, col*tile_w:(col+1)*tile_w]\n        combined[row*tile_h:(row+1)*tile_h, col*tile_w:(col+1)*tile_w] = tile\ncv2.imwrite('shimocha_tiles.png', combined)\n",
+  "# ドラ表示牌付近を切り出す\n# y: [210, 310], x: [260, 740]\ndora_img = img[210:310, 260:740]\ncv2.imwrite('dora.png', dora_img)\n",
+  "# right_top（下家の鳴き）\n# 各牌の重なり方、横向きの牌があるかを確認する\n# 縦に並んでいるが、どういう構成か？\n# 上から3枚：東、東、東。どれかが横向き？\n# 下から3枚：二萬、三萬、四萬。どれかが横向き？\n# 左下の西4枚も同様。\nprint(\"Analyzing melds...\")\n",
+  "# 鳴き牌の拡大\nmeld_shimocha = cv2.imread('right_top.png')\n# meld_kamicha（左下）\nmeld_kamicha = cv2.imread('left_bottom.png')\n\n# 保存して確認できるようにするが、まずは各牌の向きの推測のためにプログラムでピクセルチェックなど（今回は人間が見るのが確実）\n# 実は「左下の西」は4枚。西、西、西、西。\n# これ、1枚目が横、2枚目、3枚目、4枚目、すべて縦？\n# 拡大画像を別途保存して確認する\n",
+  "# 索子の部分を拡大\nsozu_img = hand_img[:, int(hand_img.shape[1]*0.45):int(hand_img.shape[1]*0.85)]\ncv2.imwrite('sozu.png', sozu_img)\n"
+ ]
+}

@@ -1,0 +1,454 @@
+{
+ "seat": 1,
+ "bakaze": "S",
+ "kyoku": 2,
+ "honba": 0,
+ "kyotaku": 1,
+ "oya": 1,
+ "scores": [
+  19100,
+  38300,
+  17200,
+  24400
+ ],
+ "doraMarkers": [
+  "3p",
+  "6p"
+ ],
+ "tilesLeft": 15,
+ "rivers": [
+  [
+   {
+    "pai": "9s",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "F",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "2p",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "1p",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "6s",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "8s",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "W",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "2p",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "F",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "C",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "9m",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "5m",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "9m",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "N",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "W",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   }
+  ],
+  [
+   {
+    "pai": "1p",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "9p",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "8p",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "S",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "P",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": true
+   },
+   {
+    "pai": "9p",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "C",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "7s",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "5s",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "9s",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "3p",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "8m",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "6m",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "6p",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "9s",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   }
+  ],
+  [
+   {
+    "pai": "W",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "E",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "N",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "1m",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "2p",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "2m",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "2p",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "C",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "9s",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "7m",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": true
+   },
+   {
+    "pai": "7s",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": true
+   },
+   {
+    "pai": "6m",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "9m",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "3m",
+    "tsumogiri": true,
+    "riichi": true,
+    "called": false
+   }
+  ],
+  [
+   {
+    "pai": "E",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "1m",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "F",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "9m",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "1p",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "E",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "3p",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "W",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "8p",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "8m",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "P",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "E",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "1m",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": true
+   }
+  ]
+ ],
+ "melds": [
+  [
+   {
+    "type": "pon",
+    "pai": "P",
+    "consumed": [
+     "P",
+     "P"
+    ],
+    "target": 1
+   },
+   {
+    "type": "pon",
+    "pai": "7m",
+    "consumed": [
+     "7m",
+     "7m"
+    ],
+    "target": 2
+   },
+   {
+    "type": "chi",
+    "pai": "1m",
+    "consumed": [
+     "2m",
+     "3m"
+    ],
+    "target": 3
+   }
+  ],
+  [],
+  [
+   {
+    "type": "ankan",
+    "consumed": [
+     "1s",
+     "1s",
+     "1s",
+     "1s"
+    ]
+   }
+  ],
+  [
+   {
+    "type": "chi",
+    "pai": "7s",
+    "consumed": [
+     "5sr",
+     "6s"
+    ],
+    "target": 2
+   }
+  ]
+ ],
+ "riichi": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "concealedCounts": [
+  4,
+  14,
+  10,
+  10
+ ],
+ "hand": [
+  "1m",
+  "2m",
+  "3m",
+  "4p",
+  "4p",
+  "2s",
+  "2s",
+  "2s",
+  "3s",
+  "3s",
+  "4s",
+  "4s",
+  "4s"
+ ],
+ "drawn": "6m",
+ "target": null
+}

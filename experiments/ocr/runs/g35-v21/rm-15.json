@@ -1,0 +1,219 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 63.0,
+ "usage": {
+  "promptTokenCount": 8284,
+  "candidatesTokenCount": 1853,
+  "totalTokenCount": 208873,
+  "cachedContentTokenCount": 131411,
+  "promptTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 6075
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 2209
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 40624
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 90787
+   }
+  ],
+  "toolUsePromptTokenCount": 193054,
+  "toolUsePromptTokensDetails": [
+   {
+    "modality": "IMAGE",
+    "tokenCount": 136888
+   },
+   {
+    "modality": "TEXT",
+    "tokenCount": 56166
+   }
+  ],
+  "thoughtsTokenCount": 5682,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "W",
+   "number": 1,
+   "honba": 0,
+   "riichiSticks": 0
+  },
+  "dealer": "shimocha",
+  "doraIndicators": [
+   "不明"
+  ],
+  "hand": {
+   "concealed": [
+    "1m",
+    "2m",
+    "3m",
+    "1p",
+    "2p",
+    "5pr",
+    "1s",
+    "3s",
+    "8s",
+    "9s",
+    "F",
+    "C",
+    "C"
+   ],
+   "drawn": "4p"
+  },
+  "players": {
+   "self": {
+    "score": 20100,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "S",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "7m",
+       "sideways": false
+      },
+      {
+       "tile": "5sr",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 22100,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "P",
+       "sideways": false
+      },
+      {
+       "tile": "C",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "8m",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      },
+      {
+       "tile": "9s",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "toimen": {
+    "score": 28100,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "P",
+       "sideways": false
+      },
+      {
+       "tile": "2p",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "1m",
+       "sideways": false
+      },
+      {
+       "tile": "S",
+       "sideways": false
+      },
+      {
+       "tile": "1s",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 29700,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "S",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "1s",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "6m",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   }
+  },
+  "uncertainties": [
+   "Dora indicator is not shown on the table representation.",
+   "8s in this tile set has a W/M shape style.",
+   "5p in hand is a red five-pin (5pr) because all 5 circles are red.",
+   "5s in self river is a red five-sou (5sr) because the central stick is red."
+  ]
+ },
+ "code": [
+  "import cv2\nimport matplotlib.pyplot as plt\nimport numpy as np\n\n# Load the image\nimg = cv2.imread('input_file_0.png')\nh, w, c = img.shape\nprint(f\"Dimensions: {w}x{h}\")\n",
+  "# Crop central panel\ncv2.imwrite('center.png', img[400:600, 400:600])\n\n# Crop hand\ncv2.imwrite('hand.png', img[800:950, 20:980])\n\n# Crop top wall (might contain dora indicator?)\ncv2.imwrite('top_wall.png', img[220:300, 250:750])\n",
+  "# Let's crop each tile in the hand\nhand_tiles_img = img[800:940, 40:870]\ncv2.imwrite('hand_tiles.png', hand_tiles_img)\n\n# Drawn tile\ndrawn_tile_img = img[800:940, 880:960]\ncv2.imwrite('drawn_tile.png', drawn_tile_img)\n",
+  "# Let's count bamboo sticks or search the standard shapes of 6s, 8s, 4s, etc.\n# In this tile set:\n# Tile 9: green lines forming two M-like shapes? Wait, it's 6s?\n# Let's crop just that tile.\ncv2.imwrite('tile9.png', hand_tiles_img[:, 450:520])\n",
+  "cv2.imwrite('tiles_7_11.png', hand_tiles_img[:, 380:650])\n",
+  "# Crop bottom river (self)\n# From y: 580 to 680, x: 300 to 700\ncv2.imwrite('river_self.png', img[580:680, 320:620])\n\n# Crop right river (shimocha)\n# From y: 380 to 640, x: 610 to 720\ncv2.imwrite('river_shimocha.png', img[380:640, 610:720])\n\n# Crop top river (toimen)\n# From y: 340 to 440, x: 350 to 650\ncv2.imwrite('river_toimen.png', img[340:430, 350:650])\n\n# Crop left river (kamicha)\n# From y: 380 to 640, x: 270 to 380\ncv2.imwrite('river_kamicha.png', img[380:640, 270:380])\n",
+  "# Crop kamicha's 4th and 5th tiles\ncv2.imwrite('kamicha_4_5.png', river_kamicha[180:300, :])\n",
+  "river_kamicha_img = cv2.imread('river_kamicha.png')\ncv2.imwrite('kamicha_4_5.png', river_kamicha_img[120:250, :])\n"
+ ]
+}

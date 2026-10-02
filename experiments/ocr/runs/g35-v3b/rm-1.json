@@ -1,0 +1,334 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 35.4,
+ "usage": {
+  "promptTokenCount": 2350,
+  "candidatesTokenCount": 1719,
+  "totalTokenCount": 11001,
+  "cachedContentTokenCount": 842,
+  "promptTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 1261
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1089
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 452
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 390
+   }
+  ],
+  "thoughtsTokenCount": 6932,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "S",
+   "number": 2,
+   "honba": 1,
+   "riichiSticks": 0
+  },
+  "dealer": "self",
+  "doraIndicators": [
+   "1s"
+  ],
+  "hand": {
+   "concealed": [
+    "1m",
+    "2m",
+    "3m",
+    "4p",
+    "4p",
+    "1s",
+    "1s",
+    "1s",
+    "1s",
+    "1s",
+    "1s",
+    "1s",
+    "1s"
+   ],
+   "drawn": "6m"
+  },
+  "players": {
+   "self": {
+    "score": 38300,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "5p",
+      "sideways": false
+     },
+     {
+      "tile": "6p",
+      "sideways": false
+     },
+     {
+      "tile": "8p",
+      "sideways": false
+     },
+     {
+      "tile": "S",
+      "sideways": false
+     },
+     {
+      "tile": "C",
+      "sideways": false
+     },
+     {
+      "tile": "6s",
+      "sideways": false
+     },
+     {
+      "tile": "6s",
+      "sideways": false
+     },
+     {
+      "tile": "6s",
+      "sideways": false
+     },
+     {
+      "tile": "4p",
+      "sideways": false
+     },
+     {
+      "tile": "8m",
+      "sideways": false
+     },
+     {
+      "tile": "9m",
+      "sideways": false
+     },
+     {
+      "tile": "5p",
+      "sideways": false
+     },
+     {
+      "tile": "6s",
+      "sideways": false
+     },
+     {
+      "tile": "6s",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 17200,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "2m",
+      "sideways": false
+     },
+     {
+      "tile": "6m",
+      "sideways": false
+     },
+     {
+      "tile": "1m",
+      "sideways": false
+     },
+     {
+      "tile": "N",
+      "sideways": false
+     },
+     {
+      "tile": "E",
+      "sideways": false
+     },
+     {
+      "tile": "W",
+      "sideways": false
+     },
+     {
+      "tile": "2p",
+      "sideways": false
+     },
+     {
+      "tile": "C",
+      "sideways": false
+     },
+     {
+      "tile": "6s",
+      "sideways": false
+     },
+     {
+      "tile": "6s",
+      "sideways": false
+     },
+     {
+      "tile": "6s",
+      "sideways": false
+     },
+     {
+      "tile": "7s",
+      "sideways": false
+     }
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "1s",
+       "1s",
+       "1s"
+      ],
+      "from": "shimocha"
+     },
+     {
+      "type": "pon",
+      "tiles": [
+       "9m",
+       "9m",
+       "9m"
+      ],
+      "from": "shimocha"
+     }
+    ]
+   },
+   "toimen": {
+    "score": 24400,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "E",
+      "sideways": false
+     },
+     {
+      "tile": "P",
+      "sideways": false
+     },
+     {
+      "tile": "8m",
+      "sideways": false
+     },
+     {
+      "tile": "5p",
+      "sideways": false
+     },
+     {
+      "tile": "W",
+      "sideways": false
+     },
+     {
+      "tile": "5p",
+      "sideways": false
+     },
+     {
+      "tile": "6s",
+      "sideways": false
+     },
+     {
+      "tile": "5s",
+      "sideways": false
+     },
+     {
+      "tile": "8m",
+      "sideways": false
+     },
+     {
+      "tile": "F",
+      "sideways": false
+     },
+     {
+      "tile": "2m",
+      "sideways": false
+     },
+     {
+      "tile": "E",
+      "sideways": false
+     }
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "1s",
+       "1s",
+       "1s"
+      ],
+      "from": "shimocha"
+     }
+    ]
+   },
+   "kamicha": {
+    "score": 19100,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "9m",
+      "sideways": false
+     },
+     {
+      "tile": "W",
+      "sideways": false
+     },
+     {
+      "tile": "6s",
+      "sideways": false
+     },
+     {
+      "tile": "P",
+      "sideways": false
+     },
+     {
+      "tile": "1s",
+      "sideways": false
+     },
+     {
+      "tile": "1s",
+      "sideways": false
+     },
+     {
+      "tile": "2m",
+      "sideways": false
+     },
+     {
+      "tile": "3m",
+      "sideways": false
+     },
+     {
+      "tile": "1m",
+      "sideways": false
+     },
+     {
+      "tile": "4m",
+      "sideways": false
+     },
+     {
+      "tile": "4m",
+      "sideways": false
+     },
+     {
+      "tile": "7m",
+      "sideways": false
+     }
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "6s",
+       "6s",
+       "6s"
+      ],
+      "from": "toimen"
+     }
+    ]
+   }
+  },
+  "uncertainties": [
+   "手牌や河、鳴き牌に1s（一索）が異常に多く存在しており、特殊なゲームモードまたはバグの可能性があります。"
+  ]
+ }
+}

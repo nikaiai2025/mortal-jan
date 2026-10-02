@@ -1,0 +1,1339 @@
+{
+ "images": 9,
+ "river tiles in order": "134/337 (40%)",
+ "rivers exact": "5/36 (14%)",
+ "hand tiles": "96/125 (77%)",
+ "checks": {
+  "round(場・局・本場・供託)": "9/9",
+  "dealer": "8/9",
+  "scores": "9/9",
+  "riichi": "8/9",
+  "sideways": "7/9",
+  "melds": "3/9",
+  "hand exact": "2/9"
+ },
+ "broken": [],
+ "missing": [
+  "rm-359"
+ ],
+ "results": [
+  {
+   "file": "rm-1.json",
+   "checks": {
+    "round(場・局・本場・供託)": true,
+    "dealer": true,
+    "dora": null,
+    "scores": true,
+    "riichi": true,
+    "sideways": false,
+    "melds": false,
+    "hand exact": true
+   },
+   "river tiles in order": "19/57",
+   "rivers exact": "0/4",
+   "hand tiles": "14/14",
+   "diff": {
+    "self.river": {
+     "truth": [
+      "1p",
+      "9p",
+      "8p",
+      "S",
+      "P",
+      "9p",
+      "C",
+      "7s",
+      "5s",
+      "9s",
+      "3p",
+      "8m",
+      "6m",
+      "6p",
+      "9s"
+     ],
+     "got": [
+      "P",
+      "6p",
+      "8p",
+      "S",
+      "不明",
+      "6p",
+      "C",
+      "4s",
+      "4s",
+      "4s",
+      "5p",
+      "8m",
+      "6m",
+      "8p",
+      "3s"
+     ]
+    },
+    "shimocha.sideways": {
+     "truth": [
+      13
+     ],
+     "got": [
+      5
+     ]
+    },
+    "shimocha.melds": {
+     "truth": [
+      "1s 1s 1s 1s ankan"
+     ],
+     "got": []
+    },
+    "shimocha.river": {
+     "truth": [
+      "W",
+      "E",
+      "N",
+      "1m",
+      "2p",
+      "2m",
+      "2p",
+      "C",
+      "9s",
+      "7m",
+      "7s",
+      "6m",
+      "9m",
+      "3m"
+     ],
+     "got": [
+      "2m",
+      "6m",
+      "8p",
+      "7s",
+      "1m",
+      "7s",
+      "9s",
+      "9s",
+      "N",
+      "C",
+      "E",
+      "2p",
+      "W",
+      "9m",
+      "9m"
+     ]
+    },
+    "toimen.melds": {
+     "truth": [
+      "5sr 6s 7s chi"
+     ],
+     "got": []
+    },
+    "toimen.river": {
+     "truth": [
+      "E",
+      "1m",
+      "F",
+      "9m",
+      "1p",
+      "E",
+      "3p",
+      "W",
+      "8p",
+      "8m",
+      "P",
+      "E",
+      "1m"
+     ],
+     "got": [
+      "1p",
+      "W",
+      "8p",
+      "1m",
+      "F",
+      "9m",
+      "1p",
+      "E",
+      "P",
+      "9m",
+      "5sr",
+      "E",
+      "不明"
+     ]
+    },
+    "kamicha.melds": {
+     "truth": [
+      "1m 2m 3m chi",
+      "7m 7m 7m pon",
+      "P P P pon"
+     ],
+     "got": [
+      "1m 2m 3m chi",
+      "1m 2m 3m chi",
+      "7s 8s 9s chi"
+     ]
+    },
+    "kamicha.river": {
+     "truth": [
+      "9s",
+      "F",
+      "2p",
+      "1p",
+      "6s",
+      "8s",
+      "W",
+      "2p",
+      "F",
+      "C",
+      "9m",
+      "5m",
+      "9m",
+      "N",
+      "W"
+     ],
+     "got": [
+      "9m",
+      "W",
+      "6s",
+      "F",
+      "N",
+      "8p",
+      "C",
+      "9p",
+      "F",
+      "9p",
+      "C",
+      "9m",
+      "5m"
+     ]
+    }
+   }
+  },
+  {
+   "file": "rm-101.json",
+   "checks": {
+    "round(場・局・本場・供託)": true,
+    "dealer": true,
+    "dora": null,
+    "scores": true,
+    "riichi": true,
+    "sideways": true,
+    "melds": true,
+    "hand exact": true
+   },
+   "river tiles in order": "11/21",
+   "rivers exact": "0/4",
+   "hand tiles": "14/14",
+   "diff": {
+    "self.river": {
+     "truth": [
+      "N",
+      "F",
+      "7s",
+      "7p",
+      "4s"
+     ],
+     "got": [
+      "N",
+      "F",
+      "5s",
+      "5p",
+      "2s"
+     ]
+    },
+    "shimocha.river": {
+     "truth": [
+      "S",
+      "9s",
+      "F",
+      "E",
+      "5p"
+     ],
+     "got": [
+      "9s",
+      "6s",
+      "F",
+      "E",
+      "6p"
+     ]
+    },
+    "toimen.river": {
+     "truth": [
+      "W",
+      "F",
+      "N",
+      "6p",
+      "7p"
+     ],
+     "got": [
+      "5p",
+      "8p",
+      "N",
+      "F",
+      "W"
+     ]
+    },
+    "kamicha.river": {
+     "truth": [
+      "W",
+      "7m",
+      "4m",
+      "P",
+      "8p",
+      "2p"
+     ],
+     "got": [
+      "W",
+      "7m",
+      "4m",
+      "P",
+      "8p",
+      "8p"
+     ]
+    }
+   }
+  },
+  {
+   "file": "rm-1414.json",
+   "checks": {
+    "round(場・局・本場・供託)": true,
+    "dealer": true,
+    "dora": null,
+    "scores": true,
+    "riichi": true,
+    "sideways": true,
+    "melds": false,
+    "hand exact": false
+   },
+   "river tiles in order": "16/40",
+   "rivers exact": "1/4",
+   "hand tiles": "10/14",
+   "diff": {
+    "shimocha.melds": {
+     "truth": [
+      "4s 4s 4s pon",
+      "S S S pon"
+     ],
+     "got": [
+      "4s 4s 4s pon",
+      "9s 9s 9s pon"
+     ]
+    },
+    "shimocha.river": {
+     "truth": [
+      "9p",
+      "E",
+      "2p",
+      "4m",
+      "6p",
+      "7m",
+      "6p",
+      "P",
+      "F",
+      "5mr"
+     ],
+     "got": [
+      "8p",
+      "E",
+      "3p",
+      "5m",
+      "9p",
+      "1s",
+      "8p",
+      "F",
+      "9m",
+      "8p"
+     ]
+    },
+    "toimen.melds": {
+     "truth": [
+      "N N N N daiminkan"
+     ],
+     "got": []
+    },
+    "toimen.river": {
+     "truth": [
+      "F",
+      "C",
+      "8p",
+      "3m",
+      "4s",
+      "2s",
+      "E",
+      "5m",
+      "2m",
+      "3m"
+     ],
+     "got": [
+      "3m",
+      "2m",
+      "5mr",
+      "E",
+      "3m",
+      "8p",
+      "C",
+      "F"
+     ]
+    },
+    "kamicha.melds": {
+     "truth": [
+      "C C C pon",
+      "P P P P daiminkan"
+     ],
+     "got": [
+      "C C C pon",
+      "N N N N daiminkan"
+     ]
+    },
+    "kamicha.river": {
+     "truth": [
+      "S",
+      "7p",
+      "5m",
+      "F",
+      "S",
+      "6s",
+      "6p",
+      "1s",
+      "2m",
+      "4m",
+      "1p"
+     ],
+     "got": [
+      "8p",
+      "S",
+      "1s",
+      "2m",
+      "5m",
+      "S",
+      "8p",
+      "S",
+      "6s"
+     ]
+    },
+    "hand": {
+     "truth": [
+      [
+       "1p",
+       "2p",
+       "4p",
+       "5s",
+       "7p",
+       "7p",
+       "7s",
+       "8m",
+       "8p",
+       "9p",
+       "9p",
+       "9s",
+       "W"
+      ],
+      "3p"
+     ],
+     "got": [
+      [
+       "1p",
+       "2p",
+       "2s",
+       "4p",
+       "5pr",
+       "6p",
+       "6s",
+       "7s",
+       "8m",
+       "8p",
+       "9p",
+       "9p",
+       "W"
+      ],
+      "3p"
+     ]
+    }
+   }
+  },
+  {
+   "file": "rm-15.json",
+   "checks": {
+    "round(場・局・本場・供託)": true,
+    "dealer": true,
+    "dora": null,
+    "scores": true,
+    "riichi": true,
+    "sideways": true,
+    "melds": true,
+    "hand exact": false
+   },
+   "river tiles in order": "12/23",
+   "rivers exact": "1/4",
+   "hand tiles": "10/14",
+   "diff": {
+    "self.river": {
+     "truth": [
+      "S",
+      "W",
+      "6s",
+      "7m",
+      "5s"
+     ],
+     "got": [
+      "S",
+      "W",
+      "6s",
+      "7m",
+      "4s"
+     ]
+    },
+    "shimocha.river": {
+     "truth": [
+      "9s",
+      "W",
+      "8m",
+      "F",
+      "C",
+      "P"
+     ],
+     "got": [
+      "C",
+      "F",
+      "8m",
+      "W",
+      "6s"
+     ]
+    },
+    "toimen.river": {
+     "truth": [
+      "1s",
+      "S",
+      "1m",
+      "E",
+      "2p",
+      "P"
+     ],
+     "got": [
+      "P",
+      "2p",
+      "E",
+      "1m",
+      "S",
+      "1s"
+     ]
+    },
+    "hand": {
+     "truth": [
+      [
+       "1m",
+       "1p",
+       "1s",
+       "2m",
+       "2p",
+       "3m",
+       "3s",
+       "5pr",
+       "8s",
+       "9s",
+       "C",
+       "C",
+       "F"
+      ],
+      "4p"
+     ],
+     "got": [
+      [
+       "1m",
+       "1p",
+       "1s",
+       "2m",
+       "2p",
+       "2s",
+       "3m",
+       "3p",
+       "4s",
+       "6s",
+       "C",
+       "C",
+       "F"
+      ],
+      "4p"
+     ]
+    }
+   }
+  },
+  {
+   "file": "rm-158.json",
+   "checks": {
+    "round(場・局・本場・供託)": true,
+    "dealer": false,
+    "dora": null,
+    "scores": true,
+    "riichi": true,
+    "sideways": true,
+    "melds": false,
+    "hand exact": false
+   },
+   "river tiles in order": "20/49",
+   "rivers exact": "1/4",
+   "hand tiles": "7/14",
+   "diff": {
+    "dealer": {
+     "truth": "shimocha",
+     "got": "self"
+    },
+    "shimocha.melds": {
+     "truth": [
+      "2m 3m 4m chi",
+      "E E E pon"
+     ],
+     "got": [
+      "3m 4m 不明 chi",
+      "E E E pon"
+     ]
+    },
+    "shimocha.river": {
+     "truth": [
+      "1s",
+      "9s",
+      "8p",
+      "1m",
+      "8m",
+      "9m",
+      "2s",
+      "7p",
+      "7m",
+      "3m",
+      "9s",
+      "8s"
+     ],
+     "got": [
+      "9m",
+      "8m",
+      "1m",
+      "8p",
+      "6s",
+      "1s",
+      "8s",
+      "3s",
+      "7m",
+      "4s",
+      "1s"
+     ]
+    },
+    "toimen.river": {
+     "truth": [
+      "9p",
+      "N",
+      "N",
+      "F",
+      "1m",
+      "1s",
+      "4s",
+      "7s",
+      "9s",
+      "2m",
+      "2m",
+      "7s"
+     ],
+     "got": [
+      "5s",
+      "9m",
+      "9m",
+      "6s",
+      "6s",
+      "6s",
+      "1s",
+      "2m",
+      "9m",
+      "N",
+      "N",
+      "8p"
+     ]
+    },
+    "kamicha.river": {
+     "truth": [
+      "6m",
+      "6s",
+      "3m",
+      "N",
+      "F",
+      "9p",
+      "4s",
+      "7s",
+      "E",
+      "8p",
+      "3m",
+      "7p",
+      "8m"
+     ],
+     "got": [
+      "8m",
+      "6s",
+      "9m",
+      "E",
+      "8p",
+      "3m",
+      "5s",
+      "3s",
+      "N",
+      "F",
+      "8p",
+      "8p"
+     ]
+    },
+    "hand": {
+     "truth": [
+      [
+       "3p",
+       "3s",
+       "3s",
+       "4m",
+       "4s",
+       "5mr",
+       "5p",
+       "5s",
+       "6p",
+       "7p",
+       "7s",
+       "8s",
+       "C"
+      ],
+      "3p"
+     ],
+     "got": [
+      [
+       "2p",
+       "2s",
+       "2s",
+       "4m",
+       "4p",
+       "5mr",
+       "5pr",
+       "5s",
+       "5s",
+       "6s",
+       "7p",
+       "8s",
+       "C"
+      ],
+      "5p"
+     ]
+    }
+   }
+  },
+  {
+   "file": "rm-4.json",
+   "checks": {
+    "round(場・局・本場・供託)": true,
+    "dealer": true,
+    "dora": null,
+    "scores": true,
+    "riichi": true,
+    "sideways": true,
+    "melds": true,
+    "hand exact": false
+   },
+   "river tiles in order": "5/9",
+   "rivers exact": "1/4",
+   "hand tiles": "11/14",
+   "diff": {
+    "shimocha.river": {
+     "truth": [
+      "9p",
+      "W"
+     ],
+     "got": [
+      "W",
+      "6p"
+     ]
+    },
+    "toimen.river": {
+     "truth": [
+      "W",
+      "1s"
+     ],
+     "got": [
+      "F",
+      "N"
+     ]
+    },
+    "kamicha.river": {
+     "truth": [
+      "N",
+      "P",
+      "W"
+     ],
+     "got": [
+      "N",
+      "W"
+     ]
+    },
+    "hand": {
+     "truth": [
+      [
+       "1p",
+       "2p",
+       "3p",
+       "3s",
+       "4p",
+       "5mr",
+       "5s",
+       "5sr",
+       "6p",
+       "6s",
+       "8s",
+       "9s",
+       "F"
+      ],
+      "9s"
+     ],
+     "got": [
+      [
+       "1p",
+       "2p",
+       "2s",
+       "3p",
+       "4p",
+       "4s",
+       "5mr",
+       "5p",
+       "5s",
+       "6s",
+       "8s",
+       "9s",
+       "F"
+      ],
+      "9s"
+     ]
+    }
+   }
+  },
+  {
+   "file": "rm-4918.json",
+   "checks": {
+    "round(場・局・本場・供託)": true,
+    "dealer": true,
+    "dora": null,
+    "scores": true,
+    "riichi": true,
+    "sideways": true,
+    "melds": false,
+    "hand exact": false
+   },
+   "river tiles in order": "22/69",
+   "rivers exact": "0/4",
+   "hand tiles": "9/13",
+   "diff": {
+    "self.river": {
+     "truth": [
+      "N",
+      "W",
+      "F",
+      "W",
+      "9m",
+      "W",
+      "7p",
+      "N",
+      "2m",
+      "6s",
+      "3m",
+      "P",
+      "5s",
+      "1s",
+      "2m",
+      "C"
+     ],
+     "got": [
+      "N",
+      "W",
+      "F",
+      "W",
+      "9m",
+      "W",
+      "5p",
+      "N",
+      "2m",
+      "6s",
+      "3m",
+      "P",
+      "2s",
+      "1s",
+      "2m",
+      "C"
+     ]
+    },
+    "shimocha.melds": {
+     "truth": [
+      "6s 6s 6s pon"
+     ],
+     "got": [
+      "8s 8s 8s pon"
+     ]
+    },
+    "shimocha.river": {
+     "truth": [
+      "2m",
+      "8s",
+      "F",
+      "4s",
+      "3m",
+      "3s",
+      "9m",
+      "5s",
+      "8m",
+      "5m",
+      "8m",
+      "7s",
+      "7s",
+      "9s",
+      "P"
+     ],
+     "got": [
+      "3s",
+      "3m",
+      "4s",
+      "F",
+      "8s",
+      "2m",
+      "8p",
+      "8m",
+      "8m",
+      "6s",
+      "9m",
+      "5p"
+     ]
+    },
+    "toimen.melds": {
+     "truth": [
+      "1m 1m 1m 1m ankan",
+      "4m 4m 4m pon",
+      "9m 9m 9m pon",
+      "E E E pon"
+     ],
+     "got": []
+    },
+    "toimen.river": {
+     "truth": [
+      "8s",
+      "4s",
+      "2s",
+      "1s",
+      "8p",
+      "7p",
+      "9p",
+      "P",
+      "F",
+      "2s",
+      "3m",
+      "8m",
+      "9s",
+      "9p",
+      "7m",
+      "7s",
+      "3s",
+      "5mr"
+     ],
+     "got": [
+      "5mr",
+      "2s",
+      "3s",
+      "P",
+      "2p",
+      "6s",
+      "1m",
+      "3m",
+      "2s",
+      "F",
+      "P",
+      "2p",
+      "8p",
+      "8p",
+      "1s",
+      "2s",
+      "4s",
+      "6s"
+     ]
+    },
+    "kamicha.river": {
+     "truth": [
+      "7m",
+      "6s",
+      "4s",
+      "2s",
+      "8s",
+      "7m",
+      "C",
+      "P",
+      "4m",
+      "C",
+      "9s",
+      "8m",
+      "3m",
+      "5sr",
+      "9s",
+      "E",
+      "S",
+      "2m",
+      "7m",
+      "4p"
+     ],
+     "got": [
+      "3m",
+      "C",
+      "6m",
+      "8s",
+      "1s",
+      "8s",
+      "E",
+      "C",
+      "8p",
+      "8s",
+      "E",
+      "8s",
+      "2m",
+      "8s",
+      "2m",
+      "4p"
+     ]
+    },
+    "hand": {
+     "truth": [
+      [
+       "1s",
+       "1s",
+       "2p",
+       "3s",
+       "4m",
+       "4p",
+       "4p",
+       "4s",
+       "5m",
+       "5p",
+       "5s",
+       "6m",
+       "6p"
+      ],
+      null
+     ],
+     "got": [
+      [
+       "1s",
+       "1s",
+       "2p",
+       "2s",
+       "4m",
+       "4p",
+       "4s",
+       "5m",
+       "5sr",
+       "6m",
+       "6p",
+       "8p",
+       "8p"
+      ],
+      null
+     ]
+    }
+   }
+  },
+  {
+   "file": "rm-654.json",
+   "checks": {
+    "round(場・局・本場・供託)": true,
+    "dealer": true,
+    "dora": null,
+    "scores": true,
+    "riichi": true,
+    "sideways": true,
+    "melds": false,
+    "hand exact": false
+   },
+   "river tiles in order": "9/14",
+   "rivers exact": "1/4",
+   "hand tiles": "12/14",
+   "diff": {
+    "self.river": {
+     "truth": [
+      "N",
+      "S",
+      "5s"
+     ],
+     "got": [
+      "N",
+      "S",
+      "4s"
+     ]
+    },
+    "shimocha.river": {
+     "truth": [
+      "8s",
+      "F",
+      "7s"
+     ],
+     "got": [
+      "9m",
+      "F",
+      "2s"
+     ]
+    },
+    "toimen.melds": {
+     "truth": [
+      "5m 5m 5m 5mr ankan"
+     ],
+     "got": []
+    },
+    "toimen.river": {
+     "truth": [
+      "N",
+      "N",
+      "1s",
+      "6s"
+     ],
+     "got": [
+      "6s",
+      "1s",
+      "N",
+      "N"
+     ]
+    },
+    "hand": {
+     "truth": [
+      [
+       "1p",
+       "2m",
+       "2s",
+       "3m",
+       "3p",
+       "3s",
+       "4m",
+       "7m",
+       "7m",
+       "8p",
+       "8p",
+       "C",
+       "C"
+      ],
+      "3p"
+     ],
+     "got": [
+      [
+       "1p",
+       "2m",
+       "2p",
+       "2s",
+       "3m",
+       "3s",
+       "4m",
+       "7m",
+       "7m",
+       "8p",
+       "8p",
+       "C",
+       "C"
+      ],
+      "5p"
+     ]
+    }
+   }
+  },
+  {
+   "file": "rm-767.json",
+   "checks": {
+    "round(場・局・本場・供託)": true,
+    "dealer": true,
+    "dora": null,
+    "scores": true,
+    "riichi": false,
+    "sideways": false,
+    "melds": false,
+    "hand exact": false
+   },
+   "river tiles in order": "20/55",
+   "rivers exact": "0/4",
+   "hand tiles": "9/14",
+   "diff": {
+    "self.river": {
+     "truth": [
+      "9s",
+      "1s",
+      "2p",
+      "8p",
+      "8m",
+      "9m",
+      "9m",
+      "3s",
+      "3s",
+      "9m",
+      "7s",
+      "C",
+      "3m"
+     ],
+     "got": [
+      "8s",
+      "1s",
+      "P",
+      "4p",
+      "8m",
+      "9m",
+      "9m",
+      "2s",
+      "3s",
+      "9m",
+      "5s",
+      "C",
+      "3m"
+     ]
+    },
+    "shimocha.melds": {
+     "truth": [],
+     "got": [
+      "5p 5pr 不明 不明 ankan"
+     ]
+    },
+    "shimocha.river": {
+     "truth": [
+      "W",
+      "F",
+      "E",
+      "2p",
+      "F",
+      "8p",
+      "9p",
+      "9p",
+      "5p",
+      "7s",
+      "2m",
+      "W",
+      "W",
+      "5pr"
+     ],
+     "got": [
+      "W",
+      "1m",
+      "E",
+      "2s",
+      "5s",
+      "1s",
+      "8p",
+      "F",
+      "2p",
+      "E",
+      "8p",
+      "8p",
+      "W"
+     ]
+    },
+    "toimen.melds": {
+     "truth": [
+      "5pr 6p 7p chi"
+     ],
+     "got": []
+    },
+    "toimen.river": {
+     "truth": [
+      "9s",
+      "1p",
+      "1p",
+      "E",
+      "3s",
+      "C",
+      "9m",
+      "S",
+      "S",
+      "P",
+      "2m",
+      "6m",
+      "E",
+      "6s"
+     ],
+     "got": [
+      "E",
+      "9s",
+      "P",
+      "N",
+      "N",
+      "9m",
+      "C",
+      "4s",
+      "E",
+      "8p",
+      "8p",
+      "6s"
+     ]
+    },
+    "kamicha.riichi": {
+     "truth": false,
+     "got": true
+    },
+    "kamicha.sideways": {
+     "truth": [],
+     "got": [
+      8
+     ]
+    },
+    "kamicha.river": {
+     "truth": [
+      "N",
+      "W",
+      "N",
+      "C",
+      "2s",
+      "F",
+      "9p",
+      "9p",
+      "5p",
+      "E",
+      "2m",
+      "6m",
+      "7s",
+      "F"
+     ],
+     "got": [
+      "3m",
+      "2m",
+      "E",
+      "N",
+      "W",
+      "C",
+      "6s",
+      "F",
+      "1p",
+      "3s",
+      "4p",
+      "8p"
+     ]
+    },
+    "hand": {
+     "truth": [
+      [
+       "1s",
+       "3m",
+       "3p",
+       "4m",
+       "4m",
+       "4s",
+       "4s",
+       "4s",
+       "5m",
+       "6s",
+       "7p",
+       "7p",
+       "8m"
+      ],
+      "4m"
+     ],
+     "got": [
+      [
+       "1s",
+       "2p",
+       "2s",
+       "3m",
+       "3s",
+       "3s",
+       "4m",
+       "4m",
+       "4s",
+       "5m",
+       "7p",
+       "8m",
+       "8p"
+      ],
+      "4m"
+     ]
+    }
+   }
+  }
+ ]
+}

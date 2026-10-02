@@ -1,0 +1,282 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 26.0,
+ "usage": {
+  "promptTokenCount": 2290,
+  "candidatesTokenCount": 1123,
+  "totalTokenCount": 7740,
+  "cachedContentTokenCount": 818,
+  "promptTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 1201
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1089
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 429
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 389
+   }
+  ],
+  "thoughtsTokenCount": 4327,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "S",
+   "number": 1,
+   "honba": 0,
+   "riichiSticks": 0
+  },
+  "dealer": "kamicha",
+  "doraIndicators": [],
+  "hand": {
+   "concealed": [
+    "8m",
+    "1p",
+    "2p",
+    "4p",
+    "5pr",
+    "6p",
+    "7p",
+    "8p",
+    "8p",
+    "2s",
+    "6s",
+    "6s",
+    "W"
+   ],
+   "drawn": "3p"
+  },
+  "players": {
+   "self": {
+    "score": 26600,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "1m",
+       "sideways": false
+      },
+      {
+       "tile": "2s",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "C",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 30500,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "5m",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "7p",
+       "sideways": false
+      },
+      {
+       "tile": "2p",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "1m",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "daiminkan",
+      "tiles": [
+       "1s",
+       "1s",
+       "1s",
+       "1s"
+      ],
+      "from": "不明"
+     }
+    ]
+   },
+   "toimen": {
+    "score": 23500,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "3m",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "5m",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "3m",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "C",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "daiminkan",
+      "tiles": [
+       "N",
+       "N",
+       "N",
+       "N"
+      ],
+      "from": "不明"
+     }
+    ]
+   },
+   "kamicha": {
+    "score": 19400,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "S",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "W",
+       "sideways": false
+      },
+      {
+       "tile": "1p",
+       "sideways": false
+      },
+      {
+       "tile": "S",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "1s",
+       "sideways": false
+      },
+      {
+       "tile": "5m",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "S",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "C",
+       "C",
+       "C"
+      ],
+      "from": "不明"
+     }
+    ]
+   }
+  },
+  "uncertainties": [
+   "ドラ表示牌が画面から確認できないため空配列としています。",
+   "他家の鳴き（暗槓・大明槓）の区別、および鳴きを誰から行ったかは推測が困難なため不明としています。"
+  ]
+ }
+}

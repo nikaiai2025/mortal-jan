@@ -26,3 +26,8 @@
 
 - Source: FluffyStuff/riichi-mahjong-tiles <https://github.com/FluffyStuff/riichi-mahjong-tiles> (Regular style)
 - License: Public domain (CC0)
+
+## OCR test images (`experiments/ocr/robomajang/rm-*.png`, `experiments/ocr/examples/example.png`)
+
+- Rendered with RoboMajang (the author's own project). The tiles are the FluffyStuff images above (CC0)
+- The center panel's numbers use DotGothic16 <https://github.com/fontworks-fonts/DotGothic16> (SIL Open Font License 1.1); other text is drawn with system fonts (Yu Mincho, Segoe UI)

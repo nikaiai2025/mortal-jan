@@ -1,0 +1,238 @@
+{
+ "seat": 2,
+ "bakaze": "E",
+ "kyoku": 3,
+ "honba": 0,
+ "kyotaku": 0,
+ "oya": 2,
+ "scores": [
+  36700,
+  20300,
+  22000,
+  21000
+ ],
+ "doraMarkers": [
+  "8m"
+ ],
+ "tilesLeft": 44,
+ "rivers": [
+  [
+   {
+    "pai": "1s",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "S",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "W",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": true
+   },
+   {
+    "pai": "9s",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "5p",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "3s",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "1s",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   }
+  ],
+  [
+   {
+    "pai": "W",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "1s",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "F",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "2s",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": true
+   },
+   {
+    "pai": "3s",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "5s",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   }
+  ],
+  [
+   {
+    "pai": "9s",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "2p",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "7p",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "S",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "4s",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "7m",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "9m",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   }
+  ],
+  [
+   {
+    "pai": "N",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "9s",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "S",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "F",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "8m",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "4s",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "5p",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   }
+  ]
+ ],
+ "melds": [
+  [],
+  [],
+  [
+   {
+    "type": "pon",
+    "pai": "W",
+    "consumed": [
+     "W",
+     "W"
+    ],
+    "target": 0
+   },
+   {
+    "type": "pon",
+    "pai": "2s",
+    "consumed": [
+     "2s",
+     "2s"
+    ],
+    "target": 1
+   }
+  ],
+  []
+ ],
+ "riichi": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "concealedCounts": [
+  13,
+  13,
+  8,
+  13
+ ],
+ "hand": [
+  "1m",
+  "2m",
+  "2m",
+  "4m",
+  "4m",
+  "E",
+  "E"
+ ],
+ "drawn": "N",
+ "target": null
+}

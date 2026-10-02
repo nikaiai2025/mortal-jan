@@ -1,0 +1,134 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 13.3,
+ "usage": {
+  "promptTokenCount": 2446,
+  "candidatesTokenCount": 659,
+  "totalTokenCount": 5124,
+  "promptTokensDetails": [
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1089
+   },
+   {
+    "modality": "TEXT",
+    "tokenCount": 1357
+   }
+  ],
+  "thoughtsTokenCount": 2019,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "S",
+   "number": 1,
+   "honba": 0,
+   "riichiSticks": 0
+  },
+  "dealer": "self",
+  "doraIndicators": [],
+  "hand": {
+   "concealed": [
+    "5m",
+    "7m",
+    "8p",
+    "2s",
+    "3s",
+    "6s",
+    "6s",
+    "8s",
+    "8s",
+    "P",
+    "C"
+   ],
+   "drawn": null
+  },
+  "players": {
+   "self": {
+    "score": 30500,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "N",
+      "sideways": false
+     },
+     {
+      "tile": "8p",
+      "sideways": false
+     },
+     {
+      "tile": "4p",
+      "sideways": false
+     }
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "S",
+       "S",
+       "S"
+      ],
+      "from": "shimocha"
+     }
+    ]
+   },
+   "shimocha": {
+    "score": 11100,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "F",
+      "sideways": false
+     },
+     {
+      "tile": "6s",
+      "sideways": false
+     },
+     {
+      "tile": "9m",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "toimen": {
+    "score": 32500,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "S",
+      "sideways": false
+     },
+     {
+      "tile": "6s",
+      "sideways": false
+     },
+     {
+      "tile": "E",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 25900,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "E",
+      "sideways": false
+     },
+     {
+      "tile": "P",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   }
+  },
+  "uncertainties": [
+   "ドラ表示牌が画面内に見当たりません。"
+  ]
+ }
+}

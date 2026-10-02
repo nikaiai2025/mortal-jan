@@ -1,0 +1,143 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 17.6,
+ "usage": {
+  "promptTokenCount": 2367,
+  "candidatesTokenCount": 748,
+  "totalTokenCount": 5862,
+  "promptTokensDetails": [
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1089
+   },
+   {
+    "modality": "TEXT",
+    "tokenCount": 1278
+   }
+  ],
+  "thoughtsTokenCount": 2747,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "S",
+   "number": 1,
+   "honba": 0,
+   "riichiSticks": 0
+  },
+  "dealer": "self",
+  "doraIndicators": [],
+  "hand": {
+   "concealed": [
+    "5m",
+    "7m",
+    "4p",
+    "2s",
+    "3s",
+    "6s",
+    "8s",
+    "8s",
+    "P",
+    "C"
+   ],
+   "drawn": null
+  },
+  "players": {
+   "self": {
+    "score": 30500,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "S",
+       "S",
+       "S"
+      ],
+      "from": "shimocha"
+     }
+    ]
+   },
+   "shimocha": {
+    "score": 11100,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "1s",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "9m",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "toimen": {
+    "score": 32500,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "S",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 25900,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "P",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   }
+  },
+  "uncertainties": [
+   "ドラ表示牌が画面上に確認できません。",
+   "自分の手牌の3番目が4p、7番目と8番目が8sであるかどうかは画像解像度から推測しています。",
+   "自分の河の2枚目と3枚目が8pの並びであるかどうか、および1枚目が北であるか不確実です。"
+  ]
+ }
+}

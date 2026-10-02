@@ -1,0 +1,126 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 14.7,
+ "usage": {
+  "promptTokenCount": 2350,
+  "candidatesTokenCount": 594,
+  "totalTokenCount": 4753,
+  "cachedContentTokenCount": 842,
+  "promptTokensDetails": [
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1089
+   },
+   {
+    "modality": "TEXT",
+    "tokenCount": 1261
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 452
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 390
+   }
+  ],
+  "thoughtsTokenCount": 1809,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "E",
+   "number": 4,
+   "honba": 0,
+   "riichiSticks": 0
+  },
+  "dealer": "kamicha",
+  "doraIndicators": [],
+  "hand": {
+   "concealed": [
+    "5mr",
+    "1p",
+    "2p",
+    "3p",
+    "4p",
+    "5pr",
+    "2s",
+    "4s",
+    "5sr",
+    "6s",
+    "8s",
+    "9s",
+    "F"
+   ],
+   "drawn": "9s"
+  },
+  "players": {
+   "self": {
+    "score": 32300,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "9m",
+      "sideways": false
+     },
+     {
+      "tile": "P",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 28400,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "W",
+      "sideways": false
+     },
+     {
+      "tile": "6p",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "toimen": {
+    "score": 20600,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "F",
+      "sideways": false
+     },
+     {
+      "tile": "N",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 18700,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "N",
+      "sideways": false
+     },
+     {
+      "tile": "W",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   }
+  },
+  "uncertainties": [
+   "ドラ表示牌が画面上に確認できませんでした。",
+   "手牌の5m, 5p, 5sは赤ドラ(5mr, 5pr, 5sr)として検出しています。"
+  ]
+ }
+}

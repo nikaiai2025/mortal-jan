@@ -1,0 +1,196 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 36.1,
+ "usage": {
+  "promptTokenCount": 1947,
+  "candidatesTokenCount": 432,
+  "totalTokenCount": 6223,
+  "cachedContentTokenCount": 692,
+  "promptTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 858
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1089
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 305
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 387
+   }
+  ],
+  "thoughtsTokenCount": 3844,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "E",
+   "number": 1,
+   "honba": 0,
+   "riichiSticks": 0
+  },
+  "dealer": "shimocha",
+  "doraIndicators": [
+   "6m",
+   "4s"
+  ],
+  "hand": {
+   "concealed": [
+    "4m",
+    "4m",
+    "4m",
+    "8m",
+    "8m",
+    "1s",
+    "2s",
+    "3s",
+    "8s",
+    "9s",
+    "W",
+    "P",
+    "P"
+   ],
+   "drawn": "1m"
+  },
+  "players": {
+   "self": {
+    "score": 25000,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "6p",
+      "sideways": false
+     },
+     {
+      "tile": "S",
+      "sideways": false
+     },
+     {
+      "tile": "C",
+      "sideways": false
+     },
+     {
+      "tile": "5p",
+      "sideways": false
+     },
+     {
+      "tile": "3m",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 25000,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "4p",
+      "sideways": false
+     },
+     {
+      "tile": "2p",
+      "sideways": false
+     },
+     {
+      "tile": "4s",
+      "sideways": false
+     },
+     {
+      "tile": "8s",
+      "sideways": false
+     },
+     {
+      "tile": "1s",
+      "sideways": false
+     },
+     {
+      "tile": "W",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "toimen": {
+    "score": 25000,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "9m",
+      "sideways": false
+     },
+     {
+      "tile": "6s",
+      "sideways": false
+     },
+     {
+      "tile": "9m",
+      "sideways": false
+     },
+     {
+      "tile": "E",
+      "sideways": false
+     },
+     {
+      "tile": "1s",
+      "sideways": false
+     },
+     {
+      "tile": "N",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 25000,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "S",
+      "sideways": false
+     },
+     {
+      "tile": "C",
+      "sideways": false
+     },
+     {
+      "tile": "8p",
+      "sideways": false
+     },
+     {
+      "tile": "6s",
+      "sideways": false
+     },
+     {
+      "tile": "2m",
+      "sideways": false
+     },
+     {
+      "tile": "6s",
+      "sideways": false
+     }
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "5p",
+       "5pr",
+       "5p"
+      ],
+      "from": "toimen"
+     }
+    ]
+   }
+  },
+  "uncertainties": []
+ }
+}

@@ -1,0 +1,137 @@
+{
+ "seat": 0,
+ "bakaze": "S",
+ "kyoku": 1,
+ "honba": 1,
+ "kyotaku": 0,
+ "oya": 0,
+ "scores": [
+  30500,
+  11100,
+  32500,
+  25900
+ ],
+ "doraMarkers": [
+  "6m"
+ ],
+ "tilesLeft": 59,
+ "rivers": [
+  [
+   {
+    "pai": "N",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "8p",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "2p",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   }
+  ],
+  [
+   {
+    "pai": "9m",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "9s",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "1s",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   }
+  ],
+  [
+   {
+    "pai": "E",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "9s",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "S",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": true
+   }
+  ],
+  [
+   {
+    "pai": "E",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "P",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   }
+  ]
+ ],
+ "melds": [
+  [
+   {
+    "type": "pon",
+    "pai": "S",
+    "consumed": [
+     "S",
+     "S"
+    ],
+    "target": 2
+   }
+  ],
+  [],
+  [],
+  []
+ ],
+ "riichi": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "concealedCounts": [
+  11,
+  13,
+  13,
+  13
+ ],
+ "hand": [
+  "5m",
+  "7m",
+  "5pr",
+  "2s",
+  "4s",
+  "6s",
+  "7s",
+  "8s",
+  "8s",
+  "P",
+  "C"
+ ],
+ "drawn": null,
+ "target": null
+}

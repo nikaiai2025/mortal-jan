@@ -1,0 +1,348 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 282.5,
+ "usage": {
+  "promptTokenCount": 21423,
+  "candidatesTokenCount": 5737,
+  "totalTokenCount": 1578174,
+  "cachedContentTokenCount": 1315463,
+  "promptTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 19214
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 2209
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 315171
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1000292
+   }
+  ],
+  "toolUsePromptTokenCount": 1528180,
+  "toolUsePromptTokensDetails": [
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1176125
+   },
+   {
+    "modality": "TEXT",
+    "tokenCount": 352055
+   }
+  ],
+  "thoughtsTokenCount": 22834,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "S",
+   "number": 1,
+   "honba": 0,
+   "riichiSticks": 0
+  },
+  "dealer": "kamicha",
+  "doraIndicators": [
+   "不明"
+  ],
+  "hand": {
+   "concealed": [
+    "8m",
+    "1p",
+    "2p",
+    "4p",
+    "5p",
+    "5p",
+    "8p",
+    "9p",
+    "9p",
+    "5s",
+    "7s",
+    "8s",
+    "W"
+   ],
+   "drawn": "3p"
+  },
+  "players": {
+   "self": {
+    "score": 26600,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "1m",
+       "sideways": false
+      },
+      {
+       "tile": "2s",
+       "sideways": false
+      },
+      {
+       "tile": "1s",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "N",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "C",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 30500,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "7m",
+       "sideways": false
+      },
+      {
+       "tile": "4p",
+       "sideways": false
+      },
+      {
+       "tile": "4m",
+       "sideways": false
+      },
+      {
+       "tile": "2p",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      },
+      {
+       "tile": "9p",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "5m",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "不明",
+       "sideways": false
+      },
+      {
+       "tile": "4p",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "S",
+       "S",
+       "S"
+      ],
+      "from": "toimen"
+     },
+     {
+      "type": "pon",
+      "tiles": [
+       "4s",
+       "4s",
+       "4s"
+      ],
+      "from": "shimocha"
+     }
+    ]
+   },
+   "toimen": {
+    "score": 23500,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "2s",
+       "sideways": false
+      },
+      {
+       "tile": "4s",
+       "sideways": false
+      },
+      {
+       "tile": "3m",
+       "sideways": false
+      },
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "C",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "3m",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "5m",
+       "sideways": false
+      },
+      {
+       "tile": "E",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "daiminkan",
+      "tiles": [
+       "N",
+       "N",
+       "N",
+       "N"
+      ],
+      "from": "shimocha"
+     }
+    ]
+   },
+   "kamicha": {
+    "score": 19400,
+    "riichi": "false",
+    "riverRows": [
+     [
+      {
+       "tile": "S",
+       "sideways": false
+      },
+      {
+       "tile": "5p",
+       "sideways": false
+      },
+      {
+       "tile": "5m",
+       "sideways": false
+      },
+      {
+       "tile": "F",
+       "sideways": false
+      },
+      {
+       "tile": "S",
+       "sideways": false
+      },
+      {
+       "tile": "6s",
+       "sideways": false
+      }
+     ],
+     [
+      {
+       "tile": "8p",
+       "sideways": false
+      },
+      {
+       "tile": "1s",
+       "sideways": false
+      },
+      {
+       "tile": "2m",
+       "sideways": false
+      },
+      {
+       "tile": "4m",
+       "sideways": false
+      },
+      {
+       "tile": "1p",
+       "sideways": false
+      }
+     ]
+    ],
+    "melds": [
+     {
+      "type": "pon",
+      "tiles": [
+       "C",
+       "C",
+       "C"
+      ],
+      "from": "kamicha"
+     }
+    ]
+   }
+  },
+  "uncertainties": [
+   "Dora indicators are not visible on the board, so they are marked as 不明.",
+   "Shimocha's second river row has a missing tile in the third position because it was called, which is represented as 不明."
+  ]
+ },
+ "code": [
+  "import cv2\nfrom PIL import Image\n\n# Load image\nimg = Image.open('input_file_0.png')\nw, h = img.size\n\n# Coordinates to crop for closer inspection:\n# 1. Round/Dealer/Scores (Central panel)\n# 2. Hand\n# 3. Melds / Players' river etc.\n\n# Save cropped image of the center panel\ncenter_crop = img.crop((w * 0.35, h * 0.35, w * 0.65, h * 0.65))\ncenter_crop.save('center.png')\n\n# Hand crop\nhand_crop = img.crop((w * 0.02, h * 0.8, w * 0.98, h * 0.95))\nhand_crop.save('hand.png')\n\n# Left melds / Right melds / Top melds / Bottom melds if any\n# Also look at player positions, scores, winds.\nprint(f\"Image loaded: {w}x{h}\")\n",
+  "# Crop each tile in the hand to be absolutely sure\n# The hand has 13 concealed tiles and 1 drawn tile (on the right)\n# Let's save a zoomed in crop of the hand\nhand_crop_zoomed = img.crop((w * 0.03, h * 0.81, w * 0.97, h * 0.93))\nhand_crop_zoomed.save('hand_zoomed.png')\n",
+  "# Let's crop the very center of the table (winds, indicators, etc.)\ncenter_detail = img.crop((w * 0.40, w * 0.40, w * 0.60, w * 0.60))\ncenter_detail.save('center_detail.png')\n\n# Let's also check the top dora indicator area\n# The dora indicator is on the top, let's crop the whole top area\ntop_dora = img.crop((w * 0.35, h * 0.20, w * 0.65, h * 0.45))\ntop_dora.save('top_dora.png')\n",
+  "# Crop top-left and top-right of the board\ntop_left_crop = img.crop((w * 0.1, h * 0.20, w * 0.35, h * 0.35))\ntop_left_crop.save('top_left.png')\n\ntop_right_crop = img.crop((w * 0.75, h * 0.25, w * 0.9, h * 0.45))\ntop_right_crop.save('top_right.png')\n",
+  "# Let's crop the melds for each player:\n# Bottom-right (Self melds) - none shown next to hand, but wait, are there any?\n# Bottom-left: is that a meld of 3 white tiles? No, wait, on the left side of the screen, there are three white tiles with \"中\" in red.\n# Let's find all melds on the table:\n# 1. Left side (near kamicha): three \"中\" (Chun) tiles: C, C, C.\n# 2. Top-right side (near shimocha): \"南\" (South), \"1s\" (bird?), \"4s\", \"4s\"? Let's crop right side melds more clearly.\n# 3. Top-left: \"北\" (North) x 4.\n\n# Let's crop left side (kamicha's area, including the C meld)\nkamicha_meld = img.crop((w * 0.05, h * 0.5, w * 0.2, h * 0.82))\nkamicha_meld.save('kamicha_meld.png')\n\n# Let's crop right side (shimocha's area, including the melds on top right)\nshimocha_meld = img.crop((w * 0.78, h * 0.23, w * 0.88, h * 0.48))\nshimocha_meld.save('shimocha_meld_zoom.png')\n",
+  "# Let's crop more areas to see where everything is located relative to the players\n# Let's crop the entire left side, entire right side, and entire top side to see hands/melds clearly.\n\nleft_side = img.crop((0, h*0.2, w*0.35, h*0.8))\nleft_side.save('left_side.png')\n\nright_side = img.crop((w*0.65, h*0.2, w, h*0.8))\nright_side.save('right_side.png')\n\ntop_side = img.crop((w*0.2, 0, w*0.8, h*0.3))\ntop_side.save('top_side.png')\n",
+  "# Let's zoom in on Shimocha's melds (right_side, top part)\nshimocha_melds = img.crop((w * 0.77, h * 0.23, w * 0.88, h * 0.44))\nshimocha_melds.save('shimocha_melds.png')\n\n# Let's zoom in on Kamicha's melds and standing tiles\nkamicha_tiles = img.crop((w * 0.05, h * 0.53, w * 0.22, h * 0.82))\nkamicha_tiles.save('kamicha_tiles.png')\n",
+  "# Let's rotate those wind tiles in shimocha_melds to read them properly\nimport numpy as np\n\nsh_melds_img = cv2.imread('shimocha_melds.png')\n\n# Let's crop the top three tiles in sh_melds_img\nsh_winds = sh_melds_img[0:int(sh_melds_img.shape[0]*0.55), :]\ncv2.imwrite('sh_winds.png', sh_winds)\n\n# Let's rotate 90 deg counter-clockwise to see it upright\nsh_winds_rot = cv2.rotate(sh_winds, cv2.ROTATE_90_COUNTERCLOCKWISE)\ncv2.imwrite('sh_winds_rot.png', sh_winds_rot)\n",
+  "# Rotate 90 deg clockwise to view upright\nsh_winds_rot_cw = cv2.rotate(sh_winds, cv2.ROTATE_90_CLOCKWISE)\ncv2.imwrite('sh_winds_rot_cw.png', sh_winds_rot_cw)\n",
+  "# Let's crop and rotate the second meld of Shimocha (4s / 8s)\nsh_green = sh_melds_img[int(sh_melds_img.shape[0]*0.55):, :]\nsh_green_rot_cw = cv2.rotate(sh_green, cv2.ROTATE_90_CLOCKWISE)\ncv2.imwrite('sh_green_rot_cw.png', sh_green_rot_cw)\n",
+  "# Let's crop Kamicha's Chun meld\nka_tiles_img = cv2.imread('kamicha_tiles.png')\n\n# The Chun meld is at the bottom of kamicha_tiles\nka_chun = ka_tiles_img[int(ka_tiles_img.shape[0]*0.55):, :]\ncv2.imwrite('ka_chun.png', ka_chun)\n\n# Rotate 90 degrees counter-clockwise to see it upright\nka_chun_rot_ccw = cv2.rotate(ka_chun, cv2.ROTATE_90_COUNTERCLOCKWISE)\ncv2.imwrite('ka_chun_rot_ccw.png', ka_chun_rot_ccw)\n",
+  "ka_chun_rot_cw = cv2.rotate(ka_chun, cv2.ROTATE_90_CLOCKWISE)\ncv2.imwrite('ka_chun_rot_cw.png', ka_chun_rot_cw)\n",
+  "# Let's crop the other corners of the screen to check for any other \"抜き北\" or similar tiles\ncorner_bl = img.crop((0, h * 0.7, w * 0.2, h))\ncorner_bl.save('corner_bl.png')\n\ncorner_br = img.crop((w * 0.8, h * 0.7, w, h))\ncorner_br.save('corner_br.png')\n\ncorner_tr = img.crop((w * 0.8, 0, w, h * 0.25))\ncorner_tr.save('corner_tr.png')\n",
+  "# Let's crop each of the four rivers carefully\n# 1. Self river\nself_river = img.crop((w * 0.33, h * 0.58, w * 0.65, h * 0.76))\nself_river.save('self_river.png')\n\n# 2. Toimen river\ntoimen_river = img.crop((w * 0.35, h * 0.28, w * 0.64, h * 0.44))\ntoimen_river.save('toimen_river.png')\n\n# 3. Kamicha river\nkamicha_river = img.crop((w * 0.22, h * 0.35, w * 0.37, h * 0.65))\nkamicha_river.save('kamicha_river.png')\n\n# 4. Shimocha river\nshimocha_river = img.crop((w * 0.62, h * 0.35, w * 0.77, h * 0.65))\nshimocha_river.save('shimocha_river.png')\n",
+  "# Let's write a quick script to read the tile names on kamicha_river.png\n# We will crop and rotate kamicha_river 90 degrees clockwise to make it upright for reading.\nka_river_img = cv2.imread('kamicha_river.png')\n\n# Column 1 (right column, closest to panel) is the right half of the image\n# Column 2 (left column) is the left half of the image\ncol1 = ka_river_img[:, int(ka_river_img.shape[1]*0.48):]\ncol2 = ka_river_img[:, 0:int(ka_river_img.shape[1]*0.52)]\n\n# Rotate 90 degrees clockwise to make top-to-bottom read as left-to-right\ncol1_rot = cv2.rotate(col1, cv2.ROTATE_90_CLOCKWISE)\ncol2_rot = cv2.rotate(col2, cv2.ROTATE_90_CLOCKWISE)\n\ncv2.imwrite('col1_rot.png', col1_rot)\ncv2.imwrite('col2_rot.png', col2_rot)\n",
+  "# Crop and rotate Shimocha's river columns\nshi_river_img = cv2.imread('shimocha_river.png')\n\n# Column 1 (left column, closest to panel) is the left half\n# Column 2 (right column) is the right half\ncol1_shi = shi_river_img[:, 0:int(shi_river_img.shape[1]*0.52)]\ncol2_shi = shi_river_img[:, int(shi_river_img.shape[1]*0.48):]\n\n# Rotate 90 degrees clockwise to read left-to-right\ncol1_shi_rot = cv2.rotate(col1_shi, cv2.ROTATE_90_CLOCKWISE)\ncol2_shi_rot = cv2.rotate(col2_shi, cv2.ROTATE_90_CLOCKWISE)\n\ncv2.imwrite('col1_shi_rot.png', col1_shi_rot)\ncv2.imwrite('col2_shi_rot.png', col2_shi_rot)\n",
+  "# Let's crop the greyed out tile in Shimocha's river (right column, 3rd tile from top)\ngrey_tile = img.crop((w * 0.70, h * 0.51, w * 0.75, h * 0.57))\ngrey_tile.save('grey_tile.png')\n",
+  "# Let's compare tile 2 (greyed out) and tile 6 (南) in col1_rot\ncol1_rot_img = cv2.imread('col1_rot.png')\n\n# Let's crop tile 2 (from left: 2nd tile) and tile 6 (6th tile)\n# Let's determine their coordinates in col1_rot_img\nh_c, w_c, _ = col1_rot_img.shape\ntile_w = w_c / 6.0\n\ntile2 = col1_rot_img[:, int(tile_w*1):int(tile_w*2)]\ntile6 = col1_rot_img[:, int(tile_w*5):int(tile_w*6)]\n\ncv2.imwrite('tile2.png', tile2)\ncv2.imwrite('tile6.png', tile6)\n",
+  "# Let's just save a visual grid over col1_rot to be absolutely sure where the columns and tiles are:\nimport matplotlib.pyplot as plt\n\nplt.figure(figsize=(10, 2))\nplt.imshow(cv2.cvtColor(col1_rot_img, cv2.COLOR_BGR2RGB))\nplt.axvline(x=w_c/6)\nplt.axvline(x=2*w_c/6)\nplt.axvline(x=3*w_c/6)\nplt.axvline(x=4*w_c/6)\nplt.axvline(x=5*w_c/6)\nplt.savefig('col1_rot_grid.png')\nprint(f\"w_c: {w_c}, h_c: {h_c}\")\n",
+  "# Crop the greyed out tile and rotate to be upright (it is at 50-100px in col1_rot_img)\ngrey_tile_kamicha = col1_rot_img[:, 60:110]\n# Since col1_rot was rotated 90 CW, the tile itself was rotated 90 CW.\n# But wait, Kamicha's tiles on the board are already rotated 90 degrees CCW (or CW?)\n# Let's rotate 90 degrees counter-clockwise to see it upright relative to the screen.\ngrey_upright = cv2.rotate(grey_tile_kamicha, cv2.ROTATE_90_COUNTERCLOCKWISE)\ncv2.imwrite('grey_upright.png', grey_upright)\n",
+  "# Rotate to make it upright relative to the screen (try 180, try 90 CW)\ngrey_upright_1 = cv2.rotate(grey_tile_kamicha, cv2.ROTATE_90_CLOCKWISE)\ncv2.imwrite('grey_upright_1.png', grey_upright_1)\n",
+  "# Let's crop the three tiles of Shimocha's South pon and show them\n# In sh_winds_rot_cw, the width is 112px, height is 112px (approx)\n# Let's see the dimensions of sh_winds_rot_cw\nsw_img = cv2.imread('sh_winds_rot_cw.png')\nh_sw, w_sw, _ = sw_img.shape\ntile_w_sw = w_sw / 3.0\n\nsw_tile1 = sw_img[:, 0:int(tile_w_sw*1)]\nsw_tile2 = sw_img[:, int(tile_w_sw*1):int(tile_w_sw*2)]\nsw_tile3 = sw_img[:, int(tile_w_sw*2):int(tile_w_sw*3)]\n\ncv2.imwrite('sw_tile1.png', sw_tile1)\ncv2.imwrite('sw_tile2.png', sw_tile2)\ncv2.imwrite('sw_tile3.png', sw_tile3)\n",
+  "# Crop a larger area around Shimocha's melds to check if there is an overlapping tile (kakan)\nsh_melds_large = img.crop((w * 0.75, h * 0.20, w * 0.90, h * 0.50))\nsh_melds_large.save('sh_melds_large.png')\n"
+ ]
+}

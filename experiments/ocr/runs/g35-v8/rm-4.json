@@ -1,0 +1,125 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 15.0,
+ "usage": {
+  "promptTokenCount": 4100,
+  "candidatesTokenCount": 287,
+  "totalTokenCount": 6965,
+  "cachedContentTokenCount": 2249,
+  "promptTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 1922
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 2178
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 1054
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1195
+   }
+  ],
+  "thoughtsTokenCount": 2578,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "E",
+   "number": 4,
+   "honba": null,
+   "riichiSticks": null
+  },
+  "dealer": "kamicha",
+  "doraIndicators": [],
+  "hand": {
+   "concealed": [
+    "5mr",
+    "1p",
+    "2p",
+    "3p",
+    "4p",
+    "5p",
+    "2s",
+    "4s",
+    "5s",
+    "6s",
+    "8s",
+    "9s",
+    "F"
+   ],
+   "drawn": "9s"
+  },
+  "players": {
+   "self": {
+    "score": 32300,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "9m",
+      "sideways": false
+     },
+     {
+      "tile": "P",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 28400,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "W",
+      "sideways": false
+     },
+     {
+      "tile": "6p",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "toimen": {
+    "score": 20600,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "F",
+      "sideways": false
+     },
+     {
+      "tile": "N",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 18700,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "N",
+      "sideways": false
+     },
+     {
+      "tile": "W",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   }
+  },
+  "uncertainties": [
+   "自分の手牌の1枚目の五萬は、「伍」の文字が赤いため赤ドラ(5mr)と判断しました。"
+  ]
+ }
+}

@@ -1,0 +1,158 @@
+{
+ "seat": 2,
+ "bakaze": "S",
+ "kyoku": 1,
+ "honba": 0,
+ "kyotaku": 0,
+ "oya": 0,
+ "scores": [
+  19700,
+  22100,
+  41600,
+  16600
+ ],
+ "doraMarkers": [
+  "2p",
+  "4s"
+ ],
+ "tilesLeft": 54,
+ "rivers": [
+  [
+   {
+    "pai": "N",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "N",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "1s",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "6s",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   }
+  ],
+  [
+   {
+    "pai": "W",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "N",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "E",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "F",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   }
+  ],
+  [
+   {
+    "pai": "N",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "S",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "5s",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   }
+  ],
+  [
+   {
+    "pai": "8s",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "F",
+    "tsumogiri": false,
+    "riichi": false,
+    "called": false
+   },
+   {
+    "pai": "7s",
+    "tsumogiri": true,
+    "riichi": false,
+    "called": false
+   }
+  ]
+ ],
+ "melds": [
+  [
+   {
+    "type": "ankan",
+    "consumed": [
+     "5mr",
+     "5m",
+     "5m",
+     "5m"
+    ]
+   }
+  ],
+  [],
+  [],
+  []
+ ],
+ "riichi": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "concealedCounts": [
+  10,
+  13,
+  14,
+  13
+ ],
+ "hand": [
+  "2m",
+  "3m",
+  "4m",
+  "7m",
+  "7m",
+  "1p",
+  "3p",
+  "8p",
+  "8p",
+  "2s",
+  "3s",
+  "C",
+  "C"
+ ],
+ "drawn": "3p",
+ "target": null
+}

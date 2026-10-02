@@ -1,0 +1,182 @@
+{
+ "model": "gemini-3.5-flash",
+ "seconds": 13.6,
+ "usage": {
+  "promptTokenCount": 2350,
+  "candidatesTokenCount": 889,
+  "totalTokenCount": 5269,
+  "cachedContentTokenCount": 842,
+  "promptTokensDetails": [
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1089
+   },
+   {
+    "modality": "TEXT",
+    "tokenCount": 1261
+   }
+  ],
+  "cacheTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 452
+   },
+   {
+    "modality": "IMAGE",
+    "tokenCount": 390
+   }
+  ],
+  "thoughtsTokenCount": 2030,
+  "serviceTier": "standard"
+ },
+ "output": {
+  "round": {
+   "wind": "W",
+   "number": 1,
+   "honba": 0,
+   "riichiSticks": 0
+  },
+  "dealer": "shimocha",
+  "doraIndicators": [],
+  "hand": {
+   "concealed": [
+    "1m",
+    "2m",
+    "3m",
+    "1p",
+    "2p",
+    "5pr",
+    "1s",
+    "2s",
+    "4s",
+    "6s",
+    "F",
+    "C",
+    "C"
+   ],
+   "drawn": "4p"
+  },
+  "players": {
+   "self": {
+    "score": 20100,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "S",
+      "sideways": false
+     },
+     {
+      "tile": "W",
+      "sideways": false
+     },
+     {
+      "tile": "3s",
+      "sideways": false
+     },
+     {
+      "tile": "7m",
+      "sideways": false
+     },
+     {
+      "tile": "3s",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "shimocha": {
+    "score": 22100,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "C",
+      "sideways": false
+     },
+     {
+      "tile": "F",
+      "sideways": false
+     },
+     {
+      "tile": "8m",
+      "sideways": false
+     },
+     {
+      "tile": "W",
+      "sideways": false
+     },
+     {
+      "tile": "6s",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "toimen": {
+    "score": 28100,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "P",
+      "sideways": false
+     },
+     {
+      "tile": "2p",
+      "sideways": false
+     },
+     {
+      "tile": "E",
+      "sideways": false
+     },
+     {
+      "tile": "1m",
+      "sideways": false
+     },
+     {
+      "tile": "S",
+      "sideways": false
+     },
+     {
+      "tile": "1s",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   },
+   "kamicha": {
+    "score": 29700,
+    "riichi": "false",
+    "river": [
+     {
+      "tile": "S",
+      "sideways": false
+     },
+     {
+      "tile": "N",
+      "sideways": false
+     },
+     {
+      "tile": "1s",
+      "sideways": false
+     },
+     {
+      "tile": "8p",
+      "sideways": false
+     },
+     {
+      "tile": "8p",
+      "sideways": false
+     },
+     {
+      "tile": "6m",
+      "sideways": false
+     }
+    ],
+    "melds": []
+   }
+  },
+  "uncertainties": [
+   "ドラ表示牌が画面上に表示されていないため、doraIndicatorsは空配列にしています。",
+   "本場表示が見当たらないため、honbaを0としています。"
+  ]
+ }
+}
