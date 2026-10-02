@@ -232,8 +232,7 @@ export async function problemCard(question: Question, result: Result, includeRes
 		problemId: question.id,
 		kind: question.kind,
 		choices: question.choices,
-		// The question stays where the page shows it; the headline under the board carries it.
-		prompt: includeResult ? undefined : questionText(question.kind),
+		// The question is the headline under the board, once; the band above the hand stays empty.
 		hand,
 	});
 	ctx.restore();
