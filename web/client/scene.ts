@@ -162,8 +162,19 @@ export interface SceneOptions {
 	hand?: HandView;
 }
 
-/** Draw `width` pixels wide (and width × sceneHeight / SCENE_WIDTH tall) at the current origin. Tiles must be preloaded. */
-export function drawScene(ctx: CanvasRenderingContext2D, scene: Scene, width: number, options: SceneOptions): void {
+/** Where a label of the band was drawn, in scene coordinates. */
+export interface TagBox {
+	x: number;
+	w: number;
+	top: number;
+	bottom: number;
+}
+
+/**
+ * Draw `width` pixels wide (and width × sceneHeight / SCENE_WIDTH tall) at the current origin. Tiles
+ * must be preloaded. Returns the boxes of the labels drawn, in the order given (for the share image's grading).
+ */
+export function drawScene(ctx: CanvasRenderingContext2D, scene: Scene, width: number, options: SceneOptions): { tags: TagBox[] } {
 	ctx.save();
 	ctx.scale(width / SCENE_WIDTH, width / SCENE_WIDTH);
 	drawFelt(ctx, options.kind);
@@ -191,9 +202,10 @@ export function drawScene(ctx: CanvasRenderingContext2D, scene: Scene, width: nu
 	drawOwnRow(ctx, scene, options.hand);
 	if (options.choices) drawCallMarks(ctx, scene, options.choices);
 	if (options.prompt) drawPrompt(ctx, options.prompt, options.promptSize ?? 32, options.promptBoxed ?? false, Boolean(options.tags?.length));
-	if (options.tags) drawTags(ctx, scene, options.tags, options.hand?.selected ?? null);
+	const tags = options.tags ? drawTags(ctx, scene, options.tags, options.hand?.selected ?? null) : [];
 	if (options.hand?.bars) drawBars(ctx, scene, options.hand.bars, options.hand.barProgress ?? 1);
 	ctx.restore();
+	return { tags };
 }
 
 function drawFelt(ctx: CanvasRenderingContext2D, kind: ProblemKind): void {
@@ -243,7 +255,7 @@ function drawPrompt(ctx: CanvasRenderingContext2D, text: string, size: number, b
  * An anchored one sits over its tile with a pointer down to it; a second label over the same place
  * moves beside the first, or above it when there is no room. Free-standing ones line up from the left.
  */
-function drawTags(ctx: CanvasRenderingContext2D, scene: Scene, tags: HandTag[], selected: number | null): void {
+function drawTags(ctx: CanvasRenderingContext2D, scene: Scene, tags: HandTag[], selected: number | null): TagBox[] {
 	const slots = handSlots(scene);
 	const height = 36;
 	const pointer = 9;
@@ -251,7 +263,7 @@ function drawTags(ctx: CanvasRenderingContext2D, scene: Scene, tags: HandTag[], 
 	ctx.font = `700 22px ${FONT}`;
 	ctx.textAlign = "left";
 	ctx.textBaseline = "middle";
-	const occupied: { x: number; w: number; bottom: number }[] = [];
+	const occupied: TagBox[] = [];
 	const handTop = Math.min(...slots.map((slot) => slot.y - (selected === slot.index ? RAISE : 0)));
 	let freeX = MARGIN + 6;
 	for (const tag of tags) {
@@ -290,9 +302,10 @@ function drawTags(ctx: CanvasRenderingContext2D, scene: Scene, tags: HandTag[], 
 		}
 		ctx.fillStyle = "#fff6ea";
 		ctx.fillText(tag.text, x + 13, bottom - height / 2 + 1);
-		occupied.push({ x, w: width, bottom });
+		occupied.push({ x, w: width, top: bottom - height, bottom });
 	}
 	ctx.restore();
+	return occupied;
 }
 
 // ---- tiles ----

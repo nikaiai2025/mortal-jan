@@ -7,7 +7,7 @@ import { h } from "./dom";
 import { chosenSlot } from "./evaluation";
 import { CALL_LABELS, DIFFICULTY_LABELS } from "./labels";
 import { hanamaruFor, paintMark, RED_INK } from "./marks";
-import { type HandTag, SCENE_WIDTH, drawScene, drawTile, handTiles, preloadScene, questionText, sceneHeight } from "./scene";
+import { type HandTag, SCENE_WIDTH, type TagBox, drawScene, drawTile, handTiles, preloadScene, questionText, sceneHeight } from "./scene";
 import { tileOrder } from "./tiles";
 
 const GOLD = "#b8860b";
@@ -116,57 +116,67 @@ function answerTags(result: Result): HandTag[] {
 }
 
 /**
- * The grading as the page shows it over the board: the mark across the upper half, the handwritten
- * score at the right above the bars, and the ピタリ seal at the left. `x`, `y`, `size`: the board's box.
+ * The grading in one row right above the "〇〇さんの回答" label: the mark, the handwritten score
+ * and, for pitari, the seal. It keeps to the label's side (its left edge on the left half of the
+ * board, its right edge on the right half) and never hides the board. `x`, `y`, `size`: the board's
+ * box; `label`: the label's box in scene units.
  */
-function paintGrading(ctx: CanvasRenderingContext2D, result: Result, x: number, y: number, size: number): void {
+function paintGrading(ctx: CanvasRenderingContext2D, result: Result, x: number, y: number, size: number, label: TagBox): void {
+	const scale = size / SCENE_WIDTH;
 	const mark = markOf(result.answer.score, result.answer.pitari);
-	const markSize = size * 0.58;
+	const scoreSize = size * 0.072;
+	const markSize = scoreSize * 1.15;
+	const gap = scoreSize * 0.2;
+	const sealFont = size * 0.03;
+	const sealHeight = sealFont * 1.7;
 	ctx.save();
-	ctx.translate(x + size * 0.16 + markSize / 2, y + size * 0.04 + markSize / 2);
-	ctx.rotate((-7 * Math.PI) / 180);
-	ctx.shadowColor = "rgba(255, 253, 246, 0.9)";
-	ctx.shadowBlur = 6;
-	paintMark(ctx, mark, -markSize / 2, -markSize / 2, markSize, hanamaruFor(currentPublicId(), result.id, result.difficulty));
-	ctx.restore();
-
-	const scoreSize = size * 0.135;
-	ctx.save();
-	ctx.translate(x + size * 0.96, y + size * 0.73);
-	ctx.rotate((-6 * Math.PI) / 180);
-	ctx.textAlign = "right";
-	ctx.textBaseline = "alphabetic";
-	ctx.shadowColor = "rgba(255, 253, 246, 0.9)";
-	ctx.shadowBlur = 6;
-	ctx.fillStyle = RED_INK;
-	ctx.font = `600 ${scoreSize * 0.45}px ${HAND}`;
-	ctx.fillText("点", 0, 0);
-	const unitWidth = ctx.measureText("点").width;
 	ctx.font = `600 ${scoreSize}px ${HAND}`;
-	ctx.fillText(String(result.answer.score), -unitWidth - 4, 0);
-	ctx.restore();
+	const numberWidth = ctx.measureText(String(result.answer.score)).width;
+	ctx.font = `600 ${scoreSize * 0.45}px ${HAND}`;
+	const unitWidth = ctx.measureText("点").width;
+	ctx.font = `800 ${sealFont}px ${MINCHO}`;
+	const sealWidth = mark === "hanamaru" ? ctx.measureText("ピタリ").width + sealFont * 1.1 : 0;
+	const groupWidth = markSize + gap + numberWidth + 4 + unitWidth + (sealWidth ? gap + sealWidth : 0);
 
+	// On the label's side, clamped to the board.
+	const labelLeft = x + label.x * scale;
+	const labelRight = x + (label.x + label.w) * scale;
+	const onLeft = (label.x + label.w / 2) * scale < size / 2;
+	const left = Math.min(Math.max(x + 8, onLeft ? labelLeft : labelRight - groupWidth), x + size - 8 - groupWidth);
+	const baseline = y + label.top * scale - 10;
+
+	ctx.translate(left, baseline);
+	ctx.rotate((-3 * Math.PI) / 180);
+	ctx.shadowColor = "rgba(255, 253, 246, 0.9)";
+	ctx.shadowBlur = 5;
+	paintMark(ctx, mark, 0, -markSize * 0.84, markSize, hanamaruFor(currentPublicId(), result.id, result.difficulty));
+	let cursor = markSize + gap;
+	ctx.fillStyle = RED_INK;
+	ctx.textAlign = "left";
+	ctx.textBaseline = "alphabetic";
+	ctx.font = `600 ${scoreSize}px ${HAND}`;
+	ctx.fillText(String(result.answer.score), cursor, 0);
+	cursor += numberWidth + 4;
+	ctx.font = `600 ${scoreSize * 0.45}px ${HAND}`;
+	ctx.fillText("点", cursor, 0);
+	cursor += unitWidth;
 	if (mark === "hanamaru") {
-		const fontSize = size * 0.042;
-		ctx.save();
-		ctx.translate(x + size * 0.05, y + size * 0.72);
-		ctx.rotate((-12 * Math.PI) / 180);
-		ctx.font = `800 ${fontSize}px ${MINCHO}`;
-		ctx.textAlign = "left";
-		ctx.textBaseline = "middle";
-		const width = ctx.measureText("ピタリ").width + fontSize * 1.1;
-		const height = fontSize * 1.7;
+		cursor += gap;
+		const middle = -scoreSize * 0.33;
+		ctx.shadowColor = "transparent";
 		ctx.fillStyle = RED_INK;
 		ctx.beginPath();
-		ctx.roundRect(0, -height / 2, width, height, 6);
+		ctx.roundRect(cursor, middle - sealHeight / 2, sealWidth, sealHeight, 6);
 		ctx.fill();
 		ctx.strokeStyle = "#fff6ea";
 		ctx.lineWidth = 2;
-		ctx.strokeRect(4, -height / 2 + 4, width - 8, height - 8);
+		ctx.strokeRect(cursor + 4, middle - sealHeight / 2 + 4, sealWidth - 8, sealHeight - 8);
 		ctx.fillStyle = "#fff6ea";
-		ctx.fillText("ピタリ", fontSize * 0.55, 1);
-		ctx.restore();
+		ctx.font = `800 ${sealFont}px ${MINCHO}`;
+		ctx.textBaseline = "middle";
+		ctx.fillText("ピタリ", cursor + sealFont * 0.55, middle + 1);
 	}
+	ctx.restore();
 }
 
 /** The candidates the result page lists: the top three, and the player's own if it is not among them. */
@@ -273,7 +283,7 @@ export async function problemCard(question: Question, result: Result, includeRes
 	ctx.save();
 	ctx.translate(margin, margin);
 	const hand = includeResult && question.kind !== "call" ? { selected: chosenSlot(result) } : undefined;
-	drawScene(ctx, question.scene, sceneWidth, {
+	const drawn = drawScene(ctx, question.scene, sceneWidth, {
 		problemId: question.id,
 		kind: question.kind,
 		choices: question.choices,
@@ -287,7 +297,7 @@ export async function problemCard(question: Question, result: Result, includeRes
 	ctx.restore();
 	footer(ctx);
 	if (!includeResult) return element;
-	paintGrading(ctx, result, margin, margin, sceneWidth);
+	if (drawn.tags[0]) paintGrading(ctx, result, margin, margin, sceneWidth, drawn.tags[0]);
 	paintCandidates(ctx, result, bottom + 58);
 	return element;
 }
