@@ -1,9 +1,11 @@
 // Share images (portrait 3:4, a problem without its result shorter) drawn in the browser, handed to the OS share sheet or saved.
 
 import { type Mark, displayName, markOf } from "../shared/rules";
-import type { Profile, Question, Result, SetProblem, Stats } from "../shared/types";
+import type { Candidate, ProblemKind, Profile, Question, Result, SetProblem, Stats } from "../shared/types";
 import { currentPublicId } from "./api";
 import { h } from "./dom";
+import { chosenSlot, handBars } from "./evaluation";
+import { actionText } from "./labels";
 import { hanamaruFor, paintMark, RED_INK } from "./marks";
 import { SCENE_WIDTH, drawScene, preloadScene, questionText, sceneHeight } from "./scene";
 
@@ -85,27 +87,173 @@ function handScore(ctx: CanvasRenderingContext2D, score: string, x: number, y: n
 	ctx.fillText("点", x + width + 6, y);
 }
 
-/** Problem image (with its question) on top; below it the mark and score, without revealing any answer. */
+/** The headline under a problem image shared without its result. */
+function headlineText(kind: ProblemKind): string {
+	if (kind === "discard") return "あなたなら、何を切る？";
+	if (kind === "riichi") return "あなたなら、リーチする？";
+	return "あなたなら、鳴く？";
+}
+
+/** Site name and host at the right end of a line (the problem card's headline or name line); returns the x where it starts. */
+function siteMark(ctx: CanvasRenderingContext2D, baseline: number): number {
+	ctx.textAlign = "right";
+	ctx.textBaseline = "alphabetic";
+	ctx.fillStyle = MUTED;
+	ctx.font = `500 20px ${GOTHIC}`;
+	ctx.fillText(location.host, WIDTH - 48, baseline);
+	const hostWidth = ctx.measureText(location.host).width;
+	ctx.fillStyle = INK;
+	ctx.font = `700 28px ${MINCHO}`;
+	const nameRight = WIDTH - 48 - hostWidth - 16;
+	ctx.fillText(SITE_NAME, nameRight, baseline);
+	return nameRight - ctx.measureText(SITE_NAME).width;
+}
+
+/** A line of text from x=48 that stops short of `limit` (the site mark), shrinking its font if needed. */
+function fittedText(ctx: CanvasRenderingContext2D, text: string, baseline: number, font: (size: number) => string, size: number, limit: number): void {
+	ctx.textAlign = "left";
+	ctx.textBaseline = "alphabetic";
+	for (let current = size; current >= 24; current -= 2) {
+		ctx.font = font(current);
+		if (ctx.measureText(text).width <= limit - 48 - 40) break;
+	}
+	ctx.fillText(text, 48, baseline);
+}
+
+/**
+ * The grading as the page shows it over the board: the mark across the upper half, the handwritten
+ * score at the right above the bars, and the ピタリ seal at the left. `x`, `y`, `size`: the board's box.
+ */
+function paintGrading(ctx: CanvasRenderingContext2D, result: Result, x: number, y: number, size: number): void {
+	const mark = markOf(result.answer.score, result.answer.pitari);
+	const markSize = size * 0.58;
+	ctx.save();
+	ctx.translate(x + size * 0.16 + markSize / 2, y + size * 0.04 + markSize / 2);
+	ctx.rotate((-7 * Math.PI) / 180);
+	ctx.shadowColor = "rgba(255, 253, 246, 0.9)";
+	ctx.shadowBlur = 6;
+	paintMark(ctx, mark, -markSize / 2, -markSize / 2, markSize, hanamaruFor(currentPublicId(), result.id, result.difficulty));
+	ctx.restore();
+
+	const scoreSize = size * 0.135;
+	ctx.save();
+	ctx.translate(x + size * 0.96, y + size * 0.73);
+	ctx.rotate((-6 * Math.PI) / 180);
+	ctx.textAlign = "right";
+	ctx.textBaseline = "alphabetic";
+	ctx.shadowColor = "rgba(255, 253, 246, 0.9)";
+	ctx.shadowBlur = 6;
+	ctx.fillStyle = RED_INK;
+	ctx.font = `600 ${scoreSize * 0.45}px ${HAND}`;
+	ctx.fillText("点", 0, 0);
+	const unitWidth = ctx.measureText("点").width;
+	ctx.font = `600 ${scoreSize}px ${HAND}`;
+	ctx.fillText(String(result.answer.score), -unitWidth - 4, 0);
+	ctx.restore();
+
+	if (mark === "hanamaru") {
+		const fontSize = size * 0.042;
+		ctx.save();
+		ctx.translate(x + size * 0.05, y + size * 0.72);
+		ctx.rotate((-12 * Math.PI) / 180);
+		ctx.font = `800 ${fontSize}px ${MINCHO}`;
+		ctx.textAlign = "left";
+		ctx.textBaseline = "middle";
+		const width = ctx.measureText("ピタリ").width + fontSize * 1.1;
+		const height = fontSize * 1.7;
+		ctx.fillStyle = RED_INK;
+		ctx.beginPath();
+		ctx.roundRect(0, -height / 2, width, height, 6);
+		ctx.fill();
+		ctx.strokeStyle = "#fff6ea";
+		ctx.lineWidth = 2;
+		ctx.strokeRect(4, -height / 2 + 4, width - 8, height - 8);
+		ctx.fillStyle = "#fff6ea";
+		ctx.fillText("ピタリ", fontSize * 0.55, 1);
+		ctx.restore();
+	}
+}
+
+/** For a call problem, which has no bars over the hand: the candidates as the result lists them. */
+function candidateRows(result: Result): Candidate[] {
+	const shown = result.evaluation.candidates.filter((c, i) => i < 3 || c.p >= 0.01).slice(0, 4);
+	const mine = result.evaluation.candidates.find((c) => c.action === result.answer.action);
+	if (mine && !shown.includes(mine)) shown.push(mine);
+	return shown;
+}
+
+function paintCandidates(ctx: CanvasRenderingContext2D, result: Result, top: number): void {
+	const rowHeight = 60;
+	const barX = 420;
+	const barWidth = 360;
+	candidateRows(result).forEach((candidate, index) => {
+		const y = top + index * rowHeight;
+		const mine = candidate.action === result.answer.action;
+		if (mine) {
+			ctx.fillStyle = "rgba(214, 42, 30, 0.08)";
+			ctx.fillRect(48, y - 40, WIDTH - 96, rowHeight - 4);
+		}
+		ctx.textBaseline = "alphabetic";
+		ctx.textAlign = "left";
+		ctx.fillStyle = INK;
+		ctx.font = `700 34px ${GOTHIC}`;
+		ctx.fillText(actionText(candidate.action, result), 64, y);
+		ctx.fillStyle = "#e4dcc6";
+		ctx.fillRect(barX, y - 22, barWidth, 16);
+		ctx.fillStyle = candidate.action === result.evaluation.best ? RED_INK : "#1b5741";
+		ctx.fillRect(barX, y - 22, Math.max(4, barWidth * candidate.p), 16);
+		ctx.textAlign = "right";
+		ctx.fillStyle = MUTED;
+		ctx.font = `500 30px ${GOTHIC}`;
+		ctx.fillText(`${(candidate.p * 100).toFixed(candidate.p < 0.1 ? 1 : 0)}%`, 890, y);
+		ctx.fillStyle = mine ? RED_INK : INK;
+		ctx.font = `700 34px ${GOTHIC}`;
+		ctx.fillText(`${candidate.score}点`, WIDTH - 64, y);
+	});
+}
+
+/**
+ * Problem image on top. Without the result: the question on the board and a headline under it.
+ * With it: the board as the result page shows it (the chosen tile, the evaluation bars, the mark and
+ * the score), the player's name and score under it, and for a call problem the candidates.
+ */
 export async function problemCard(question: Question, result: Result, includeResult = true): Promise<HTMLCanvasElement> {
-	await Promise.all([preloadScene(question.scene, question.choices), loadGlyphs(`${result.playerName} さん点${questionText(question.kind)}`)]);
+	const candidates = question.kind === "call" ? candidateRows(result).map((c) => actionText(c.action, result)).join("") : "";
+	await Promise.all([
+		preloadScene(question.scene, question.choices),
+		loadGlyphs(`${result.playerName} さん点${questionText(question.kind)}${headlineText(question.kind)}ピタリ${candidates}`),
+	]);
 	const margin = 40;
 	const sceneWidth = WIDTH - 2 * margin;
 	const bottom = margin + (sceneHeight() * sceneWidth) / SCENE_WIDTH;
-	// Without the result, the image ends just below the scene with room for the footer.
-	const [element, ctx] = canvas(includeResult ? HEIGHT : Math.round(bottom + 80));
+	const line = bottom + 92; // baseline of the line under the board
+	const [element, ctx] = canvas(includeResult ? HEIGHT : Math.round(line + 44));
 	paper(ctx, 0);
 	ctx.save();
 	ctx.translate(margin, margin);
-	drawScene(ctx, question.scene, sceneWidth, { problemId: question.id, kind: question.kind, choices: question.choices, prompt: questionText(question.kind) });
+	const hand = includeResult && question.kind !== "call" ? { selected: chosenSlot(result), bars: handBars(result) } : undefined;
+	drawScene(ctx, question.scene, sceneWidth, {
+		problemId: question.id,
+		kind: question.kind,
+		choices: question.choices,
+		prompt: includeResult ? undefined : questionText(question.kind),
+		promptSize: 44,
+		promptColor: "#ffd166",
+		hand,
+	});
 	ctx.restore();
-	if (includeResult) {
-		// The mark (220 tall) with the player and the score beside it, centred between the scene and the footer.
-		const top = bottom + (HEIGHT - 70 - bottom - 220) / 2;
-		paintMark(ctx, markOf(result.answer.score, result.answer.pitari), 56, top, 220, hanamaruFor(currentPublicId(), result.id, result.difficulty));
-		playerLine(ctx, result.playerName, 318, top + 52);
-		handScore(ctx, String(result.answer.score), 318, top + 200, 150);
+	const limit = siteMark(ctx, line);
+	if (!includeResult) {
+		ctx.fillStyle = INK;
+		fittedText(ctx, headlineText(question.kind), line, (size) => `800 ${size}px ${MINCHO}`, 50, limit);
+		return element;
 	}
-	footer(ctx);
+	paintGrading(ctx, result, margin, margin, sceneWidth);
+	ctx.fillStyle = INK;
+	fittedText(ctx, `${result.playerName} さん`, line, (size) => `700 ${size}px ${GOTHIC}`, 40, limit - 150);
+	const nameWidth = ctx.measureText(`${result.playerName} さん`).width;
+	handScore(ctx, String(result.answer.score), 48 + nameWidth + 28, line, 72);
+	if (question.kind === "call") paintCandidates(ctx, result, line + 90);
 	return element;
 }
 

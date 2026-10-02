@@ -147,6 +147,9 @@ export interface SceneOptions {
 	choices?: Choice[];
 	/** The question, drawn above the hand where the page shows it (for share images). */
 	prompt?: string;
+	/** Size and colour of the prompt; the share image makes it the headline of the board. */
+	promptSize?: number;
+	promptColor?: string;
 	hand?: HandView;
 }
 
@@ -178,7 +181,7 @@ export function drawScene(ctx: CanvasRenderingContext2D, scene: Scene, width: nu
 	ctx.restore();
 	drawOwnRow(ctx, scene, options.hand);
 	if (options.choices) drawCallMarks(ctx, scene, options.choices);
-	if (options.prompt) drawPrompt(ctx, options.prompt);
+	if (options.prompt) drawPrompt(ctx, options.prompt, options.promptSize ?? 32, options.promptColor ?? "#f6efdc");
 	if (options.hand?.bars) drawBars(ctx, scene, options.hand.bars, options.hand.barProgress ?? 1);
 	ctx.restore();
 }
@@ -192,11 +195,11 @@ function drawFelt(ctx: CanvasRenderingContext2D, kind: ProblemKind): void {
 }
 
 /** The question in the band above the hand, as the page sets it there. */
-function drawPrompt(ctx: CanvasRenderingContext2D, text: string): void {
+function drawPrompt(ctx: CanvasRenderingContext2D, text: string, size: number, color: string): void {
 	const band = handBand();
 	ctx.save();
-	ctx.font = `800 32px ${MINCHO}`;
-	ctx.fillStyle = "#f6efdc";
+	ctx.font = `800 ${size}px ${MINCHO}`;
+	ctx.fillStyle = color;
 	ctx.textAlign = "left";
 	ctx.textBaseline = "middle";
 	ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
