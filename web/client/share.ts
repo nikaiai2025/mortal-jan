@@ -242,11 +242,10 @@ export async function problemCard(question: Question, result: Result, includeRes
 		fittedText(ctx, headlineText(question.kind), line, (size) => `800 ${size}px ${MINCHO}`, 50, limit);
 		return element;
 	}
+	// The score is already written on the board; the line under it names the player only.
 	paintGrading(ctx, result, margin, margin, sceneWidth);
 	ctx.fillStyle = INK;
-	fittedText(ctx, `${result.playerName} さん`, line, (size) => `700 ${size}px ${GOTHIC}`, 40, limit - 150);
-	const nameWidth = ctx.measureText(`${result.playerName} さん`).width;
-	handScore(ctx, String(result.answer.score), 48 + nameWidth + 28, line, 72);
+	fittedText(ctx, `${result.playerName} さん`, line, (size) => `700 ${size}px ${GOTHIC}`, 40, limit);
 	if (question.kind === "call") paintCandidates(ctx, result, line + 90);
 	return element;
 }

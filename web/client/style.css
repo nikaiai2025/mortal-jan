@@ -1314,13 +1314,13 @@ button {
 }
 
 /* A fixed 3:4 frame, top-aligned: the shorter image without the result keeps the same width. */
+/* The preview keeps the image's own proportions (a problem without its result is shorter than 3:4). */
 .share__preview {
 	display: block;
-	width: min(100%, calc(58vh * 3 / 4));
-	aspect-ratio: 3 / 4;
+	width: auto;
+	max-width: 100%;
+	max-height: 58vh;
 	margin: 0 auto;
-	object-fit: contain;
-	object-position: top;
 	filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
 }
 
