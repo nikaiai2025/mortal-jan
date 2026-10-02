@@ -3,7 +3,7 @@ import { h } from "./dom";
 import { tileElement, tileLabel, tileOrder } from "./tiles";
 
 export const DIFFICULTY_LABELS: Record<Difficulty, string> = { easy: "かんたん", normal: "ふつう", hard: "むずかしい" };
-const CALL_LABELS: Record<string, string> = { chi_low: "チー", chi_mid: "チー", chi_high: "チー", pon: "ポン", pass: "スルー" };
+export const CALL_LABELS: Record<string, string> = { chi_low: "チー", chi_mid: "チー", chi_high: "チー", pon: "ポン", pass: "スルー" };
 
 /** An answer drawn with tiles, e.g. [リーチ][3萬] or [ポン][5筒][5筒][5筒]. */
 export function actionElement(action: string, question: Question, tileClass = "tile tile--small"): HTMLElement {

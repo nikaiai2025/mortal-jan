@@ -4,10 +4,11 @@ import { type Mark, displayName, markOf } from "../shared/rules";
 import type { Candidate, ProblemKind, Profile, Question, Result, SetProblem, Stats } from "../shared/types";
 import { currentPublicId } from "./api";
 import { h } from "./dom";
-import { chosenSlot, handBars } from "./evaluation";
-import { actionText } from "./labels";
+import { chosenSlot } from "./evaluation";
+import { CALL_LABELS, DIFFICULTY_LABELS } from "./labels";
 import { hanamaruFor, paintMark, RED_INK } from "./marks";
-import { SCENE_WIDTH, drawScene, preloadScene, questionText, sceneHeight } from "./scene";
+import { SCENE_WIDTH, drawScene, drawTile, preloadScene, questionText, sceneHeight } from "./scene";
+import { tileOrder } from "./tiles";
 
 export const SITE_NAME = "もーたる何切る教室";
 /** Ends every post text, after what is shared (e.g. 第12問); the link follows. */
@@ -170,71 +171,112 @@ function paintGrading(ctx: CanvasRenderingContext2D, result: Result, x: number, 
 	}
 }
 
-/** For a call problem, which has no bars over the hand: the candidates as the result lists them. */
+/** The candidates the result page lists: the top three, and the player's own if it is not among them. */
 function candidateRows(result: Result): Candidate[] {
-	const shown = result.evaluation.candidates.filter((c, i) => i < 3 || c.p >= 0.01).slice(0, 4);
+	const shown = result.evaluation.candidates.filter((c, i) => i < 3 || c.p >= 0.01).slice(0, 3);
 	const mine = result.evaluation.candidates.find((c) => c.action === result.answer.action);
 	if (mine && !shown.includes(mine)) shown.push(mine);
 	return shown;
 }
 
-function paintCandidates(ctx: CanvasRenderingContext2D, result: Result, top: number): void {
+/** An action as tiles: a discard, [リーチ] + tile, [ポン] + the meld (called tile outlined), or [スルー]. Returns its width. */
+function drawAction(ctx: CanvasRenderingContext2D, action: string, result: Result, x: number, baseline: number, tileH: number): number {
+	const tileW = tileH * 0.75;
+	let cursor = x;
+	const tag = (text: string, red: boolean) => {
+		ctx.font = `700 ${tileH * 0.46}px ${GOTHIC}`;
+		const width = ctx.measureText(text).width + tileH * 0.5;
+		ctx.fillStyle = red ? RED_INK : INK;
+		ctx.beginPath();
+		ctx.roundRect(cursor, baseline - tileH * 0.82, width, tileH * 0.64, 6);
+		ctx.fill();
+		ctx.fillStyle = "#fff6ea";
+		ctx.textAlign = "left";
+		ctx.textBaseline = "middle";
+		ctx.fillText(text, cursor + tileH * 0.25, baseline - tileH * 0.5);
+		cursor += width + 10;
+	};
+	const tile = (pai: string, called = false) => {
+		drawTile(ctx, pai, cursor, baseline - tileH, tileW, tileH, { highlight: called });
+		cursor += tileW + 4;
+	};
+	if (action.startsWith("d:")) tile(action.slice(2));
+	else if (action.startsWith("r:")) {
+		tag("リーチ", true);
+		tile(action.slice(2));
+	} else if (action === "pass") tag(CALL_LABELS.pass, false);
+	else {
+		tag(CALL_LABELS[action] ?? action, false);
+		const choice = result.choices.find((c) => c.action === action);
+		const target = result.scene.target?.pai;
+		if (choice?.consumed && target) {
+			const tiles = [{ pai: target, called: true }, ...choice.consumed.map((pai) => ({ pai, called: false }))];
+			tiles.sort((a, b) => tileOrder(a.pai) - tileOrder(b.pai));
+			for (const t of tiles) tile(t.pai, t.called);
+		}
+	}
+	return cursor - x;
+}
+
+/** Under the name: the AI's difficulty, then the candidates with tiles, a bar, the evaluation and the score. */
+function paintCandidates(ctx: CanvasRenderingContext2D, result: Result, header: number): void {
+	ctx.textBaseline = "alphabetic";
+	ctx.textAlign = "left";
+	ctx.fillStyle = MUTED;
+	ctx.font = `700 30px ${GOTHIC}`;
+	ctx.fillText("候補ごとのAI評価", 48, header);
+	ctx.textAlign = "right";
+	ctx.fillStyle = INK;
+	ctx.fillText(`AIの判定　${DIFFICULTY_LABELS[result.difficulty]}`, WIDTH - 48, header);
+
 	const rowHeight = 60;
-	const barX = 420;
-	const barWidth = 360;
+	const tileH = 48;
+	const barX = 430;
+	const barWidth = 320;
 	candidateRows(result).forEach((candidate, index) => {
-		const y = top + index * rowHeight;
+		const y = header + 66 + index * rowHeight;
 		const mine = candidate.action === result.answer.action;
 		if (mine) {
 			ctx.fillStyle = "rgba(214, 42, 30, 0.08)";
-			ctx.fillRect(48, y - 40, WIDTH - 96, rowHeight - 4);
+			ctx.fillRect(48, y - tileH - 5, WIDTH - 96, rowHeight - 4);
 		}
-		ctx.textBaseline = "alphabetic";
-		ctx.textAlign = "left";
-		ctx.fillStyle = INK;
-		ctx.font = `700 34px ${GOTHIC}`;
-		ctx.fillText(actionText(candidate.action, result), 64, y);
+		drawAction(ctx, candidate.action, result, 64, y, tileH);
 		ctx.fillStyle = "#e4dcc6";
-		ctx.fillRect(barX, y - 22, barWidth, 16);
+		ctx.fillRect(barX, y - 30, barWidth, 16);
 		ctx.fillStyle = candidate.action === result.evaluation.best ? RED_INK : "#1b5741";
-		ctx.fillRect(barX, y - 22, Math.max(4, barWidth * candidate.p), 16);
+		ctx.fillRect(barX, y - 30, Math.max(4, barWidth * candidate.p), 16);
+		ctx.textBaseline = "alphabetic";
 		ctx.textAlign = "right";
 		ctx.fillStyle = MUTED;
 		ctx.font = `500 30px ${GOTHIC}`;
-		ctx.fillText(`${(candidate.p * 100).toFixed(candidate.p < 0.1 ? 1 : 0)}%`, 890, y);
+		ctx.fillText(`${(candidate.p * 100).toFixed(candidate.p < 0.1 ? 1 : 0)}%`, 870, y - 12);
 		ctx.fillStyle = mine ? RED_INK : INK;
 		ctx.font = `700 34px ${GOTHIC}`;
-		ctx.fillText(`${candidate.score}点`, WIDTH - 64, y);
+		ctx.fillText(`${candidate.score}点`, WIDTH - 64, y - 10);
 	});
 }
 
 /**
- * Problem image on top. Without the result: the question on the board and a headline under it.
- * With it: the board as the result page shows it (the chosen tile, the evaluation bars, the mark and
- * the score), the player's name and score under it, and for a call problem the candidates.
+ * Problem image on top. Without the result: the question as a headline under the board.
+ * With it: the board as the result page shows it (the chosen tile, the mark and the score), the
+ * player's name under it, then the AI's difficulty and the candidates with their evaluation.
  */
 export async function problemCard(question: Question, result: Result, includeResult = true): Promise<HTMLCanvasElement> {
-	const candidates = question.kind === "call" ? candidateRows(result).map((c) => actionText(c.action, result)).join("") : "";
 	await Promise.all([
 		preloadScene(question.scene, question.choices),
-		loadGlyphs(`${result.playerName} さん点${questionText(question.kind)}${headlineText(question.kind)}ピタリ${candidates}`),
+		loadGlyphs(`${result.playerName} さん点${headlineText(question.kind)}ピタリ候補ごとのAI評価AIの判定${Object.values(DIFFICULTY_LABELS).join("")}${Object.values(CALL_LABELS).join("")}リーチ`),
 	]);
 	const margin = 40;
 	const sceneWidth = WIDTH - 2 * margin;
 	const bottom = margin + (sceneHeight() * sceneWidth) / SCENE_WIDTH;
-	const line = bottom + 92; // baseline of the line under the board
+	const line = bottom + (includeResult ? 66 : 92); // baseline of the line under the board
 	const [element, ctx] = canvas(includeResult ? HEIGHT : Math.round(line + 44));
 	paper(ctx, 0);
 	ctx.save();
 	ctx.translate(margin, margin);
-	const hand = includeResult && question.kind !== "call" ? { selected: chosenSlot(result), bars: handBars(result) } : undefined;
-	drawScene(ctx, question.scene, sceneWidth, {
-		problemId: question.id,
-		kind: question.kind,
-		choices: question.choices,
-		// The question is the headline under the board, once; the band above the hand stays empty.
-		hand,
-	});
+	// The question is the headline under the board, once; the band above the hand stays empty.
+	const hand = includeResult && question.kind !== "call" ? { selected: chosenSlot(result) } : undefined;
+	drawScene(ctx, question.scene, sceneWidth, { problemId: question.id, kind: question.kind, choices: question.choices, hand });
 	ctx.restore();
 	const limit = siteMark(ctx, line);
 	if (!includeResult) {
@@ -246,7 +288,7 @@ export async function problemCard(question: Question, result: Result, includeRes
 	paintGrading(ctx, result, margin, margin, sceneWidth);
 	ctx.fillStyle = INK;
 	fittedText(ctx, `${result.playerName} さん`, line, (size) => `700 ${size}px ${GOTHIC}`, 40, limit);
-	if (question.kind === "call") paintCandidates(ctx, result, line + 90);
+	paintCandidates(ctx, result, line + 54);
 	return element;
 }
 

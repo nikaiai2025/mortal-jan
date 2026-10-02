@@ -220,7 +220,7 @@ interface TileOptions {
 }
 
 /** Draw a tile whose bounding box (after rotation) has its top-left at (x, y). */
-function drawTile(ctx: CanvasRenderingContext2D, pai: Pai | null, x: number, y: number, w: number, h: number, o: TileOptions = {}): void {
+export function drawTile(ctx: CanvasRenderingContext2D, pai: Pai | null, x: number, y: number, w: number, h: number, o: TileOptions = {}): void {
 	const boxW = o.sideways ? h : w;
 	const boxH = o.sideways ? w : h;
 	ctx.save();
