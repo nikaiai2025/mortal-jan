@@ -322,35 +322,90 @@ interface TileOptions {
 export function drawTile(ctx: CanvasRenderingContext2D, pai: Pai | null, x: number, y: number, w: number, h: number, o: TileOptions = {}): void {
 	const boxW = o.sideways ? h : w;
 	const boxH = o.sideways ? w : h;
+	const face = o.back ? null : pai;
+	const dim = o.dim ?? false;
 	ctx.save();
 	ctx.translate(x + boxW / 2, y + boxH / 2);
 	if (o.sideways) ctx.rotate(-Math.PI / 2);
-	ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
-	ctx.shadowBlur = w * 0.08;
-	ctx.shadowOffsetY = w * 0.04;
-	ctx.drawImage(tileImage(o.back || !pai ? BACK_URL : FRONT_URL), -w / 2, -h / 2, w, h);
-	ctx.shadowColor = "transparent";
-	if (!o.back && pai) ctx.drawImage(tileImage(faceUrl(pai)), -w / 2, -h / 2, w, h);
-	if (o.back || !pai) {
-		ctx.fillStyle = "rgba(30, 38, 34, 0.5)"; // tone the bright back down so rivers stay the focus
-		roundRect(ctx, -w / 2, -h / 2, w, h, w * 0.12);
-		ctx.fill();
-	}
-	if (o.dim) {
-		ctx.fillStyle = "rgba(20, 30, 28, 0.36)";
-		roundRect(ctx, -w / 2, -h / 2, w, h, w * 0.12);
-		ctx.fill();
-	}
+	if (!drawCachedTile(ctx, face, w, h, dim)) paintTile(ctx, face, w, h, w * 0.04, dim);
 	if (o.highlight || o.selected) {
 		const color = o.selected ? COLORS.red : COLORS.accent;
 		ctx.strokeStyle = color;
 		ctx.lineWidth = o.selected ? 5 : 4;
 		ctx.shadowColor = color;
 		ctx.shadowBlur = 14;
+		ctx.shadowOffsetY = w * 0.04; // the glow sits a little low, like the tile's shadow
 		roundRect(ctx, -w / 2 - 3, -h / 2 - 3, w + 6, h + 6, w * 0.16);
 		ctx.stroke();
 	}
 	ctx.restore();
+}
+
+/**
+ * A tile centred on the origin: body, face (none for a back) and drop shadow. The shadow's size is in
+ * canvas pixels, which the transform does not change.
+ */
+function paintTile(ctx: CanvasRenderingContext2D, face: Pai | null, w: number, h: number, shadow: number, dim: boolean): void {
+	ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
+	ctx.shadowBlur = 2 * shadow;
+	ctx.shadowOffsetY = shadow;
+	ctx.drawImage(tileImage(face ? FRONT_URL : BACK_URL), -w / 2, -h / 2, w, h);
+	ctx.shadowColor = "transparent";
+	if (face) ctx.drawImage(tileImage(faceUrl(face)), -w / 2, -h / 2, w, h);
+	else {
+		ctx.fillStyle = "rgba(30, 38, 34, 0.5)"; // tone the bright back down so rivers stay the focus
+		roundRect(ctx, -w / 2, -h / 2, w, h, w * 0.12);
+		ctx.fill();
+	}
+	if (dim) {
+		ctx.fillStyle = "rgba(20, 30, 28, 0.36)";
+		roundRect(ctx, -w / 2, -h / 2, w, h, w * 0.12);
+		ctx.fill();
+	}
+}
+
+const tileCache = new Map<string, { image: HTMLCanvasElement; pad: number }>();
+const TILE_CACHE_LIMIT = 400; // a board needs up to about 200
+
+/**
+ * Draw a tile centred on the origin from an image painted once per size, quarter turn and look: painting
+ * the SVGs and the shadow for every tile made each redraw of the board slow. The tile snaps to whole
+ * pixels, so neighbours meet without a seam. False (nothing drawn) unless the transform is a uniform
+ * scale with quarter turns.
+ */
+function drawCachedTile(ctx: CanvasRenderingContext2D, face: Pai | null, w: number, h: number, dim: boolean): boolean {
+	const m = ctx.getTransform();
+	const scale = Math.hypot(m.a, m.b);
+	if (Math.abs(m.a * m.b) > 1e-9 * scale * scale || Math.abs(m.c + m.b) + Math.abs(m.d - m.a) > 1e-6 * scale) return false;
+	const quarter = (Math.round(Math.atan2(m.b, m.a) / (Math.PI / 2)) + 4) % 4;
+	const [boxW, boxH] = quarter % 2 ? [h * scale, w * scale] : [w * scale, h * scale];
+	const left = Math.round(m.e - boxW / 2);
+	const top = Math.round(m.f - boxH / 2);
+	const width = Math.round(m.e + boxW / 2) - left;
+	const height = Math.round(m.f + boxH / 2) - top;
+	const shadow = w * 0.04;
+	const key = `${face} ${dim} ${quarter} ${width}x${height} ${shadow.toFixed(2)}`;
+	let tile = tileCache.get(key);
+	if (!tile) {
+		if (tileCache.size >= TILE_CACHE_LIMIT) tileCache.clear();
+		const pad = Math.ceil(4 * shadow) + 1; // the blur reaches 3 × shadow, below the offset of 1 × shadow
+		const image = document.createElement("canvas");
+		image.width = width + 2 * pad;
+		image.height = height + 2 * pad;
+		const tileCtx = image.getContext("2d");
+		if (!tileCtx) return false;
+		tileCtx.translate(pad + width / 2, pad + height / 2);
+		tileCtx.rotate((quarter * Math.PI) / 2);
+		const [tileW, tileH] = quarter % 2 ? [height, width] : [width, height];
+		paintTile(tileCtx, face, tileW, tileH, shadow, dim);
+		tile = { image, pad };
+		tileCache.set(key, tile);
+	}
+	ctx.save();
+	ctx.setTransform(1, 0, 0, 1, 0, 0);
+	ctx.drawImage(tile.image, left - tile.pad, top - tile.pad);
+	ctx.restore();
+	return true;
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {

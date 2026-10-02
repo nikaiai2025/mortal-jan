@@ -419,7 +419,7 @@ button {
 	border-radius: 4px;
 }
 
-/* A button over each hand tile. A gold glow runs along the hand until a tile is chosen. */
+/* A button over each hand tile. A gold ring runs along the hand until a tile is chosen. */
 .board__tile {
 	position: absolute;
 	padding: 0;
@@ -428,8 +428,19 @@ button {
 	border-radius: 12% / 9%;
 	pointer-events: auto;
 	cursor: pointer;
-	animation: tile-invite 2.6s ease-in-out calc(var(--order) * 60ms) infinite;
 	-webkit-tap-highlight-color: transparent;
+}
+
+/* The ring is painted once and only fades in and out, which the browser does without repainting. */
+.board__tile::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	background: rgba(255, 236, 170, 0.28);
+	box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.95);
+	opacity: 0;
+	animation: tile-invite 2.6s ease-in-out calc(var(--order) * 60ms) infinite;
 }
 
 /* Reach above the tile, where a raised tile is and fingers land. */
@@ -447,26 +458,19 @@ button {
 	cursor: default;
 }
 
-.board.is-picked .board__tile,
-.board__tile:disabled {
+.board.is-picked .board__tile::after,
+.board__tile:disabled::after {
 	animation: none;
 }
 
-/* The tile lights up and a gold ring passes over it. */
 @keyframes tile-invite {
 	0%,
 	40%,
 	100% {
-		box-shadow:
-			inset 0 0 0 99px rgba(255, 236, 170, 0),
-			0 0 0 0 rgba(255, 209, 102, 0),
-			0 0 0 0 rgba(255, 209, 102, 0);
+		opacity: 0;
 	}
 	14% {
-		box-shadow:
-			inset 0 0 0 99px rgba(255, 236, 170, 0.28),
-			0 0 0 3px rgba(255, 209, 102, 0.95),
-			0 0 16px 5px rgba(255, 209, 102, 0.6);
+		opacity: 1;
 	}
 }
 
@@ -1448,8 +1452,8 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
-	/* A still ring instead of the moving glow. */
-	.board__tile {
+	/* A still ring instead of the moving one. */
+	.board__tile::after {
 		animation: none;
 	}
 
