@@ -308,8 +308,8 @@ export async function problemCard(question: Question, result: Result, includeRes
 		kind: question.kind,
 		choices: question.choices,
 		prompt: includeResult ? undefined : questionText(question.kind),
-		promptSize: 46,
-		promptColor: "#ffd166",
+		promptSize: 44,
+		promptBoxed: true,
 		tags: includeResult ? tags : undefined,
 		hand,
 	});

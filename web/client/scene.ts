@@ -154,9 +154,9 @@ export interface SceneOptions {
 	choices?: Choice[];
 	/** The question, drawn above the hand where the page shows it (for share images). */
 	prompt?: string;
-	/** Size and colour of the prompt; the share image makes it the headline of the board. */
+	/** Size of the prompt, and whether it sits on a paper label (the share image: plain text is lost on the felt). */
 	promptSize?: number;
-	promptColor?: string;
+	promptBoxed?: boolean;
 	/** Labels in the band (the player's answer, the AI's best) for share images. */
 	tags?: HandTag[];
 	hand?: HandView;
@@ -190,7 +190,7 @@ export function drawScene(ctx: CanvasRenderingContext2D, scene: Scene, width: nu
 	ctx.restore();
 	drawOwnRow(ctx, scene, options.hand);
 	if (options.choices) drawCallMarks(ctx, scene, options.choices);
-	if (options.prompt) drawPrompt(ctx, options.prompt, options.promptSize ?? 32, options.promptColor ?? "#f6efdc");
+	if (options.prompt) drawPrompt(ctx, options.prompt, options.promptSize ?? 32, options.promptBoxed ?? false);
 	if (options.tags) drawTags(ctx, scene, options.tags, options.hand?.selected ?? null);
 	if (options.hand?.bars) drawBars(ctx, scene, options.hand.bars, options.hand.barProgress ?? 1);
 	ctx.restore();
@@ -205,17 +205,35 @@ function drawFelt(ctx: CanvasRenderingContext2D, kind: ProblemKind): void {
 }
 
 /** The question in the band above the hand, as the page sets it there. */
-function drawPrompt(ctx: CanvasRenderingContext2D, text: string, size: number, color: string): void {
+function drawPrompt(ctx: CanvasRenderingContext2D, text: string, size: number, boxed: boolean): void {
 	const band = handBand();
+	const x = SCENE_WIDTH * 0.02;
+	const middle = (band.top + band.bottom) / 2;
 	ctx.save();
 	ctx.font = `800 ${size}px ${MINCHO}`;
-	ctx.fillStyle = color;
 	ctx.textAlign = "left";
 	ctx.textBaseline = "middle";
-	ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
-	ctx.shadowBlur = 4;
-	ctx.shadowOffsetY = 2;
-	ctx.fillText(text, SCENE_WIDTH * 0.02, (band.top + band.bottom) / 2);
+	if (boxed) {
+		// A paper label, like the ones for the answer and the AI's best, with ink text.
+		const width = ctx.measureText(text).width + size * 0.9;
+		const height = size * 1.5;
+		ctx.fillStyle = "#f6efdc";
+		ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
+		ctx.shadowBlur = 6;
+		ctx.shadowOffsetY = 2;
+		ctx.beginPath();
+		ctx.roundRect(x, middle - height / 2, width, height, 10);
+		ctx.fill();
+		ctx.shadowColor = "transparent";
+		ctx.fillStyle = "#1d2830";
+		ctx.fillText(text, x + size * 0.45, middle + 2);
+	} else {
+		ctx.fillStyle = "#f6efdc";
+		ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+		ctx.shadowBlur = 4;
+		ctx.shadowOffsetY = 2;
+		ctx.fillText(text, x, middle);
+	}
 	ctx.restore();
 }
 
