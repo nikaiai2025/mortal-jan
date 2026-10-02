@@ -140,6 +140,13 @@ export interface HandBar {
 	best: boolean;
 }
 
+/** A label in the band above the hand (share images): over a hand tile, or free-standing when `index` is null. */
+export interface HandTag {
+	index: number | null;
+	text: string;
+	color: string;
+}
+
 export interface SceneOptions {
 	problemId: number;
 	kind: ProblemKind;
@@ -150,6 +157,8 @@ export interface SceneOptions {
 	/** Size and colour of the prompt; the share image makes it the headline of the board. */
 	promptSize?: number;
 	promptColor?: string;
+	/** Labels in the band (the player's answer, the AI's best) for share images. */
+	tags?: HandTag[];
 	hand?: HandView;
 }
 
@@ -182,6 +191,7 @@ export function drawScene(ctx: CanvasRenderingContext2D, scene: Scene, width: nu
 	drawOwnRow(ctx, scene, options.hand);
 	if (options.choices) drawCallMarks(ctx, scene, options.choices);
 	if (options.prompt) drawPrompt(ctx, options.prompt, options.promptSize ?? 32, options.promptColor ?? "#f6efdc");
+	if (options.tags) drawTags(ctx, scene, options.tags, options.hand?.selected ?? null);
 	if (options.hand?.bars) drawBars(ctx, scene, options.hand.bars, options.hand.barProgress ?? 1);
 	ctx.restore();
 }
@@ -206,6 +216,57 @@ function drawPrompt(ctx: CanvasRenderingContext2D, text: string, size: number, c
 	ctx.shadowBlur = 4;
 	ctx.shadowOffsetY = 2;
 	ctx.fillText(text, SCENE_WIDTH * 0.02, (band.top + band.bottom) / 2);
+	ctx.restore();
+}
+
+/**
+ * Labels in the band: each anchored one sits over its tile with a pointer down to it (a second label on
+ * the same tile stacks above the first); free-standing ones line up from the left at the band's middle.
+ */
+function drawTags(ctx: CanvasRenderingContext2D, scene: Scene, tags: HandTag[], selected: number | null): void {
+	const slots = handSlots(scene);
+	const band = handBand();
+	const height = 36;
+	const pointer = 9;
+	ctx.save();
+	ctx.font = `700 22px ${FONT}`;
+	ctx.textAlign = "left";
+	ctx.textBaseline = "middle";
+	const occupied: { x: number; w: number; bottom: number }[] = [];
+	let freeX = MARGIN + 6;
+	for (const tag of tags) {
+		const width = ctx.measureText(tag.text).width + 26;
+		let x: number;
+		let bottom: number;
+		const slot = tag.index !== null ? slots[tag.index] : undefined;
+		if (slot) {
+			const top = slot.y - (selected === tag.index ? RAISE : 0);
+			x = Math.min(Math.max(MARGIN, slot.x + slot.w / 2 - width / 2), SCENE_WIDTH - MARGIN - width);
+			bottom = top - pointer - 4;
+			// Stack above a label already sitting over the same place.
+			for (const other of occupied) if (x < other.x + other.w && other.x < x + width) bottom = Math.min(bottom, other.bottom - height - 10);
+		} else {
+			x = freeX;
+			bottom = (band.top + band.bottom) / 2 + height / 2;
+			freeX += width + 14;
+		}
+		occupied.push({ x, w: width, bottom });
+		ctx.fillStyle = tag.color;
+		ctx.beginPath();
+		ctx.roundRect(x, bottom - height, width, height, 8);
+		ctx.fill();
+		if (slot) {
+			const centre = slot.x + slot.w / 2;
+			ctx.beginPath();
+			ctx.moveTo(centre - pointer, bottom - 1);
+			ctx.lineTo(centre + pointer, bottom - 1);
+			ctx.lineTo(centre, bottom + pointer);
+			ctx.closePath();
+			ctx.fill();
+		}
+		ctx.fillStyle = "#fff6ea";
+		ctx.fillText(tag.text, x + 13, bottom - height / 2 + 1);
+	}
 	ctx.restore();
 }
 

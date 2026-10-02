@@ -1,14 +1,16 @@
 // Share images (portrait 3:4, a problem without its result shorter) drawn in the browser, handed to the OS share sheet or saved.
 
 import { type Mark, displayName, markOf } from "../shared/rules";
-import type { Candidate, ProblemKind, Profile, Question, Result, SetProblem, Stats } from "../shared/types";
+import type { Candidate, Profile, Question, Result, SetProblem, Stats } from "../shared/types";
 import { currentPublicId } from "./api";
 import { h } from "./dom";
 import { chosenSlot } from "./evaluation";
 import { CALL_LABELS, DIFFICULTY_LABELS } from "./labels";
 import { hanamaruFor, paintMark, RED_INK } from "./marks";
-import { SCENE_WIDTH, drawScene, drawTile, preloadScene, questionText, sceneHeight } from "./scene";
+import { type HandTag, SCENE_WIDTH, drawScene, drawTile, handTiles, preloadScene, questionText, sceneHeight } from "./scene";
 import { tileOrder } from "./tiles";
+
+const GOLD = "#b8860b";
 
 export const SITE_NAME = "もーたる何切る教室";
 /** Ends every post text, after what is shared (e.g. 第12問); the link follows. */
@@ -88,8 +90,30 @@ function handScore(ctx: CanvasRenderingContext2D, score: string, x: number, y: n
 	ctx.fillText("点", x + width + 6, y);
 }
 
-/** The headline under a problem image shared without its result: the question itself. */
-const headlineText = (kind: ProblemKind): string => questionText(kind);
+/** Labels for the band: the player's answer over the chosen tile, the AI's best over its tile (one label when they agree). */
+function answerTags(result: Result): HandTag[] {
+	const name = `${result.playerName}さんの回答`;
+	const best = result.evaluation.best;
+	const mine = result.answer.action;
+	if (result.kind === "call") {
+		const label = (action: string) => CALL_LABELS[action] ?? action;
+		return mine === best
+			? [{ index: null, text: `${name}: ${label(mine)} ＝ AIの最善手`, color: RED_INK }]
+			: [
+					{ index: null, text: `${name}: ${label(mine)}`, color: RED_INK },
+					{ index: null, text: `AIの最善手: ${label(best)}`, color: GOLD },
+				];
+	}
+	const way = (action: string) => (result.kind === "riichi" ? (action.startsWith("r:") ? "（リーチ）" : "（ダマ）") : "");
+	const tiles = handTiles(result.scene);
+	const mineIndex = tiles.indexOf(mine.slice(2));
+	const bestIndex = tiles.indexOf(best.slice(2));
+	if (mine === best) return [{ index: mineIndex, text: `${name}${way(mine)} ＝ AIの最善手`, color: RED_INK }];
+	return [
+		{ index: mineIndex, text: `${name}${way(mine)}`, color: RED_INK },
+		{ index: bestIndex, text: `AIの最善手${way(best)}`, color: GOLD },
+	];
+}
 
 /** Site name and host at the right end of a line (the problem card's headline or name line); returns the x where it starts. */
 function siteMark(ctx: CanvasRenderingContext2D, baseline: number): number {
@@ -218,7 +242,7 @@ function drawAction(ctx: CanvasRenderingContext2D, action: string, result: Resul
 	return cursor - x;
 }
 
-/** Under the name: the AI's difficulty, then the candidates with tiles, a bar, the evaluation and the score. */
+/** Under the title line: the AI's difficulty, then the candidates with tiles, a bar, the evaluation and the score. */
 function paintCandidates(ctx: CanvasRenderingContext2D, result: Result, header: number): void {
 	ctx.textBaseline = "alphabetic";
 	ctx.textAlign = "left";
@@ -257,37 +281,44 @@ function paintCandidates(ctx: CanvasRenderingContext2D, result: Result, header: 
 }
 
 /**
- * Problem image on top. Without the result: the question as a headline under the board.
- * With it: the board as the result page shows it (the chosen tile, the mark and the score), the
- * player's name under it, then the AI's difficulty and the candidates with their evaluation.
+ * The board as the page shows it, with a line under it. Without the result: the question, large,
+ * in the band above the hand. With it: the chosen tile, labels in the band for the player's answer
+ * and the AI's best, the mark and the score; under the board a title, the AI's difficulty and the
+ * candidates with their evaluation.
  */
 export async function problemCard(question: Question, result: Result, includeResult = true): Promise<HTMLCanvasElement> {
+	const tags = includeResult ? answerTags(result) : [];
 	await Promise.all([
 		preloadScene(question.scene, question.choices),
-		loadGlyphs(`${result.playerName} さん点${headlineText(question.kind)}ピタリ候補ごとのAI評価AIの判定${Object.values(DIFFICULTY_LABELS).join("")}${Object.values(CALL_LABELS).join("")}リーチ`),
+		loadGlyphs(
+			`${result.playerName} さんの回答の採点点${questionText(question.kind)}ピタリ候補ごとのAI評価AIの判定${Object.values(DIFFICULTY_LABELS).join("")}${Object.values(CALL_LABELS).join("")}リーチ${tags.map((t) => t.text).join("")}`,
+		),
 	]);
 	const margin = 40;
 	const sceneWidth = WIDTH - 2 * margin;
 	const bottom = margin + (sceneHeight() * sceneWidth) / SCENE_WIDTH;
-	const line = bottom + (includeResult ? 66 : 92); // baseline of the line under the board
-	const [element, ctx] = canvas(includeResult ? HEIGHT : Math.round(line + 44));
+	const line = bottom + 66; // baseline of the line under the board
+	const [element, ctx] = canvas(includeResult ? HEIGHT : Math.round(line + 28));
 	paper(ctx, 0);
 	ctx.save();
 	ctx.translate(margin, margin);
-	// The question is the headline under the board, once; the band above the hand stays empty.
 	const hand = includeResult && question.kind !== "call" ? { selected: chosenSlot(result) } : undefined;
-	drawScene(ctx, question.scene, sceneWidth, { problemId: question.id, kind: question.kind, choices: question.choices, hand });
+	drawScene(ctx, question.scene, sceneWidth, {
+		problemId: question.id,
+		kind: question.kind,
+		choices: question.choices,
+		prompt: includeResult ? undefined : questionText(question.kind),
+		promptSize: 46,
+		promptColor: "#ffd166",
+		tags: includeResult ? tags : undefined,
+		hand,
+	});
 	ctx.restore();
 	const limit = siteMark(ctx, line);
-	if (!includeResult) {
-		ctx.fillStyle = INK;
-		fittedText(ctx, headlineText(question.kind), line, (size) => `800 ${size}px ${MINCHO}`, 50, limit);
-		return element;
-	}
-	// The score is already written on the board; the line under it names the player only.
+	if (!includeResult) return element;
 	paintGrading(ctx, result, margin, margin, sceneWidth);
 	ctx.fillStyle = INK;
-	fittedText(ctx, `${result.playerName} さん`, line, (size) => `700 ${size}px ${GOTHIC}`, 40, limit);
+	fittedText(ctx, `${result.playerName} さんの回答の採点`, line, (size) => `700 ${size}px ${GOTHIC}`, 38, limit);
 	paintCandidates(ctx, result, line + 54);
 	return element;
 }
