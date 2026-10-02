@@ -56,7 +56,7 @@ export async function freePlay(root: HTMLElement, app: App): Promise<void> {
 				"section",
 				{ class: "notice" },
 				h("h2", {}, pick.mode === "order" ? "番号順に最後まで解きました" : "全問解きました"),
-				h("div", { class: "result__next" }, h("span", {}, "次の問題"), modeSwitch()),
+				h("div", { class: "notice__switch" }, modeSwitch()),
 				pick.mode === "order"
 					? h("button", { class: "stamp-button", type: "button", onclick: restart }, "最初から")
 					: h("p", {}, "すべての問題に回答済みです。"),
@@ -140,6 +140,7 @@ export async function setList(root: HTMLElement, theme: SetTheme, page: number, 
 				if (Number.isInteger(id) && id >= 1) app.navigate(`/q/${id}`);
 			},
 		},
+		h("span", { class: "set-jump__label" }, "1問だけ解く"),
 		h("label", {}, "第", number, "問を"),
 		h("button", { class: "ghost-button ghost-button--small", type: "submit" }, "開く"),
 	);

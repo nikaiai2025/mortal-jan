@@ -187,10 +187,11 @@ function resultCard(result: Result, options: PlayOptions): HTMLElement {
 		{ class: "result", "aria-label": "結果" },
 		result.kind === "call" ? h("div", { class: "result__list" }, h("h3", {}, "候補ごとのAI評価"), list) : null,
 		meta,
-		options.nextSwitch ? h("div", { class: "result__next" }, h("span", {}, "次の問題"), options.nextSwitch) : null,
 		h(
 			"div",
 			{ class: "result__actions" },
+			// The switch sits right above "次の問題へ", the same width: it belongs to that button.
+			options.nextSwitch ?? null,
 			h("button", { class: "ghost-button", type: "button", onclick: share }, "結果を共有"),
 			h("button", { class: "stamp-button", type: "button", onclick: () => options.onNext() }, options.nextLabel),
 		),

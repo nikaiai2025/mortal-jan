@@ -228,19 +228,23 @@ button {
 	background: var(--ink);
 }
 
-/* Above the result's buttons, beside "次の問題へ": how the next problem is chosen. */
-.result__next {
-	display: flex;
-	align-items: center;
-	justify-content: flex-end;
-	gap: 10px;
-	margin-top: 14px;
-	font-size: 0.85rem;
-	font-weight: 700;
-	color: var(--muted);
+/* In a result: a small switch tucked above "次の問題へ", right-aligned with it. */
+.result .result__actions .segmented {
+	grid-column: 2;
+	justify-self: end;
+	min-height: 0;
+	margin-bottom: -4px;
+	padding: 2px;
 }
 
-.notice .result__next {
+.result .result__actions .segmented button {
+	min-height: 24px;
+	padding: 0 10px;
+	font-size: 0.75rem;
+}
+
+.notice__switch {
+	display: flex;
 	justify-content: center;
 	margin: 14px 0 18px;
 }
@@ -252,6 +256,12 @@ button {
 	gap: 6px;
 	margin: 0 0 14px;
 	font-size: 0.9rem;
+}
+
+.set-jump__label {
+	margin-right: 6px;
+	font-weight: 700;
+	color: var(--muted);
 }
 
 .set-jump input {
