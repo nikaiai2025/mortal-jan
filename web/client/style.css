@@ -295,25 +295,21 @@ button {
 	color: var(--muted);
 }
 
+/* The board has no frame: the green reaches its edge. */
 .board {
 	position: relative;
 	margin: 0 auto 18px;
-	padding: 7px;
-	background: #fffdf6;
 	border-radius: 4px;
-	box-shadow:
-		0 1px 0 var(--paper-edge),
-		0 10px 24px -12px rgba(40, 30, 10, 0.45);
 }
 
 .play .board {
 	margin-bottom: 10px;
 }
 
-/* The board fills the window's height: --board is its width with its 7px padding.
+/* The board fills the window's height: --board is its width.
    0.982 ≈ SCENE_WIDTH / sceneHeight; 100px: the site header and padding above the board, and 12px below it. */
 .sheet:has(.play) {
-	--board: max(328px, calc((100svh - 100px) * 0.982 + 14px));
+	--board: max(328px, calc((100svh - 100px) * 0.982));
 	max-width: calc(var(--board) + 32px);
 }
 
@@ -333,7 +329,7 @@ button {
 .board__overlay,
 .board__controls {
 	position: absolute;
-	inset: 7px;
+	inset: 0;
 	pointer-events: none;
 }
 
@@ -1371,12 +1367,6 @@ button {
 	.board {
 		margin-left: -6px;
 		margin-right: -6px;
-		padding: 5px;
-	}
-
-	.board__overlay,
-	.board__controls {
-		inset: 5px;
 	}
 
 	/* No room for the riichi hint beside the toggle; the glowing tiles show where to tap. */
