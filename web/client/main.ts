@@ -2,7 +2,7 @@ import "./style.css";
 import { h } from "./dom";
 import { errorMessage } from "./errors";
 import { SET_THEMES, type SetTheme } from "../shared/rules";
-import { type App, freePlay, meLink, problemPage, profilePage, rankingPage, rulesPage, setList, setPlay } from "./screens";
+import { type App, dailyPlay, freePlay, meLink, problemPage, profilePage, rankingPage, rulesPage, setList, setPlay } from "./screens";
 import { effectsSetting } from "./effects";
 import { SITE_NAME } from "./share";
 import { sound } from "./sound";
@@ -14,6 +14,7 @@ type Render = (root: HTMLElement, match: RegExpMatchArray, app: App) => Promise<
 const routes: [RegExp, Render][] = [
 	[/^\/$/, (root, _, app) => freePlay(root, app)],
 	[/^\/q\/(\d+)$/, (root, m, app) => problemPage(root, Number(m[1]), app)],
+	[/^\/daily$/, (root, _, app) => dailyPlay(root, app)],
 	[/^\/sets$/, (root) => setList(root, themeParam(), Number(new URLSearchParams(location.search).get("page") ?? 1) || 1)],
 	[/^\/sets\/([a-z]+)\/(\d+)$/, (root, m, app) => setPlay(root, m[1] as SetTheme, Number(m[2]), app)],
 	[/^\/rules$/, (root) => rulesPage(root)],
@@ -66,6 +67,7 @@ async function render(): Promise<void> {
 
 const navLinks: [string, string | (() => string)][] = [
 	["出題", "/"],
+	["今日の10問", "/daily"],
 	["問題集", "/sets"],
 	["成績", meLink],
 	["ランキング", "/ranking"],

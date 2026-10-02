@@ -16,6 +16,8 @@ export interface PlayOptions {
 	/** Shown after the answer, never between the board and it: a message to the player, and set progress. */
 	notice?: string;
 	progress?: string;
+	/** How the next problem is chosen (free play); under the info, above the rules. */
+	controls?: HTMLElement;
 	from: string | null;
 	nextLabel: string;
 	onNext(): void;
@@ -28,17 +30,6 @@ export async function showProblem(root: HTMLElement, response: ProblemResponse, 
 			return showQuestion(root, response.question, options);
 		case "result":
 			return showResult(root, response.result, options);
-		case "locked":
-			replace(root, 
-				h(
-					"section",
-					{ class: "notice" },
-					h("h2", {}, "解答中の問題があります"),
-					h("p", {}, `先に第${response.currentId}問を解いてください。1問ずつ順番に解く決まりです。`),
-					h("a", { class: "stamp-button", href: `/q/${response.currentId}` }, `第${response.currentId}問へ`),
-				),
-			);
-			return;
 		case "finished":
 			replace(root, h("section", { class: "notice" }, h("h2", {}, "全問解きました"), h("p", {}, "すべての問題に回答済みです。")));
 	}
@@ -67,9 +58,9 @@ function info(options: PlayOptions): HTMLElement | null {
 	);
 }
 
-/** The board first, so that nothing pushes it down; under it the answer or the result, then the info and the rules. */
+/** The board first, so that nothing pushes it down; under it the answer or the result, then the info, the controls and the rules. */
 const play = (view: Board, below: HTMLElement, options: PlayOptions) =>
-	h("div", { class: "play" }, view.element, below, info(options), rulesNote());
+	h("div", { class: "play" }, view.element, below, info(options), options.controls ?? null, rulesNote());
 
 async function showQuestion(root: HTMLElement, question: Question, options: PlayOptions): Promise<void> {
 	const view = await board(question);

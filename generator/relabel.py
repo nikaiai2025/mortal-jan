@@ -9,6 +9,8 @@ instead, since the extraction drew the difficulties under the old thresholds.
 A row is updated only if it holds the same problem (same source), so the SQL leaves a
 database with another problem set (e.g. the trial set) alone. problems.jsonl and its
 meta are rewritten to match, so a later load gives the same result.
+The SQL ends by recounting each player's answers by difficulty (the ranking's mix bar,
+kept in player_stats), the one aggregate that copies the difficulty.
 """
 
 from __future__ import annotations
@@ -47,6 +49,17 @@ def update_statement(problem: dict[str, Any], position: int) -> str:
     )
 
 
+def mix_statement() -> str:
+    """Recount the all-time answers by difficulty from the aggregated answers (up to the aggregation cursor,
+    as the next aggregation adds the newer ones); each player's answers are read once per difficulty."""
+    count = (
+        "(SELECT COUNT(*) FROM answers a JOIN problems p ON p.id = a.problem_id WHERE a.player_id = player_stats.player_id"
+        " AND p.difficulty = '{0}' AND a.id <= (SELECT last_answer_id FROM aggregation WHERE id = 1))"
+    )
+    columns = ", ".join(f"{d} = {count.format(d)}" for d in ("easy", "normal", "hard"))
+    return f"UPDATE player_stats SET {columns} WHERE period = 'all';"
+
+
 def replace_file(path: Path, text: str) -> None:
     """Write beside the file, then swap: an interruption never leaves a truncated file."""
     temporary = path.with_name(path.name + ".tmp")
@@ -68,6 +81,7 @@ def main() -> None:
     with args.out.open("w", encoding="utf-8", newline="\n") as out:
         for problem, positions in with_positions(relabelled):
             out.write(update_statement(problem, positions["difficulty"]) + "\n")
+        out.write(mix_statement() + "\n")
     replace_file(args.problems, "".join(json.dumps(p, ensure_ascii=False, separators=(",", ":")) + "\n" for p in relabelled))
     meta_path = args.problems.with_suffix(".meta.json")
     if meta_path.exists():

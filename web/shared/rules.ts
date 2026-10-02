@@ -2,8 +2,8 @@
 
 export const SET_SIZE = 10;
 export const NAME_MAX_LENGTH = 12;
-/** Minimum answers to appear in the average / pitari rankings. */
-export const RANKING_MIN_ANSWERS = { all: 50, today: 10 } as const;
+/** Minimum answers to appear in the all-time average / pitari rankings (today's ranking is today's ten). */
+export const RANKING_MIN_ANSWERS = 50;
 /** Answers one player can save per JST day (protects the D1 write quota). */
 export const DAILY_ANSWER_LIMIT = 1000;
 /** Days shown in the daily results chart (days with answers only). */
@@ -46,3 +46,12 @@ export function markOf(score: number, pitari: boolean): Mark {
 	if (score >= 30) return "sankaku";
 	return "batsu";
 }
+
+/** A miss (△ or ✕): what the review list collects. */
+export function isMiss(score: number, pitari: boolean): boolean {
+	const mark = markOf(score, pitari);
+	return mark === "sankaku" || mark === "batsu";
+}
+
+/** How the next problem on the question page is chosen. */
+export type PickMode = "random" | "order";

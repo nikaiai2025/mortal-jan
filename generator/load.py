@@ -6,6 +6,8 @@
 Plain INSERTs: loading into a database that already has problems fails instead of
 replacing problems that players may have answered. `--replace` first deletes every
 problem and every answer and record on them (for swapping a trial set for the real one).
+`--after N` writes only the problems numbered above N (added by generator.extract --extend);
+their positions continue those of the loaded problems, so answers and records stay.
 """
 
 from __future__ import annotations
@@ -50,6 +52,8 @@ def insert_statement(problem: dict, positions: dict[str, int]) -> str:
 REPLACE_PRELUDE = (
     "DELETE FROM answers;",
     "DELETE FROM player_stats;",
+    "DELETE FROM daily_results;",
+    "DELETE FROM daily_sets;",
     "DELETE FROM problems;",
     "UPDATE aggregation SET last_answer_id = 0 WHERE id = 1;",
     "UPDATE players SET current_problem_id = NULL, assigned_day = NULL, assigned_count = 0;",
@@ -60,17 +64,24 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--problems", type=Path, default=runtime.GENERATED_ROOT / "problems.jsonl")
     parser.add_argument("--out", type=Path, default=runtime.GENERATED_ROOT / "problems.sql")
-    parser.add_argument("--replace", action="store_true", help="delete all problems, answers and records first")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--replace", action="store_true", help="delete all problems, answers and records first")
+    mode.add_argument("--after", type=int, metavar="N", help="write only the problems numbered above N (already loaded up to N)")
     args = parser.parse_args()
 
     with args.problems.open(encoding="utf-8") as source:
         problems = [json.loads(line) for line in source]
+    written = 0
     with args.out.open("w", encoding="utf-8", newline="\n") as out:
         if args.replace:
             out.write("\n".join(REPLACE_PRELUDE) + "\n")
         for problem, positions in with_positions(problems):
+            if args.after is not None and problem["id"] <= args.after:
+                continue
             out.write(insert_statement(problem, positions) + "\n")
-    print(f"{len(problems)} problems -> {args.out}{' (replacing everything)' if args.replace else ''}")
+            written += 1
+    note = " (replacing everything)" if args.replace else f" (added after {args.after})" if args.after is not None else ""
+    print(f"{written} problems -> {args.out}{note}")
 
 
 if __name__ == "__main__":

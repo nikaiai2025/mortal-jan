@@ -17,7 +17,9 @@ pwsh -File tools/generate-problems.ps1     # 自己対局→全判断の評価�
 
 `generate-problems.ps1` は中断しても、再実行すれば続きから処理する。導出した抽出の設定（鳴きの閾値・鳴き枠とリーチ枠の確率）は `generator/calibration.json` に保存される。
 
-公開後に難易度の閾値（`generator/scoring.py` の `DISCARD_THRESHOLDS`）を変えるときは、`python -m generator.calibrate` で鳴きの閾値を導き直してから `python -m generator.relabel` を実行し、できた `generated/relabel.sql` を本番D1に流す（`npx wrangler d1 execute DB --remote --file ../generated/relabel.sql`）。問題・回答・成績はそのままで、問題の難易度と難易度別問題集の並びだけが変わる（Workerのテーマ別の問題数は最大10分で追従する）。
+公開後に難易度の閾値（`generator/scoring.py` の `DISCARD_THRESHOLDS`）を変えるときは、`python -m generator.calibrate` で鳴きの閾値を導き直してから `python -m generator.relabel` を実行し、できた `generated/relabel.sql` を本番D1に流す（`npx wrangler d1 execute DB --remote --file ../generated/relabel.sql`）。問題・回答・成績はそのままで、問題の難易度と難易度別問題集の並び、ランキングの難易度別の回答数だけが変わる（Workerのテーマ別の問題数は最大10分で追従する）。
+
+公開後に問題を増やすときは、`pwsh -File tools/generate-problems.ps1 -Hanchan 1500 -Problems 12000 -Extend` のように半荘数と総問題数を増やして実行する（自己対局と評価は済んだ分を飛ばし、抽出の設定は導き直さず、投入済みの問題と番号はそのまま末尾に追加する）。追加分は `python -m generator.load --after 10000`（投入済みの問題数）でSQLにして本番D1に流す。回答・成績は残り、問題集はテーマごとに末尾に増える。
 
 初回実行時に、本番の問題集用の非公開の乱数seed（`generator/seeds.local.json`、git対象外）を作る。公開コードとseedがあれば問題と答えを再現できるため、このファイルは公開せず、バックアップしておく。
 

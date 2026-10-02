@@ -5,6 +5,7 @@ import {
 	SET_SIZE,
 	type SetTheme,
 	displayName,
+	isMiss,
 	jstDate,
 	setOf,
 } from "../shared/rules";
@@ -12,6 +13,7 @@ import type {
 	AnswerResult,
 	Breakdown,
 	Choice,
+	DailySet,
 	DailyStats,
 	Evaluation,
 	Me,
@@ -72,8 +74,10 @@ const routes: [string, RegExp, Handler][] = [
 	["GET", /^\/api\/me$/, getMe],
 	["PUT", /^\/api\/me\/name$/, putName],
 	["GET", /^\/api\/problems\/current$/, getCurrent],
+	["GET", /^\/api\/problems\/next$/, getNext],
 	["GET", /^\/api\/problems\/(\d+)$/, getProblem],
 	["POST", /^\/api\/problems\/(\d+)\/answer$/, postAnswer],
+	["GET", /^\/api\/daily$/, getDaily],
 	["GET", /^\/api\/sets$/, getSets],
 	["GET", /^\/api\/sets\/([a-z]+)\/(\d+)$/, getSet],
 	["GET", /^\/api\/players\/([a-z0-9]+)$/, getProfile],
@@ -100,14 +104,15 @@ export async function route(request: Request, env: Env, url: URL): Promise<Respo
 async function authenticate(ctx: Ctx): Promise<PlayerRow> {
 	const token = ctx.request.headers.get("Authorization")?.match(/^Bearer (\S+)$/)?.[1];
 	if (!token) throw new HttpError(401, "unauthorized");
-	const player = await ctx.env.DB.prepare(
-		"SELECT id, public_id, name, current_problem_id, assigned_day, assigned_count FROM players WHERE token_hash = ?",
-	)
+	const player = await ctx.env.DB.prepare(`SELECT ${PLAYER_COLUMNS} FROM players WHERE token_hash = ?`)
 		.bind(await sha256Hex(token))
 		.first<PlayerRow>();
 	if (!player) throw new HttpError(401, "unauthorized");
 	return player;
 }
+
+const loadPlayer = (db: D1Database, id: number) =>
+	db.prepare(`SELECT ${PLAYER_COLUMNS} FROM players WHERE id = ?`).bind(id).first<PlayerRow>();
 
 const clientIp = (ctx: Ctx) => addressKey(ctx.request.headers.get("CF-Connecting-IP") ?? "local");
 
@@ -150,12 +155,15 @@ interface PlayerAnswers {
 
 const emptyStats = (): Stats => ({ answers: 0, scoreSum: 0, pitari: 0 });
 
+const HISTORY_SIZE = 50;
+
 /**
  * A player's stats counted from their answers (always up to date). `detail` adds the breakdown and
- * the recent answers, read with the problems' current kind and difficulty: the difficulty is never
- * copied into answers or aggregates, so a threshold change only relabels the problems (generator.relabel).
+ * the recent answers (all of them, or the misses for the review list), read with the problems' current
+ * kind and difficulty: the difficulty is never copied into answers, so a threshold change only
+ * relabels the problems (generator.relabel).
  */
-async function playerAnswers(db: D1Database, playerId: number, now: Date, detail = true): Promise<PlayerAnswers> {
+async function playerAnswers(db: D1Database, playerId: number, now: Date, detail = true, history: "all" | "miss" = "all"): Promise<PlayerAnswers> {
 	const today = jstDate(now);
 	const { results } = await db
 		.prepare(
@@ -185,9 +193,14 @@ async function playerAnswers(db: D1Database, playerId: number, now: Date, detail
 		.sort(([a], [b]) => a.localeCompare(b))
 		.slice(-DAILY_CHART_DAYS)
 		.map(([date, stats]) => ({ date, ...stats }));
-	const recent = detail ? results.sort((a, b) => b.id - a.id).slice(0, 50) : [];
-	const history = recent.map((r) => ({ id: r.problem_id, difficulty: r.difficulty ?? null, score: r.score, pitari: r.pitari === 1, answeredAt: r.answered_at }));
-	return { all, today: days.get(today) ?? emptyStats(), daily, breakdown, history };
+	const recent = detail
+		? results
+				.filter((r) => history === "all" || isMiss(r.score, r.pitari === 1))
+				.sort((a, b) => b.id - a.id)
+				.slice(0, HISTORY_SIZE)
+		: [];
+	const historyItems = recent.map((r) => ({ id: r.problem_id, difficulty: r.difficulty ?? null, score: r.score, pitari: r.pitari === 1, answeredAt: r.answered_at }));
+	return { all, today: days.get(today) ?? emptyStats(), daily, breakdown, history: historyItems };
 }
 
 async function getMe(ctx: Ctx): Promise<Response> {
@@ -207,8 +220,7 @@ async function putName(ctx: Ctx): Promise<Response> {
 
 // ---- problems ----
 
-// Problems are swapped (a trial set for the real one) or relabelled (generator.relabel) rarely,
-// so a few minutes of staleness is fine.
+// Problems are added or relabelled (generator.relabel) rarely, so a few minutes of staleness is fine.
 const PROBLEM_CACHE_TTL_MS = 10 * 60_000;
 let problemCountCache: { count: number; expires: number } | null = null;
 
@@ -226,12 +238,24 @@ async function loadProblem(db: D1Database, id: number): Promise<ProblemRow> {
 	return row;
 }
 
+const toAnswer = (row: AnswerRow | null | undefined): AnswerResult | null =>
+	row ? { action: row.action, score: row.score, pitari: row.pitari === 1 } : null;
+
 async function loadAnswer(db: D1Database, playerId: number, problemId: number): Promise<AnswerResult | null> {
 	const row = await db
 		.prepare("SELECT action, score, pitari FROM answers WHERE player_id = ? AND problem_id = ?")
 		.bind(playerId, problemId)
 		.first<AnswerRow>();
-	return row && { action: row.action, score: row.score, pitari: row.pitari === 1 };
+	return toAnswer(row);
+}
+
+/** The player's answers to the given problems (one index probe each). */
+async function answersFor(db: D1Database, playerId: number, ids: number[]): Promise<Map<number, AnswerRow>> {
+	const { results } = await db
+		.prepare(`SELECT problem_id, action, score, pitari FROM answers WHERE player_id = ? AND problem_id IN (${ids.map(() => "?").join(",")})`)
+		.bind(playerId, ...ids)
+		.all<AnswerRow & { problem_id: number }>();
+	return new Map(results.map((r) => [r.problem_id, r]));
 }
 
 function questionOf(row: ProblemRow): Question {
@@ -292,9 +316,24 @@ async function assign(db: D1Database, playerId: number, current: number | null, 
 	return meta.changes === 1;
 }
 
+/**
+ * Assign the problem the player opened. Any problem can be opened at any time; a concurrent
+ * assignment is retried once from the fresh row. Throws when the daily limit is reached.
+ */
+async function assignOpened(db: D1Database, player: PlayerRow, problemId: number): Promise<void> {
+	const today = jstDate(new Date());
+	if (player.current_problem_id === problemId) return;
+	if (dailyLimitReached(player, today)) throw new HttpError(429, "daily_limit");
+	if (await assign(db, player.id, player.current_problem_id, problemId)) return;
+	const fresh = await loadPlayer(db, player.id);
+	if (fresh?.current_problem_id === problemId) return;
+	if (fresh && dailyLimitReached(fresh, today)) throw new HttpError(429, "daily_limit");
+	if (!fresh || !(await assign(db, fresh.id, fresh.current_problem_id, problemId))) throw new HttpError(409, "conflict");
+}
+
 /** After a failed assignment: the problem another request assigned (still unanswered), or the daily limit. */
 async function pendingAfterRace(db: D1Database, playerId: number): Promise<number> {
-	const player = await db.prepare(`SELECT ${PLAYER_COLUMNS} FROM players WHERE id = ?`).bind(playerId).first<PlayerRow>();
+	const player = await loadPlayer(db, playerId);
 	const pending = player && (await pendingProblem(db, player));
 	if (pending !== null && pending !== undefined) return pending;
 	if (player && dailyLimitReached(player, jstDate(new Date()))) throw new HttpError(429, "daily_limit");
@@ -307,36 +346,107 @@ async function pendingProblem(db: D1Database, player: PlayerRow): Promise<number
 	return id !== null && !(await loadAnswer(db, player.id, id)) ? id : null;
 }
 
-/** A random problem the player has not answered, or null when all are answered. */
-async function randomUnanswered(db: D1Database, playerId: number): Promise<number | null> {
-	const count = await problemCount(db);
+// ---- choosing the next problem ----
+
+const THEME_FILTERS: Record<SetTheme, { column: "difficulty" | "kind"; value: string } | null> = {
+	all: null,
+	easy: { column: "difficulty", value: "easy" },
+	normal: { column: "difficulty", value: "normal" },
+	hard: { column: "difficulty", value: "hard" },
+	discard: { column: "kind", value: "discard" },
+	riichi: { column: "kind", value: "riichi" },
+	call: { column: "kind", value: "call" },
+};
+
+function theme(text: string | null | undefined): SetTheme {
+	if (!text || !Object.hasOwn(THEME_FILTERS, text)) throw new HttpError(404, "not_found");
+	return text as SetTheme;
+}
+
+const themeSizeCache = new Map<SetTheme, { size: number; expires: number }>();
+
+/** Number of problems in a theme. */
+async function themeSize(db: D1Database, t: SetTheme): Promise<number> {
+	const filter = THEME_FILTERS[t];
+	if (!filter) return problemCount(db);
+	const cached = themeSizeCache.get(t);
+	if (cached && cached.expires > Date.now()) return cached.size;
+	const size = (await db.prepare(`SELECT MAX(${filter.column}_pos) AS n FROM problems WHERE ${filter.column} = ?`).bind(filter.value).first<number>("n")) ?? 0;
+	themeSizeCache.set(t, { size, expires: Date.now() + PROBLEM_CACHE_TTL_MS });
+	return size;
+}
+
+/** A random problem of the theme the player has not answered, or null when all are answered. */
+async function randomUnanswered(db: D1Database, playerId: number, t: SetTheme): Promise<number | null> {
+	const filter = THEME_FILTERS[t];
+	const size = await themeSize(db, t);
+	if (!size) return null;
 	const answered = db.prepare("SELECT 1 FROM answers WHERE player_id = ? AND problem_id = ?");
 	for (let attempt = 0; attempt < 20; attempt++) {
-		const id = randomInt(count);
+		const position = randomInt(size);
+		const id = filter
+			? await db.prepare(`SELECT id FROM problems WHERE ${filter.column} = ? AND ${filter.column}_pos = ?`).bind(filter.value, position).first<number>("id")
+			: position;
+		if (id === null || id === undefined) continue; // a position in flux while problems are relabelled
 		if (!(await answered.bind(playerId, id).first())) return id;
 	}
-	// Rare: the player has answered most problems.
+	// Rare: the player has answered most problems of the theme.
 	return db
 		.prepare(
-			"SELECT id FROM problems WHERE id NOT IN (SELECT problem_id FROM answers WHERE player_id = ?) ORDER BY random() LIMIT 1",
+			`SELECT id FROM problems WHERE ${filter ? `${filter.column} = ? AND ` : ""}id NOT IN (SELECT problem_id FROM answers WHERE player_id = ?) ORDER BY random() LIMIT 1`,
 		)
-		.bind(playerId)
+		.bind(...(filter ? [filter.value] : []), playerId)
 		.first<number>("id");
+}
+
+/**
+ * The first unanswered problem of the theme numbered above `after`, or null at the end. NOT INDEXED
+ * keeps SQLite on the primary key (with a theme it would otherwise scan the theme's index and sort),
+ * so it walks the problems from `after` and probes the player's answers until the first hit: a few rows.
+ */
+async function nextUnanswered(db: D1Database, playerId: number, t: SetTheme, after: number): Promise<number | null> {
+	const filter = THEME_FILTERS[t];
+	return db
+		.prepare(
+			`SELECT p.id FROM problems p NOT INDEXED LEFT JOIN answers a ON a.player_id = ?1 AND a.problem_id = p.id
+			 WHERE p.id > ?2 ${filter ? `AND p.${filter.column} = ?3` : ""} AND a.problem_id IS NULL ORDER BY p.id LIMIT 1`,
+		)
+		.bind(playerId, after, ...(filter ? [filter.value] : []))
+		.first<number>("id");
+}
+
+/**
+ * The problem `choose` picks, assigned to the player. Random play first returns the pending problem
+ * (the one opened last and left unanswered), so that a reload shows the same question; play in number
+ * order asks for the problem after a given number and ignores the pending one.
+ */
+async function serveNext(ctx: Ctx, player: PlayerRow, choose: (db: D1Database) => Promise<number | null>, keepPending = true): Promise<Response> {
+	const db = ctx.env.DB;
+	let id = keepPending ? await pendingProblem(db, player) : null;
+	if (id === null) {
+		if (dailyLimitReached(player, jstDate(new Date()))) throw new HttpError(429, "daily_limit");
+		id = await choose(db);
+		if (id === null) return json({ state: "finished" } satisfies ProblemResponse);
+		// Already assigned (a reload in number order): no write, no count against the daily limit.
+		// Otherwise a concurrent request may have assigned another problem; show that one instead.
+		if (id !== player.current_problem_id && !(await assign(db, player.id, player.current_problem_id, id))) id = await pendingAfterRace(db, player.id);
+	}
+	const question = questionOf(await loadProblem(db, id));
+	return json({ state: "question", question } satisfies ProblemResponse);
 }
 
 async function getCurrent(ctx: Ctx): Promise<Response> {
 	const player = await authenticate(ctx);
-	const db = ctx.env.DB;
-	let id = await pendingProblem(db, player);
-	if (id === null) {
-		if (dailyLimitReached(player, jstDate(new Date()))) throw new HttpError(429, "daily_limit");
-		id = await randomUnanswered(db, player.id);
-		if (id === null) return json({ state: "finished" } satisfies ProblemResponse);
-		// A concurrent request may have assigned another problem; show that one instead.
-		if (!(await assign(db, player.id, player.current_problem_id, id))) id = await pendingAfterRace(db, player.id);
-	}
-	const question = questionOf(await loadProblem(db, id));
-	return json({ state: "question", question } satisfies ProblemResponse);
+	const t = theme(ctx.url.searchParams.get("theme") ?? "all");
+	return serveNext(ctx, player, (db) => randomUnanswered(db, player.id, t));
+}
+
+async function getNext(ctx: Ctx): Promise<Response> {
+	const player = await authenticate(ctx);
+	const t = theme(ctx.url.searchParams.get("theme") ?? "all");
+	const after = Number(ctx.url.searchParams.get("after") ?? 0);
+	if (!Number.isSafeInteger(after) || after < 0) throw new HttpError(400, "invalid_query");
+	return serveNext(ctx, player, (db) => nextUnanswered(db, player.id, t, after), false);
 }
 
 async function getProblem(ctx: Ctx): Promise<Response> {
@@ -349,13 +459,7 @@ async function getProblem(ctx: Ctx): Promise<Response> {
 		const result = await resultOf(db, player, row, answer, ctx.url.searchParams.get("from"));
 		return json({ state: "result", result } satisfies ProblemResponse);
 	}
-	const pending = await pendingProblem(db, player);
-	if (pending !== null && pending !== id) return json({ state: "locked", currentId: pending } satisfies ProblemResponse);
-	if (pending === null && dailyLimitReached(player, jstDate(new Date()))) throw new HttpError(429, "daily_limit");
-	if (player.current_problem_id !== id && !(await assign(db, player.id, player.current_problem_id, id))) {
-		const current = await pendingAfterRace(db, player.id);
-		if (current !== id) return json({ state: "locked", currentId: current } satisfies ProblemResponse);
-	}
+	await assignOpened(db, player, id);
 	return json({ state: "question", question: questionOf(row) } satisfies ProblemResponse);
 }
 
@@ -390,41 +494,100 @@ async function postAnswer(ctx: Ctx): Promise<Response> {
 		if (!stored) throw error;
 		return json({ state: "result", result: await resultOf(db, player, row, stored, sharerId) } satisfies ProblemResponse);
 	}
+	// The tenth answer of a day's ten records the player's result, wherever the problem was opened.
+	// Yesterday's ten (if it exists) still completes after midnight, as yesterday's result.
+	for (const [day, create] of [[jstDate(now), true], [jstDate(new Date(now.getTime() - 24 * 3600_000)), false]] as const) {
+		const ids = await dailySet(db, day, create);
+		if (ids.includes(id)) await recordDaily(db, player.id, day, ids, await answersFor(db, player.id, ids), now);
+	}
 	const result = await resultOf(db, player, row, { action, score, pitari: pitari === 1 }, sharerId);
 	return json({ state: "result", result } satisfies ProblemResponse);
+}
+
+// ---- today's ten ----
+// The same ten problems for everyone on a Japan date: the least answered ones, chosen when the day is
+// first requested (one scan of the problems per day) and kept in daily_sets. A player's completed ten
+// is recorded once in daily_results, which the day's ranking reads.
+
+const dailySetCache = new Map<string, number[]>();
+
+/** The day's ten problem numbers; [] when the day has no set (and `create` is false, or too few problems exist). */
+async function dailySet(db: D1Database, day: string, create = true): Promise<number[]> {
+	const cached = dailySetCache.get(day);
+	if (cached) return cached;
+	const read = () => db.prepare("SELECT problem_ids FROM daily_sets WHERE day = ?").bind(day).first<string>("problem_ids");
+	let stored = await read();
+	if (!stored) {
+		if (!create) {
+			dailySetCache.set(day, []); // a past day without a set stays without one
+			return [];
+		}
+		const { results } = await db.prepare("SELECT id FROM problems ORDER BY answer_count, random() LIMIT ?").bind(SET_SIZE).all<{ id: number }>();
+		if (results.length < SET_SIZE) return []; // fewer problems than a set (before they are loaded)
+		const chosen = results.map((r) => r.id).sort((a, b) => a - b);
+		await db.prepare("INSERT OR IGNORE INTO daily_sets (day, problem_ids) VALUES (?, ?)").bind(day, JSON.stringify(chosen)).run();
+		stored = (await read()) ?? JSON.stringify(chosen); // the row a concurrent request wrote first
+	}
+	const ids = JSON.parse(stored) as number[];
+	// Today's and yesterday's sets are enough to keep.
+	for (const key of dailySetCache.keys()) if (key < day && dailySetCache.size >= 2) dailySetCache.delete(key);
+	dailySetCache.set(day, ids);
+	return ids;
+}
+
+interface DailyRow {
+	score_sum: number;
+	pitari: number;
+	completed_at: string;
+}
+
+/** Record the player's completed ten once (answers from any day count); null while problems remain. */
+async function recordDaily(db: D1Database, playerId: number, day: string, ids: number[], answers: Map<number, AnswerRow>, now: Date): Promise<DailyRow | null> {
+	if (ids.some((id) => !answers.has(id))) return null;
+	const existing = await db
+		.prepare("SELECT score_sum, pitari, completed_at FROM daily_results WHERE day = ? AND player_id = ?")
+		.bind(day, playerId)
+		.first<DailyRow>();
+	if (existing) return existing;
+	const rows = [...answers.values()];
+	const row: DailyRow = {
+		score_sum: rows.reduce((sum, a) => sum + a.score, 0),
+		pitari: rows.reduce((sum, a) => sum + a.pitari, 0),
+		completed_at: now.toISOString(),
+	};
+	await db
+		.prepare("INSERT OR IGNORE INTO daily_results (day, player_id, score_sum, pitari, completed_at) VALUES (?, ?, ?, ?, ?)")
+		.bind(day, playerId, row.score_sum, row.pitari, row.completed_at)
+		.run();
+	return row;
+}
+
+async function getDaily(ctx: Ctx): Promise<Response> {
+	const player = await authenticate(ctx);
+	const db = ctx.env.DB;
+	const now = new Date();
+	const day = jstDate(now);
+	const ids = await dailySet(db, day);
+	if (!ids.length) throw new HttpError(404, "not_found");
+	const { results: rows } = await db
+		.prepare(`SELECT id, difficulty FROM problems WHERE id IN (${ids.map(() => "?").join(",")})`)
+		.bind(...ids)
+		.all<Pick<SetProblem, "id" | "difficulty">>();
+	const answers = await answersFor(db, player.id, ids);
+	const problems: SetProblem[] = ids.map((id) => ({
+		id,
+		difficulty: rows.find((r) => r.id === id)?.difficulty ?? "normal",
+		answer: toAnswer(answers.get(id)),
+	}));
+	const recorded = await recordDaily(db, player.id, day, ids, answers, now);
+	const result: DailySet["result"] = recorded && { scoreSum: recorded.score_sum, pitari: recorded.pitari, completedAt: recorded.completed_at };
+	return json({ day, problems, result, playerName: displayName(player.name, player.public_id) } satisfies DailySet);
 }
 
 // ---- problem sets ----
 // A theme's sets are its problems in number order, ten at a time (full sets only).
 
 const SETS_PER_PAGE = 100;
-const THEME_FILTERS: Record<SetTheme, { column: "difficulty" | "kind"; value: string } | null> = {
-	all: null,
-	easy: { column: "difficulty", value: "easy" },
-	normal: { column: "difficulty", value: "normal" },
-	hard: { column: "difficulty", value: "hard" },
-	discard: { column: "kind", value: "discard" },
-	riichi: { column: "kind", value: "riichi" },
-	call: { column: "kind", value: "call" },
-};
-
-function theme(text: string | null | undefined): SetTheme {
-	if (!text || !Object.hasOwn(THEME_FILTERS, text)) throw new HttpError(404, "not_found");
-	return text as SetTheme;
-}
-
-const themeSizeCache = new Map<SetTheme, { size: number; expires: number }>();
-
-/** Number of problems in a theme. */
-async function themeSize(db: D1Database, t: SetTheme): Promise<number> {
-	const filter = THEME_FILTERS[t];
-	if (!filter) return problemCount(db);
-	const cached = themeSizeCache.get(t);
-	if (cached && cached.expires > Date.now()) return cached.size;
-	const size = (await db.prepare(`SELECT MAX(${filter.column}_pos) AS n FROM problems WHERE ${filter.column} = ?`).bind(filter.value).first<number>("n")) ?? 0;
-	themeSizeCache.set(t, { size, expires: Date.now() + PROBLEM_CACHE_TTL_MS });
-	return size;
-}
 
 async function getSets(ctx: Ctx): Promise<Response> {
 	const player = await authenticate(ctx);
@@ -472,15 +635,12 @@ async function getSet(ctx: Ctx): Promise<Response> {
 				.bind(filter.value, (set - 1) * SET_SIZE + 1, set * SET_SIZE)
 		: db.prepare("SELECT id, difficulty FROM problems WHERE id BETWEEN ? AND ? ORDER BY id").bind((set - 1) * SET_SIZE + 1, set * SET_SIZE)
 	).all<Pick<SetProblem, "id" | "difficulty">>();
-	const ids = entries.map((p) => p.id);
-	const { results } = await db
-		.prepare(`SELECT problem_id, action, score, pitari FROM answers WHERE player_id = ? AND problem_id IN (${ids.map(() => "?").join(",")})`)
-		.bind(player.id, ...ids)
-		.all<AnswerRow & { problem_id: number }>();
-	const problems: SetProblem[] = entries.map(({ id, difficulty }) => {
-		const row = results.find((r) => r.problem_id === id);
-		return { id, difficulty, answer: row ? { action: row.action, score: row.score, pitari: row.pitari === 1 } : null };
-	});
+	const answers = await answersFor(
+		db,
+		player.id,
+		entries.map((p) => p.id),
+	);
+	const problems: SetProblem[] = entries.map(({ id, difficulty }) => ({ id, difficulty, answer: toAnswer(answers.get(id)) }));
 	return json({ theme: t, set, problems, playerName: displayName(player.name, player.public_id) });
 }
 
@@ -504,21 +664,20 @@ async function aggregatedStats(db: D1Database, playerId: number, now: Date): Pro
 }
 
 /**
- * The owner sees live stats and history counted from their answers. Anyone else (a shared
- * link) gets the aggregated stats only, so a popular page never scans a long history.
+ * The owner sees live stats and history counted from their answers (`?history=miss` lists the misses
+ * only, for the review). Anyone else (a shared link) gets the aggregated stats only, so a popular page
+ * never scans a long history.
  */
 async function getProfile(ctx: Ctx): Promise<Response> {
 	const db = ctx.env.DB;
-	const player = await db
-		.prepare("SELECT id, public_id, name, current_problem_id, assigned_day, assigned_count FROM players WHERE public_id = ?")
-		.bind(ctx.params[0])
-		.first<PlayerRow>();
+	const player = await db.prepare(`SELECT ${PLAYER_COLUMNS} FROM players WHERE public_id = ?`).bind(ctx.params[0]).first<PlayerRow>();
 	if (!player) throw new HttpError(404, "not_found");
 	const viewer = ctx.request.headers.has("Authorization") ? await authenticate(ctx).catch(() => null) : null;
 	const now = new Date();
+	const history = ctx.url.searchParams.get("history") === "miss" ? "miss" : "all";
 	const profile: Profile =
 		viewer?.id === player.id
-			? { publicId: player.public_id, name: player.name, ...(await playerAnswers(db, player.id, now)) }
+			? { publicId: player.public_id, name: player.name, ...(await playerAnswers(db, player.id, now, true, history)) }
 			: { publicId: player.public_id, name: player.name, ...(await aggregatedStats(db, player.id, now)), breakdown: null, history: [] };
 	return json(profile);
 }
@@ -532,30 +691,57 @@ const RANKING_ORDER: Record<RankingAxis, string> = {
 	pitari: "s.pitari_rate DESC, s.answers DESC",
 };
 
-async function getRanking(ctx: Ctx): Promise<Response> {
-	const period = ctx.url.searchParams.get("period") as RankingPeriod;
-	const axis = ctx.url.searchParams.get("axis") as RankingAxis;
-	if (!(period === "all" || period === "today") || !Object.hasOwn(RANKING_ORDER, axis)) throw new HttpError(400, "invalid_query");
-	const key = period === "all" ? "all" : jstDate(new Date());
-	const cacheKey = `${key}:${axis}`;
-	const cached = rankingCache.get(cacheKey);
-	if (cached && cached.expires > Date.now()) return json({ period, axis, entries: cached.entries }, 200, "public, max-age=30");
-
+/** All time: the aggregated stats by axis, with the answers by difficulty. */
+async function allTimeRanking(db: D1Database, axis: RankingAxis): Promise<RankingEntry[]> {
 	const qualified = axis === "answers" ? "" : "AND s.qualified = 1";
-	const { results } = await ctx.env.DB.prepare(
-		`SELECT p.public_id, p.name, s.answers, s.average, s.pitari_rate
-		 FROM player_stats s JOIN players p ON p.id = s.player_id
-		 WHERE s.period = ? ${qualified} ORDER BY ${RANKING_ORDER[axis]} LIMIT ${RANKING_SIZE}`,
-	)
-		.bind(key)
-		.all<{ public_id: string; name: string | null; answers: number; average: number; pitari_rate: number }>();
+	const { results } = await db
+		.prepare(
+			`SELECT p.public_id, p.name, s.answers, s.average, s.pitari_rate, s.easy, s.normal, s.hard
+			 FROM player_stats s JOIN players p ON p.id = s.player_id
+			 WHERE s.period = 'all' ${qualified} ORDER BY ${RANKING_ORDER[axis]} LIMIT ${RANKING_SIZE}`,
+		)
+		.all<{ public_id: string; name: string | null; answers: number; average: number; pitari_rate: number; easy: number; normal: number; hard: number }>();
 	const entries: RankingEntry[] = [];
 	results.forEach((r, index) => {
 		const value = axis === "answers" ? r.answers : axis === "average" ? r.average : r.pitari_rate;
 		const previous = entries[index - 1];
 		const rank = previous && previous.value === value ? previous.rank : index + 1;
-		entries.push({ rank, publicId: r.public_id, name: r.name, answers: r.answers, value });
+		entries.push({ rank, publicId: r.public_id, name: r.name, answers: r.answers, value, mix: { easy: r.easy, normal: r.normal, hard: r.hard } });
 	});
+	return entries;
+}
+
+/** Today: the players who completed today's ten, by score, then pitari, then who finished first. */
+async function todayRanking(db: D1Database, day: string): Promise<RankingEntry[]> {
+	const { results } = await db
+		.prepare(
+			`SELECT p.public_id, p.name, r.score_sum, r.pitari, r.completed_at
+			 FROM daily_results r JOIN players p ON p.id = r.player_id
+			 WHERE r.day = ? ORDER BY r.score_sum DESC, r.pitari DESC, r.completed_at LIMIT ${RANKING_SIZE}`,
+		)
+		.bind(day)
+		.all<{ public_id: string; name: string | null; score_sum: number; pitari: number; completed_at: string }>();
+	return results.map((r, index) => ({
+		rank: index + 1,
+		publicId: r.public_id,
+		name: r.name,
+		answers: SET_SIZE,
+		value: r.score_sum / SET_SIZE,
+		mix: null,
+		pitari: r.pitari,
+		completedAt: r.completed_at,
+	}));
+}
+
+async function getRanking(ctx: Ctx): Promise<Response> {
+	const period = ctx.url.searchParams.get("period") as RankingPeriod;
+	const axis = (ctx.url.searchParams.get("axis") ?? "answers") as RankingAxis;
+	if (!(period === "all" || period === "today") || !Object.hasOwn(RANKING_ORDER, axis)) throw new HttpError(400, "invalid_query");
+	const day = jstDate(new Date());
+	const cacheKey = period === "all" ? `all:${axis}` : `today:${day}`;
+	const cached = rankingCache.get(cacheKey);
+	if (cached && cached.expires > Date.now()) return json({ period, axis, entries: cached.entries }, 200, "public, max-age=30");
+	const entries = period === "all" ? await allTimeRanking(ctx.env.DB, axis) : await todayRanking(ctx.env.DB, day);
 	rankingCache.set(cacheKey, { expires: Date.now() + RANKING_TTL_MS, entries });
 	return json({ period, axis, entries }, 200, "public, max-age=30");
 }

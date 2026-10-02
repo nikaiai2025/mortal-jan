@@ -84,15 +84,52 @@ describe("questions", () => {
 		expect(Object.keys(body.state === "question" ? body.question : {}).sort()).toEqual(["choices", "id", "kind", "scene"]);
 	});
 
-	it("keep the assigned problem until it is answered", async () => {
+	it("keep the assigned problem until it is answered, and let the player open any other problem", async () => {
 		const player = await newPlayer();
 		const first = await call<ProblemResponse>("/api/problems/current", player);
 		const again = await call<ProblemResponse>("/api/problems/current", player);
 		expect(again.body).toEqual(first.body);
 		const id = first.body.state === "question" ? first.body.question.id : 0;
 		const other = (id % PROBLEMS) + 1;
-		const locked = await call<ProblemResponse>(`/api/problems/${other}`, player);
-		expect(locked.body).toEqual({ state: "locked", currentId: id });
+		const opened = await call<ProblemResponse>(`/api/problems/${other}`, player);
+		expect(opened.body).toMatchObject({ state: "question", question: { id: other } });
+		// The problem opened last is the pending one.
+		const pending = await call<ProblemResponse>("/api/problems/current", player);
+		expect(pending.body).toMatchObject({ state: "question", question: { id: other } });
+	});
+
+	it("choose a random problem of a theme", async () => {
+		const player = await newPlayer();
+		for (let i = 0; i < 5; i++) {
+			const { body } = await call<ProblemResponse>("/api/problems/current?theme=hard", player);
+			const id = body.state === "question" ? body.question.id : 0;
+			expect(id % 2).toBe(0); // even numbers are hard
+			await answer(player, id, "d:1m");
+		}
+		expect((await call("/api/problems/current?theme=unknown", player)).status).toBe(404);
+	});
+
+	it("give the next unanswered problem of a theme in number order", async () => {
+		const player = await newPlayer();
+		await call("/api/problems/3", player);
+		await answer(player, 3, "d:1m");
+		const next = await call<ProblemResponse>("/api/problems/next?theme=easy&after=1", player);
+		expect(next.body).toMatchObject({ state: "question", question: { id: 5 } }); // 3 is answered
+		await answer(player, 5, "d:1m");
+		const after = await call<ProblemResponse>("/api/problems/next?theme=all&after=4", player);
+		expect(after.body).toMatchObject({ state: "question", question: { id: 6 } });
+		await answer(player, 6, "d:1m");
+		expect((await call<ProblemResponse>(`/api/problems/next?theme=all&after=${PROBLEMS}`, player)).body).toEqual({ state: "finished" });
+		expect((await call("/api/problems/next?after=-1", player)).status).toBe(400);
+	});
+
+	it("do not count a reload in number order against the daily limit", async () => {
+		const player = await newPlayer();
+		const assigned = () => env.DB.prepare("SELECT assigned_count FROM players WHERE public_id = ?").bind(player.publicId).first<number>("assigned_count");
+		await call("/api/problems/next?theme=all&after=10", player);
+		const once = await assigned();
+		await call("/api/problems/next?theme=all&after=10", player);
+		expect(await assigned()).toBe(once);
 	});
 
 	it("reject an unknown player", async () => {
@@ -236,7 +273,24 @@ describe("ranking", () => {
 		await answer(player, 8, "d:2m"); // 63 points, not pitari
 		await aggregate(env.DB);
 		expect(await statsRow(player, "all")).toEqual({ answers: 50, qualified: 1, average: 4963 / 50, pitari_rate: 10 / 50 });
-		expect(await statsRow(player, today())).toEqual({ answers: 10, qualified: 1, average: 963 / 10, pitari_rate: 3 / 10 });
+		// A day's row feeds the chart only; the day's ranking is today's ten.
+		expect(await statsRow(player, today())).toEqual({ answers: 10, qualified: 0, average: 963 / 10, pitari_rate: 3 / 10 });
+	});
+
+	it("counts the answers by difficulty for the all-time mix bar", async () => {
+		const player = await newPlayer();
+		for (const id of [1, 3, 4]) {
+			await call(`/api/problems/${id}`, player);
+			await answer(player, id, "d:1m");
+		}
+		await aggregate(env.DB);
+		const row = await env.DB.prepare("SELECT s.easy, s.normal, s.hard FROM player_stats s JOIN players p ON p.id = s.player_id WHERE p.public_id = ? AND s.period = 'all'")
+			.bind(player.publicId)
+			.first();
+		expect(row).toEqual({ easy: 2, normal: 0, hard: 1 });
+		await env.DB.prepare("UPDATE player_stats SET answers = 60, qualified = 1 WHERE player_id = (SELECT id FROM players WHERE public_id = ?)").bind(player.publicId).run();
+		const ranking = await call<{ entries: { publicId: string; mix: unknown }[] }>("/api/ranking?period=all&axis=answers");
+		expect(ranking.body.entries.find((e) => e.publicId === player.publicId)?.mix).toEqual({ easy: 2, normal: 0, hard: 1 });
 	});
 
 	it("keeps a player below the minimum out of the ranking", async () => {
@@ -314,6 +368,59 @@ describe("aggregation", () => {
 			{ date: today(), answers: 1, scoreSum: 100, pitari: 1 },
 		]);
 		expect(shared.all.answers).toBe(1);
+	});
+});
+
+describe("today's ten", () => {
+	type Daily = { day: string; problems: SetProblem[]; result: { scoreSum: number; pitari: number; completedAt: string } | null };
+
+	it("gives everyone the same ten problems, records the completed ten once and ranks them", async () => {
+		const early = await newPlayer();
+		const first = (await call<Daily>("/api/daily", early)).body;
+		expect(first.day).toBe(today());
+		expect(first.problems).toHaveLength(10);
+		expect(first.problems.map((p) => p.id)).toEqual([...first.problems.map((p) => p.id)].sort((a, b) => a - b));
+		expect(first.result).toBeNull();
+		// An answer given elsewhere counts for today's ten.
+		const [elsewhere, ...rest] = first.problems.map((p) => p.id);
+		await call(`/api/problems/${elsewhere}`, early);
+		await answer(early, elsewhere, "d:2m");
+		for (const id of rest) {
+			await call(`/api/problems/${id}`, early);
+			await answer(early, id, "d:1m");
+		}
+		const done = (await call<Daily>("/api/daily", early)).body;
+		expect(done.problems.map((p) => p.id)).toEqual(first.problems.map((p) => p.id));
+		expect(done.result).toMatchObject({ scoreSum: 963, pitari: 9 });
+		// Viewing again changes nothing.
+		expect((await call<Daily>("/api/daily", early)).body.result).toEqual(done.result);
+
+		const late = await newPlayer();
+		const same = (await call<Daily>("/api/daily", late)).body;
+		expect(same.problems.map((p) => p.id)).toEqual(first.problems.map((p) => p.id));
+		for (const id of same.problems.map((p) => p.id)) {
+			await call(`/api/problems/${id}`, late);
+			await answer(late, id, "d:1m");
+		}
+		const ranking = await call<{ entries: { publicId: string; value: number; pitari: number; rank: number }[] }>("/api/ranking?period=today");
+		const [top, second] = ranking.body.entries;
+		expect(top).toMatchObject({ rank: 1, publicId: late.publicId, value: 100, pitari: 10 });
+		expect(second).toMatchObject({ rank: 2, publicId: early.publicId, value: 96.3, pitari: 9 });
+	});
+});
+
+describe("review", () => {
+	it("lists only the misses when asked", async () => {
+		const player = await newPlayer();
+		for (const [id, action] of [[1, "d:1m"], [2, "d:2m"], [3, "d:3m"]] as const) {
+			await call(`/api/problems/${id}`, player);
+			await answer(player, id, action);
+		}
+		const all = (await call<Profile>(`/api/players/${player.publicId}`, player)).body;
+		expect(all.history.map((h) => h.id)).toEqual([3, 2, 1]);
+		const misses = (await call<Profile>(`/api/players/${player.publicId}?history=miss`, player)).body;
+		expect(misses.history.map((h) => h.id)).toEqual([3, 2]); // 5 and 63 points; 100 is not a miss
+		expect(misses.all.answers).toBe(3);
 	});
 });
 

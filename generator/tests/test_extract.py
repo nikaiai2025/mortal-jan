@@ -1,11 +1,14 @@
+import gzip
+import json
 import random
 
 import numpy as np
 import pytest
 
+from generator import runtime
 from generator.actions import CHI_LOW, PASS, PON, RIICHI, TILE_NAMES
 from generator.evaluate import DecisionPoint, candidates, classify
-from generator.extract import call_consumed, choices, number, pick
+from generator.extract import call_consumed, choices, kyoku_key, number, pick, select
 from generator.scoring import classify_difficulty, p_max
 
 
@@ -68,6 +71,40 @@ def test_numbering_is_a_reproducible_permutation():
     assert sorted(p["n"] for p in numbered) == list(range(100))
     assert numbered == number(problems)
     assert [p["n"] for p in numbered] != list(range(100))
+
+
+def test_numbering_continues_after_the_published_problems():
+    added = number([{"n": i} for i in range(20)], start=10000)
+    assert [p["id"] for p in added] == list(range(10001, 10021))
+
+
+def write_decisions(path, game, kyoku_count):
+    data = {
+        "identity": runtime.IDENTITY,
+        "game": game,
+        "logSha256": "x",
+        # Every difficulty in every kyoku, so that each kyoku yields a problem.
+        "decisions": [
+            {**decision("discard", q), "kyokuIndex": k, "eventIndex": 3 * k + i}
+            for k in range(kyoku_count)
+            for i, q in enumerate((EASY, NORMAL, HARD))
+        ],
+    }
+    with gzip.open(path, "wt", encoding="utf-8") as f:
+        json.dump(data, f)
+
+
+def test_select_skips_the_kyoku_of_published_problems(tmp_path):
+    write_decisions(tmp_path / "1_k.json.gz", "1_k", 3)
+    write_decisions(tmp_path / "2_k.json.gz", "2_k", 3)
+    calibration = {"callThresholds": [0.9, 0.5], "callProbability": 0.0, "riichiProbability": 0.0}
+    files = sorted(tmp_path.glob("*.json.gz"))
+
+    everything, _ = select(files, 10, calibration)
+    assert len(everything) == 6
+    published = frozenset(kyoku_key({"game": game, "kyokuIndex": d["kyokuIndex"]}) for game, d in everything[:4])
+    added, _ = select(files, 10, calibration, published)
+    assert [(game, d["kyokuIndex"]) for game, d in added] == [(game, d["kyokuIndex"]) for game, d in everything[4:]]
 
 
 def legal(*actions):

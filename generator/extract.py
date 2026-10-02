@@ -1,6 +1,10 @@
 """Pick at most one problem per kyoku, build the problem data and number it.
 
     python -m generator.extract --count 10000
+    python -m generator.extract --count 12000 --extend   # add to the problems already in --out
+
+`--extend` keeps the published problems and their numbers, skips the kyoku they came from,
+and numbers the new problems after them, so that loading the additions keeps every answer.
 """
 
 from __future__ import annotations
@@ -91,10 +95,18 @@ def pick(
     return rng.choice(pool) if pool else None
 
 
+def kyoku_key(source: dict[str, Any]) -> tuple[str, int]:
+    """The kyoku a problem came from, as recorded in its source."""
+    return (source["game"], source["kyokuIndex"])
+
+
 def select(
-    files: list[Path], count: int, calibration: dict[str, Any]
+    files: list[Path], count: int, calibration: dict[str, Any], taken: frozenset[tuple[str, int]] = frozenset()
 ) -> tuple[list[tuple[str, dict]], dict[str, str]]:
-    """Return (game, decision) pairs in game order and the evaluated log hash of each game used."""
+    """Return (game, decision) pairs in game order and the evaluated log hash of each game used.
+
+    Kyoku in `taken` already have a published problem and are skipped.
+    """
     selected: list[tuple[str, dict]] = []
     log_hashes: dict[str, str] = {}
     for path in files:
@@ -105,6 +117,8 @@ def select(
         for decision in data["decisions"]:
             decision["difficulty"] = classify_difficulty(p_max(decision["q"]), thresholds_for(decision["kind"], calibration))
         for kyoku_index, decisions in by_kyoku(data["decisions"]):
+            if (data["game"], kyoku_index) in taken:
+                continue
             rng = kyoku_rng(data["game"], kyoku_index)
             decision = pick(decisions, rng, calibration["callProbability"], calibration["riichiProbability"])
             if decision is not None:
@@ -189,11 +203,16 @@ def build_problems(selected: list[tuple[str, dict]], log_hashes: dict[str, str],
     return problems
 
 
-def number(problems: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Shuffle so that a 10-problem set does not come from one hanchan, then number from 1."""
+def number(problems: list[dict[str, Any]], start: int = 0) -> list[dict[str, Any]]:
+    """Shuffle so that a 10-problem set does not come from one hanchan, then number from start + 1."""
     order = list(range(len(problems)))
     random.Random(f"{EXTRACT_SEED}:numbering").shuffle(order)
-    return [{"id": i + 1, **problems[source]} for i, source in enumerate(order)]
+    return [{"id": start + i + 1, **problems[source]} for i, source in enumerate(order)]
+
+
+def read_problems(path: Path) -> list[dict[str, Any]]:
+    with path.open(encoding="utf-8") as f:
+        return [json.loads(line) for line in f]
 
 
 def main() -> None:
@@ -201,19 +220,31 @@ def main() -> None:
     parser.add_argument("--decisions", type=Path, default=runtime.GENERATED_ROOT / "decisions")
     parser.add_argument("--logs", type=Path, default=runtime.GENERATED_ROOT / "logs")
     parser.add_argument("--out", type=Path, default=runtime.GENERATED_ROOT / "problems.jsonl")
-    parser.add_argument("--count", type=int, default=10000)
+    parser.add_argument("--count", type=int, default=10000, help="problems in total, including the kept ones")
+    parser.add_argument("--extend", action="store_true", help="keep the problems already in --out and add to them")
     args = parser.parse_args()
 
+    existing = read_problems(args.out) if args.extend else []
+    wanted = args.count - len(existing)
+    if wanted <= 0:
+        raise SystemExit(f"{args.out} already holds {len(existing)} problems (wanted {args.count})")
     calibration = load_calibration()
-    selected, log_hashes = select(decision_files(args.decisions), args.count, calibration)
+    taken = frozenset(kyoku_key(p["source"]) for p in existing)
+    selected, log_hashes = select(decision_files(args.decisions), wanted, calibration, taken)
     used_games = len(log_hashes)
-    if len(selected) < args.count:
-        raise SystemExit(f"only {len(selected)} problems from {used_games} games (wanted {args.count}); play more hanchan")
-    problems = number(build_problems(selected, log_hashes, args.logs))
+    if len(selected) < wanted:
+        raise SystemExit(f"only {len(selected)} new problems from {used_games} games (wanted {wanted}); play more hanchan")
+    start = max((p["id"] for p in existing), default=0)
+    added = number(build_problems(selected, log_hashes, args.logs), start)
+    problems = existing + added
 
     with args.out.open("w", encoding="utf-8", newline="\n") as f:
         for problem in problems:
             f.write(json.dumps(problem, ensure_ascii=False, separators=(",", ":")) + "\n")
+    # The numbering depends on the stages (10000 then 12000 differs from 12000 at once), so they are kept.
+    meta_path = args.out.with_suffix(".meta.json")
+    previous = json.loads(meta_path.read_text(encoding="utf-8")) if existing and meta_path.exists() else {}
+    stages = previous.get("stages", [len(existing)] if existing else []) + [len(problems)]
     meta = {
         **runtime.IDENTITY,
         "temperature": TEMPERATURE,
@@ -223,15 +254,19 @@ def main() -> None:
         "secretSeeds": runtime.SEEDS_PATH.exists(),
         "games": used_games,
         "problems": len(problems),
+        "stages": stages,
     }
-    args.out.with_suffix(".meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
-    mix = Counter((p["kind"], p["difficulty"]) for p in problems)
-    print(f"{len(problems)} problems from {used_games} games")
+    mix = Counter((p["kind"], p["difficulty"]) for p in added)
+    if existing:
+        print(f"{len(added)} problems added (ids {start + 1}..{start + len(added)}); {len(problems)} in total from {used_games} games")
+    else:
+        print(f"{len(problems)} problems from {used_games} games")
     for kind in ("discard", "riichi", "call"):
         total = sum(v for (k, _), v in mix.items() if k == kind)
         detail = ", ".join(f"{d} {mix[(kind, d)]}" for d in DIFFICULTIES)
-        print(f"  {kind}: {total} ({total / max(len(problems), 1):.1%}): {detail}")
+        print(f"  {kind}: {total} ({total / max(len(added), 1):.1%}): {detail}")
 
 
 if __name__ == "__main__":

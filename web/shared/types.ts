@@ -99,8 +99,7 @@ export interface Result extends Question {
 export type ProblemResponse =
 	| { state: "question"; question: Question }
 	| { state: "result"; result: Result }
-	/** Another problem is assigned and must be answered first. */
-	| { state: "locked"; currentId: number }
+	/** No unanswered problem is left (in the theme, or after the given number). */
 	| { state: "finished" };
 
 export interface Stats {
@@ -139,6 +138,15 @@ export interface DailyStats extends Stats {
 	date: string;
 }
 
+/** Today's ten: the same ten problems for everyone on a Japan date. */
+export interface DailySet {
+	day: string;
+	problems: SetProblem[];
+	/** Recorded once all ten are answered; the day's ranking is built from these. */
+	result: { scoreSum: number; pitari: number; completedAt: string } | null;
+	playerName: string;
+}
+
 /** Answers by problem kind and by difficulty; each answer counts once in each. */
 export interface Breakdown {
 	kind: Record<ProblemKind, Stats>;
@@ -165,6 +173,11 @@ export interface RankingEntry {
 	publicId: string;
 	name: string | null;
 	answers: number;
-	/** answers, average score (0-100) or pitari rate (0-1), by axis. */
+	/** All time: answers, average score (0-100) or pitari rate (0-1), by axis. Today: today's ten score (0-100). */
 	value: number;
+	/** All time: the player's answers by difficulty (the mix bar). */
+	mix: Record<Difficulty, number> | null;
+	/** Today only. */
+	pitari?: number;
+	completedAt?: string;
 }

@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from generator.relabel import relabel, update_statement
+from generator.relabel import mix_statement, relabel, update_statement
 
 
 def problem(id_, kind, gap):
@@ -36,3 +36,11 @@ def test_update_writes_only_the_same_problem_when_it_changes():
         """WHERE id = 7 AND source = '{"game":"3_1","seat":2}' """
         "AND (difficulty <> 'hard' OR difficulty_pos <> 12);"
     )
+
+
+def test_mix_recounts_the_all_time_answers_by_difficulty():
+    sql = mix_statement()
+    assert sql.startswith("UPDATE player_stats SET easy = (SELECT COUNT(*) FROM answers a JOIN problems p")
+    assert "p.difficulty = 'hard'" in sql and sql.endswith("WHERE period = 'all';")
+    # Only aggregated answers: the next aggregation adds the newer ones itself.
+    assert sql.count("a.id <= (SELECT last_answer_id FROM aggregation WHERE id = 1)") == 3

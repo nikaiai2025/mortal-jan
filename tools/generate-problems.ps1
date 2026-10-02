@@ -1,6 +1,8 @@
 param(
 	[int]$Hanchan = 1250,
-	[int]$Problems = 10000
+	[int]$Problems = 10000,
+	# 投入済みの問題を保ったまま、$Problems 問になるまで末尾に追加する（抽出の設定は導き直さない）
+	[switch]$Extend
 )
 $ErrorActionPreference = "Stop"
 
@@ -27,10 +29,16 @@ Push-Location $repoRoot
 try {
 	$steps = @(
 		@("generator.selfplay", "--count", $Hanchan),
-		@("generator.evaluate"),
-		@("generator.calibrate"),
-		@("generator.extract", "--count", $Problems)
+		@("generator.evaluate")
 	)
+	if ($Extend) {
+		$steps += , @("generator.extract", "--count", $Problems, "--extend")
+	} else {
+		$steps += @(
+			, @("generator.calibrate")
+			, @("generator.extract", "--count", $Problems)
+		)
+	}
 	foreach ($step in $steps) {
 		Write-Output "=== $($step -join ' ') ($(Get-Date -Format HH:mm:ss))"
 		& $python -m @step
