@@ -277,9 +277,9 @@ export async function problemCard(question: Question, result: Result, includeRes
 		problemId: question.id,
 		kind: question.kind,
 		choices: question.choices,
-		// The question stays after answering too, at the top of the band above the labels.
-		prompt: questionText(question.kind),
-		promptSize: includeResult ? 34 : 44,
+		// After answering, the band holds the labels only: the question beside the ピタリ seal was clutter.
+		prompt: includeResult ? undefined : questionText(question.kind),
+		promptSize: 44,
 		promptBoxed: true,
 		tags: includeResult ? tags : undefined,
 		hand,
