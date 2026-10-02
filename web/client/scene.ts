@@ -190,7 +190,7 @@ export function drawScene(ctx: CanvasRenderingContext2D, scene: Scene, width: nu
 	ctx.restore();
 	drawOwnRow(ctx, scene, options.hand);
 	if (options.choices) drawCallMarks(ctx, scene, options.choices);
-	if (options.prompt) drawPrompt(ctx, options.prompt, options.promptSize ?? 32, options.promptBoxed ?? false);
+	if (options.prompt) drawPrompt(ctx, options.prompt, options.promptSize ?? 32, options.promptBoxed ?? false, Boolean(options.tags?.length));
 	if (options.tags) drawTags(ctx, scene, options.tags, options.hand?.selected ?? null);
 	if (options.hand?.bars) drawBars(ctx, scene, options.hand.bars, options.hand.barProgress ?? 1);
 	ctx.restore();
@@ -205,10 +205,11 @@ function drawFelt(ctx: CanvasRenderingContext2D, kind: ProblemKind): void {
 }
 
 /** The question in the band above the hand, as the page sets it there. */
-function drawPrompt(ctx: CanvasRenderingContext2D, text: string, size: number, boxed: boolean): void {
+function drawPrompt(ctx: CanvasRenderingContext2D, text: string, size: number, boxed: boolean, tagsBelow: boolean): void {
 	const band = handBand();
 	const x = SCENE_WIDTH * 0.02;
-	const middle = (band.top + band.bottom) / 2;
+	// With labels under it (a share image with the result), the question keeps to the top of the band.
+	const middle = tagsBelow ? band.top + size * 0.8 : (band.top + band.bottom) / 2;
 	ctx.save();
 	ctx.font = `800 ${size}px ${MINCHO}`;
 	ctx.textAlign = "left";
@@ -238,12 +239,12 @@ function drawPrompt(ctx: CanvasRenderingContext2D, text: string, size: number, b
 }
 
 /**
- * Labels in the band: each anchored one sits over its tile with a pointer down to it (a second label on
- * the same tile stacks above the first); free-standing ones line up from the left at the band's middle.
+ * Labels at the bottom of the band, just above the hand (the question, if shown, keeps to the top).
+ * An anchored one sits over its tile with a pointer down to it; a second label over the same place
+ * moves beside the first, or above it when there is no room. Free-standing ones line up from the left.
  */
 function drawTags(ctx: CanvasRenderingContext2D, scene: Scene, tags: HandTag[], selected: number | null): void {
 	const slots = handSlots(scene);
-	const band = handBand();
 	const height = 36;
 	const pointer = 9;
 	ctx.save();
@@ -251,6 +252,7 @@ function drawTags(ctx: CanvasRenderingContext2D, scene: Scene, tags: HandTag[], 
 	ctx.textAlign = "left";
 	ctx.textBaseline = "middle";
 	const occupied: { x: number; w: number; bottom: number }[] = [];
+	const handTop = Math.min(...slots.map((slot) => slot.y - (selected === slot.index ? RAISE : 0)));
 	let freeX = MARGIN + 6;
 	for (const tag of tags) {
 		const width = ctx.measureText(tag.text).width + 26;
@@ -261,14 +263,18 @@ function drawTags(ctx: CanvasRenderingContext2D, scene: Scene, tags: HandTag[], 
 			const top = slot.y - (selected === tag.index ? RAISE : 0);
 			x = Math.min(Math.max(MARGIN, slot.x + slot.w / 2 - width / 2), SCENE_WIDTH - MARGIN - width);
 			bottom = top - pointer - 4;
-			// Stack above a label already sitting over the same place.
-			for (const other of occupied) if (x < other.x + other.w && other.x < x + width) bottom = Math.min(bottom, other.bottom - height - 10);
+			const overlapping = occupied.filter((other) => x < other.x + other.w && other.x < x + width);
+			if (overlapping.length) {
+				// Beside the other label when the board has room; otherwise above it.
+				const beside = Math.max(...overlapping.map((other) => other.x + other.w)) + 8;
+				if (beside + width <= SCENE_WIDTH - MARGIN) x = beside;
+				else bottom = Math.min(...overlapping.map((other) => other.bottom)) - height - 10;
+			}
 		} else {
 			x = freeX;
-			bottom = (band.top + band.bottom) / 2 + height / 2;
+			bottom = handTop - 8;
 			freeX += width + 14;
 		}
-		occupied.push({ x, w: width, bottom });
 		ctx.fillStyle = tag.color;
 		ctx.beginPath();
 		ctx.roundRect(x, bottom - height, width, height, 8);
@@ -284,6 +290,7 @@ function drawTags(ctx: CanvasRenderingContext2D, scene: Scene, tags: HandTag[], 
 		}
 		ctx.fillStyle = "#fff6ea";
 		ctx.fillText(tag.text, x + 13, bottom - height / 2 + 1);
+		occupied.push({ x, w: width, bottom });
 	}
 	ctx.restore();
 }
