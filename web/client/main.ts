@@ -122,7 +122,7 @@ document.body.append(
 			{},
 			"制作: ",
 			h("a", { href: "https://x.com/shika_bakudan" }, "@shika_bakudan"),
-			"（AIで開発。サーバー代は0円で動いています。使用ツール: Claude, Codex）",
+			"（AIで開発。Cloudflareの無料枠で動かしていて、サーバー代は0円です。使用ツール: Claude, ChatGPT）",
 			h("br"),
 			"採点: 麻雀AI ",
 			h("a", { href: "https://github.com/Equim-chan/Mortal" }, "Mortal"),
