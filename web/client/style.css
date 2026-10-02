@@ -1383,7 +1383,30 @@ button {
 	}
 
 	.result {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
 		padding: 14px 8px 16px;
+	}
+
+	/* On phones, put the actions directly under the board and the switch below the next button. */
+	.result .result__actions {
+		order: -1;
+		margin-top: 0;
+	}
+
+	.result .result__actions > button {
+		grid-row: 1;
+	}
+
+	.result .result__actions .segmented {
+		grid-row: 2;
+		margin-top: -4px;
+		margin-bottom: 0;
+	}
+
+	.result__meta {
+		margin-top: 0;
 	}
 
 	.candidate {
