@@ -115,32 +115,6 @@ function answerTags(result: Result): HandTag[] {
 	];
 }
 
-/** Site name and host at the right end of a line (the problem card's headline or name line); returns the x where it starts. */
-function siteMark(ctx: CanvasRenderingContext2D, baseline: number): number {
-	ctx.textAlign = "right";
-	ctx.textBaseline = "alphabetic";
-	ctx.fillStyle = MUTED;
-	ctx.font = `500 20px ${GOTHIC}`;
-	ctx.fillText(location.host, WIDTH - 48, baseline);
-	const hostWidth = ctx.measureText(location.host).width;
-	ctx.fillStyle = INK;
-	ctx.font = `700 28px ${MINCHO}`;
-	const nameRight = WIDTH - 48 - hostWidth - 16;
-	ctx.fillText(SITE_NAME, nameRight, baseline);
-	return nameRight - ctx.measureText(SITE_NAME).width;
-}
-
-/** A line of text from x=48 that stops short of `limit` (the site mark), shrinking its font if needed. */
-function fittedText(ctx: CanvasRenderingContext2D, text: string, baseline: number, font: (size: number) => string, size: number, limit: number): void {
-	ctx.textAlign = "left";
-	ctx.textBaseline = "alphabetic";
-	for (let current = size; current >= 24; current -= 2) {
-		ctx.font = font(current);
-		if (ctx.measureText(text).width <= limit - 48 - 40) break;
-	}
-	ctx.fillText(text, 48, baseline);
-}
-
 /**
  * The grading as the page shows it over the board: the mark across the upper half, the handwritten
  * score at the right above the bars, and the ピタリ seal at the left. `x`, `y`, `size`: the board's box.
@@ -242,23 +216,20 @@ function drawAction(ctx: CanvasRenderingContext2D, action: string, result: Resul
 	return cursor - x;
 }
 
-/** Under the title line: the AI's difficulty, then the candidates with tiles, a bar, the evaluation and the score. */
+/** Under the board: the AI's difficulty on the first line, then the candidates with tiles, a bar, the evaluation and the score. */
 function paintCandidates(ctx: CanvasRenderingContext2D, result: Result, header: number): void {
 	ctx.textBaseline = "alphabetic";
 	ctx.textAlign = "left";
-	ctx.fillStyle = MUTED;
-	ctx.font = `700 30px ${GOTHIC}`;
-	ctx.fillText("候補ごとのAI評価", 48, header);
-	ctx.textAlign = "right";
 	ctx.fillStyle = INK;
-	ctx.fillText(`AIの判定　${DIFFICULTY_LABELS[result.difficulty]}`, WIDTH - 48, header);
+	ctx.font = `700 32px ${GOTHIC}`;
+	ctx.fillText(`AIの判定　${DIFFICULTY_LABELS[result.difficulty]}`, 48, header);
 
 	const rowHeight = 60;
 	const tileH = 48;
 	const barX = 430;
 	const barWidth = 320;
 	candidateRows(result).forEach((candidate, index) => {
-		const y = header + 66 + index * rowHeight;
+		const y = header + 70 + index * rowHeight;
 		const mine = candidate.action === result.answer.action;
 		if (mine) {
 			ctx.fillStyle = "rgba(214, 42, 30, 0.08)";
@@ -283,22 +254,21 @@ function paintCandidates(ctx: CanvasRenderingContext2D, result: Result, header: 
 /**
  * The board as the page shows it, with a line under it. Without the result: the question, large,
  * in the band above the hand. With it: the chosen tile, labels in the band for the player's answer
- * and the AI's best, the mark and the score; under the board a title, the AI's difficulty and the
- * candidates with their evaluation.
+ * and the AI's best, the mark and the score; under the board the AI's difficulty and the candidates
+ * with their evaluation. The site name sits at the bottom right of every image.
  */
 export async function problemCard(question: Question, result: Result, includeResult = true): Promise<HTMLCanvasElement> {
 	const tags = includeResult ? answerTags(result) : [];
 	await Promise.all([
 		preloadScene(question.scene, question.choices),
 		loadGlyphs(
-			`${result.playerName} さんの回答の採点点${questionText(question.kind)}ピタリ候補ごとのAI評価AIの判定${Object.values(DIFFICULTY_LABELS).join("")}${Object.values(CALL_LABELS).join("")}リーチ${tags.map((t) => t.text).join("")}`,
+			`点${questionText(question.kind)}ピタリAIの判定${Object.values(DIFFICULTY_LABELS).join("")}${Object.values(CALL_LABELS).join("")}リーチ${tags.map((t) => t.text).join("")}`,
 		),
 	]);
 	const margin = 40;
 	const sceneWidth = WIDTH - 2 * margin;
 	const bottom = margin + (sceneHeight() * sceneWidth) / SCENE_WIDTH;
-	const line = bottom + 66; // baseline of the line under the board
-	const [element, ctx] = canvas(includeResult ? HEIGHT : Math.round(line + 28));
+	const [element, ctx] = canvas(includeResult ? HEIGHT : Math.round(bottom + 64));
 	paper(ctx, 0);
 	ctx.save();
 	ctx.translate(margin, margin);
@@ -314,12 +284,10 @@ export async function problemCard(question: Question, result: Result, includeRes
 		hand,
 	});
 	ctx.restore();
-	const limit = siteMark(ctx, line);
+	footer(ctx);
 	if (!includeResult) return element;
 	paintGrading(ctx, result, margin, margin, sceneWidth);
-	ctx.fillStyle = INK;
-	fittedText(ctx, `${result.playerName} さんの回答の採点`, line, (size) => `700 ${size}px ${GOTHIC}`, 38, limit);
-	paintCandidates(ctx, result, line + 54);
+	paintCandidates(ctx, result, bottom + 58);
 	return element;
 }
 
