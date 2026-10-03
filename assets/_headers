@@ -1,0 +1,18 @@
+# Static responses bypass the API Worker.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://cloudflareinsights.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'
+
+# Only the home page is canonicalized to /; other SPA routes are different pages.
+/
+  Link: <https://mortal-jan.shika.workers.dev/>; rel="canonical"
+
+# Profiles and recovery remain accessible by URL, without appearing in search.
+/u/*
+  X-Robots-Tag: noindex
+
+/recover
+  X-Robots-Tag: noindex

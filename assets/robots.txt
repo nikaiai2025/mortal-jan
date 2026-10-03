@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://mortal-jan.shika.workers.dev/sitemap.xml

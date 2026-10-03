@@ -49,6 +49,12 @@ npm test; npm run typecheck
 
 復活の呪文を保存していない利用者への発行手順は [tools/recovery/README.md](tools/recovery/README.md)。
 
+## 公開後の検索設定
+
+初回配信後、[Google Search Console](https://search.google.com/search-console/) に本番URLの「URLプレフィックス」プロパティを追加し、「HTMLタグ」の方式で所有権を確認する。Googleが指定する `google-site-verification` のmetaタグを `web/index.html` のheadに追加して配信し、確認後もタグを残す。サイトマップに `/sitemap.xml` を登録し、「URL検査」でトップページのインデックス登録をリクエストする。サイト名やfaviconの更新時も同じ手順で再クロールを依頼する。反映時期と表示名はGoogleが決める。
+
+公開URLを変える場合は、`web/index.html` と `assets/_headers`・`assets/robots.txt`・`assets/sitemap.xml` の本番URLを揃えて更新する。
+
 ## ライセンス
 
 [GNU Affero General Public License v3.0 or later](LICENSE)。第三者の素材は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) を参照。
