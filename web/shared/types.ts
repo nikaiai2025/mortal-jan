@@ -118,6 +118,7 @@ export interface Session {
 export interface Me {
 	publicId: string;
 	name: string | null;
+	recoveryEnabled: boolean;
 	all: Stats;
 	today: Stats;
 }
@@ -158,6 +159,8 @@ export interface Breakdown {
 export interface Profile {
 	publicId: string;
 	name: string | null;
+	/** Present only when the viewer is the owner. Never contains the recovery credential. */
+	recoveryEnabled?: boolean;
 	all: Stats;
 	today: Stats;
 	/** Days with answers, oldest first: the latest DAILY_CHART_DAYS of them. */

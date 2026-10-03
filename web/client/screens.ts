@@ -22,6 +22,7 @@ import type {
 	SetSummary,
 	Stats,
 } from "../shared/types";
+import { recoveryPanel } from "./recovery";
 import { api, currentPublicId, ensureSession, publicApi, put } from "./api";
 import { h, replace } from "./dom";
 import { errorMessage } from "./errors";
@@ -384,6 +385,7 @@ export async function profilePage(root: HTMLElement, publicId: string, app: App)
 		),
 		h("div", { class: "stat-row" }, statBlock("全期間", profile.all), statBlock("今日", profile.today)),
 		isMe ? h("div", { class: "result__actions" }, h("button", { class: "ghost-button", type: "button", onclick: share }, "成績を共有")) : null,
+		isMe ? recoveryPanel(profile.recoveryEnabled ?? false) : null,
 		profile.breakdown && profile.all.answers ? h("h2", { class: "section-title" }, "難易度別・種類別の成績") : null,
 		profile.breakdown && profile.all.answers ? breakdownTable(profile.breakdown) : null,
 		h("h2", { class: "section-title" }, "1日ごとの成績"),

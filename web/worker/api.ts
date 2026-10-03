@@ -30,6 +30,7 @@ import type {
 } from "../shared/types";
 import { HttpError, addressKey, json, positiveInt, randomId, randomInt, randomToken, readJson, sha256Hex } from "./http";
 import { validateName } from "./names";
+import { formatSpell, normalizeSpell, spellHashInput } from "../shared/recovery";
 
 interface Ctx {
 	request: Request;
@@ -38,12 +39,15 @@ interface Ctx {
 	params: string[];
 }
 
-const PLAYER_COLUMNS = "id, public_id, name, current_problem_id, assigned_day, assigned_count";
+const PLAYER_COLUMNS = "id, public_id, name, token_hash, recovery_hash, recovery_hash IS NOT NULL AS recovery_enabled, current_problem_id, assigned_day, assigned_count";
 
 interface PlayerRow {
 	id: number;
 	public_id: string;
 	name: string | null;
+	token_hash: string;
+	recovery_hash: string | null;
+	recovery_enabled: number;
 	current_problem_id: number | null;
 	/** Japan date of the last assignment and how many problems were assigned that day. */
 	assigned_day: string | null;
@@ -73,6 +77,8 @@ const routes: [string, RegExp, Handler][] = [
 	["POST", /^\/api\/players$/, createPlayer],
 	["GET", /^\/api\/me$/, getMe],
 	["PUT", /^\/api\/me\/name$/, putName],
+	["POST", /^\/api\/me\/recovery$/, issueRecovery],
+	["POST", /^\/api\/recover$/, recoverPlayer],
 	["GET", /^\/api\/problems\/current$/, getCurrent],
 	["GET", /^\/api\/problems\/next$/, getNext],
 	["GET", /^\/api\/problems\/(\d+)$/, getProblem],
@@ -207,7 +213,7 @@ async function playerAnswers(db: D1Database, playerId: number, now: Date, detail
 async function getMe(ctx: Ctx): Promise<Response> {
 	const player = await authenticate(ctx);
 	const { all, today } = await playerAnswers(ctx.env.DB, player.id, new Date(), false);
-	const me: Me = { publicId: player.public_id, name: player.name, all, today };
+	const me: Me = { publicId: player.public_id, name: player.name, recoveryEnabled: !!player.recovery_enabled, all, today };
 	return json(me);
 }
 
@@ -217,6 +223,51 @@ async function putName(ctx: Ctx): Promise<Response> {
 	const name = validateName((await readJson(ctx.request)).name);
 	await ctx.env.DB.prepare("UPDATE players SET name = ? WHERE id = ?").bind(name, player.id).run();
 	return json({ name });
+}
+
+/** Return a spell once. Keep the session valid even if the issuance response is lost. */
+async function issueRecovery(ctx: Ctx): Promise<Response> {
+	const player = await authenticate(ctx);
+	await limitPlayerWrites(ctx, player);
+	const replace = (await readJson(ctx.request)).replace === true;
+	if (player.recovery_enabled && !replace) throw new HttpError(409, "recovery_exists");
+	const spell = randomId(32);
+	const changed = await ctx.env.DB
+		.prepare("UPDATE players SET recovery_hash = ? WHERE id = ? AND token_hash = ? AND recovery_hash IS ?")
+		.bind(await sha256Hex(spellHashInput(spell)), player.id, player.token_hash, player.recovery_hash)
+		.run();
+	if (!changed.meta.changes) throw new HttpError(409, "session_changed");
+	return json({ spell: formatSpell(spell) });
+}
+
+/** Possession of the spell restores the same player, never a copy of their records. */
+async function recoverPlayer(ctx: Ctx): Promise<Response> {
+	await limit(ctx.env.PLAYER_LIMITER, `recovery:ip:${clientIp(ctx)}`);
+	await limit(ctx.env.IP_LIMITER, `ip:${clientIp(ctx)}`);
+	const body = await readJson(ctx.request);
+	const spell = normalizeSpell(body.spell);
+	if (!spell) throw new HttpError(400, "invalid_spell");
+	const hash = await sha256Hex(spellHashInput(spell));
+	const db = ctx.env.DB;
+	const player = await db.prepare(`SELECT ${PLAYER_COLUMNS} FROM players WHERE recovery_hash = ?`).bind(hash).first<PlayerRow>();
+	if (!player) throw new HttpError(400, "invalid_spell");
+	// An expired session must not prevent recovery. DB failures must still propagate.
+	const current = ctx.request.headers.has("Authorization")
+		? await authenticate(ctx).catch((error) => {
+			if (error instanceof HttpError && error.status === 401) return null;
+			throw error;
+		})
+		: null;
+	if (current && current.id !== player.id) {
+		const answered = await db.prepare("SELECT 1 FROM answers WHERE player_id = ? LIMIT 1").bind(current.id).first();
+		if (answered && !current.recovery_enabled) throw new HttpError(409, "backup_required");
+		if (body.confirmSwitch !== true) throw new HttpError(409, "switch_required");
+	}
+	const token = randomToken();
+	const changed = await db.prepare("UPDATE players SET token_hash = ? WHERE id = ? AND recovery_hash = ?")
+		.bind(await sha256Hex(token), player.id, hash).run();
+	if (!changed.meta.changes) throw new HttpError(400, "invalid_spell");
+	return json({ token, publicId: player.public_id });
 }
 
 // ---- problems ----
@@ -696,14 +747,14 @@ async function aggregatedStats(db: D1Database, playerId: number, now: Date): Pro
  */
 async function getProfile(ctx: Ctx): Promise<Response> {
 	const db = ctx.env.DB;
+	const viewer = ctx.request.headers.has("Authorization") ? await authenticate(ctx) : null;
 	const player = await db.prepare(`SELECT ${PLAYER_COLUMNS} FROM players WHERE public_id = ?`).bind(ctx.params[0]).first<PlayerRow>();
 	if (!player) throw new HttpError(404, "not_found");
-	const viewer = ctx.request.headers.has("Authorization") ? await authenticate(ctx).catch(() => null) : null;
 	const now = new Date();
 	const history = ctx.url.searchParams.get("history") === "miss" ? "miss" : "all";
 	const profile: Profile =
 		viewer?.id === player.id
-			? { publicId: player.public_id, name: player.name, ...(await playerAnswers(db, player.id, now, true, history)) }
+			? { publicId: player.public_id, name: player.name, recoveryEnabled: !!player.recovery_enabled, ...(await playerAnswers(db, player.id, now, true, history)) }
 			: { publicId: player.public_id, name: player.name, ...(await aggregatedStats(db, player.id, now)), breakdown: null, history: [] };
 	return json(profile);
 }

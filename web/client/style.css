@@ -1626,3 +1626,56 @@ button {
 	line-height: 1;
 	vertical-align: 0.05em;
 }
+
+/* ---- recovery spell ---- */
+
+.recovery-panel {
+	margin: 24px 0;
+	padding: 0 0 18px;
+	border-bottom: 1px dashed var(--muted);
+}
+
+.recovery-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px 16px;
+	margin-top: 12px;
+}
+
+.spell-field {
+	display: block;
+	box-sizing: border-box;
+	width: 100%;
+	max-width: 100%;
+	min-height: 76px;
+	margin: 8px 0;
+	padding: 12px;
+	font: 1rem/1.6 monospace;
+	color: var(--ink);
+	background: #fffdf6;
+	border: 2px solid var(--ink);
+	border-radius: 6px;
+	resize: vertical;
+}
+
+.recovery-form {
+	margin: 24px 0;
+}
+
+.recovery-form label {
+	display: block;
+	font-weight: 700;
+}
+
+.recovery-form .form-message {
+	margin: 12px 0;
+}
+
+.storage-warning {
+	max-width: 900px;
+	margin: 12px auto;
+	padding: 12px 20px;
+	color: var(--red);
+	background: var(--paper);
+}

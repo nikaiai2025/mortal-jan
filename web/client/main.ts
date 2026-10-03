@@ -6,6 +6,8 @@ import { type App, dailyPlay, freePlay, meLink, problemPage, profilePage, rankin
 import { effectsSetting } from "./effects";
 import { SITE_NAME } from "./share";
 import { sound } from "./sound";
+import { ApiError, SESSION_KEY, sessionIsPersistent, startNewPlayer, syncSessionFromStorage } from "./api";
+import { recoveryPage } from "./recovery";
 
 const main = h("main", { class: "sheet", id: "main" });
 
@@ -18,6 +20,7 @@ const routes: [RegExp, Render][] = [
 	[/^\/sets$/, (root, _, app) => setList(root, themeParam(), Number(new URLSearchParams(location.search).get("page") ?? 1) || 1, app)],
 	[/^\/sets\/([a-z]+)\/(\d+)$/, (root, m, app) => setPlay(root, m[1] as SetTheme, Number(m[2]), app)],
 	[/^\/rules$/, (root) => rulesPage(root)],
+	[/^\/recover$/, (root, _, app) => recoveryPage(root, app)],
 	[/^\/u\/([a-z0-9]+)$/, (root, m, app) => profilePage(root, m[1], app)],
 	[/^\/ranking$/, (root) => rankingPage(root)],
 ];
@@ -44,6 +47,7 @@ async function render(): Promise<void> {
 	main.replaceChildren(view);
 	window.scrollTo(0, 0);
 	updateNav();
+	updateStorageWarning();
 	const route = routes.find(([pattern]) => pattern.test(location.pathname));
 	if (!route) {
 		view.replaceChildren(h("section", { class: "notice" }, h("h2", {}, "ページが見つかりません")));
@@ -53,6 +57,10 @@ async function render(): Promise<void> {
 		await route[1](view, location.pathname.match(route[0]) as RegExpMatchArray, app);
 	} catch (error) {
 		console.error(error);
+		if (error instanceof ApiError && error.status === 401) {
+			view.replaceChildren(authNotice(error));
+			return;
+		}
 		view.replaceChildren(
 			h(
 				"section",
@@ -63,6 +71,33 @@ async function render(): Promise<void> {
 			),
 		);
 	}
+}
+
+function authNotice(error?: unknown): HTMLElement {
+	const message = h("p", {}, error ? errorMessage(error) : "この端末では成績を利用できません。復活の呪文で復旧してください。");
+	const button = h("button", { class: "ghost-button", type: "button" }, "新しく始める");
+	button.addEventListener("click", async () => {
+		if (!window.confirm("別の利用者として新しく始めます。元の成績は引き継がれません。よろしいですか？")) return;
+		button.disabled = true;
+		try {
+			await startNewPlayer();
+			app.navigate("/");
+		} catch (failure) {
+			message.textContent = errorMessage(failure);
+			button.disabled = false;
+		}
+	});
+	return h("section", { class: "notice" },
+		h("h2", {}, "成績の復旧が必要です"), message,
+		h("div", { class: "recovery-actions" }, h("a", { class: "ghost-button", href: "/recover" }, "呪文で復旧する"), button),
+	);
+}
+
+const storageWarning = h("p", { class: "storage-warning", role: "status", hidden: true },
+	"利用者情報をブラウザーに保存できていません。画面を閉じる前に、成績ページで復活の呪文を発行・保存してください。",
+);
+function updateStorageWarning(): void {
+	storageWarning.hidden = sessionIsPersistent();
 }
 
 const navLinks: [string, string | (() => string)][] = [
@@ -113,10 +148,12 @@ const settings = h(
 
 document.body.append(
 	h("header", { class: "site-header" }, h("a", { class: "brand", href: "/" }, SITE_NAME), nav, settings),
+	storageWarning,
 	main,
 	h(
 		"footer",
 		{ class: "site-footer" },
+		h("p", {}, h("a", { href: "/recover" }, "成績を復旧する")),
 		h(
 			"p",
 			{},
@@ -143,5 +180,12 @@ document.addEventListener("click", (event) => {
 	app.navigate(url.pathname + url.search);
 });
 window.addEventListener("popstate", () => void render());
+window.addEventListener("session-unauthorized", () => main.replaceChildren(authNotice()));
+window.addEventListener("session-storage-failed", updateStorageWarning);
+window.addEventListener("storage", (event) => {
+	if (event.key !== SESSION_KEY && event.key !== null) return;
+	syncSessionFromStorage();
+	void render();
+});
 
 void render();

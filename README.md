@@ -45,6 +45,10 @@ npm test; npm run typecheck
 
 既存問題にリーチ宣言時の河の枚数を補うときは `python -m generator.refresh_scenes` を実行し、`generated/refresh-scenes.sql` をD1に流す。元ログと既存の局面を全件照合し、生成元の一致する問題の `scene` だけを更新する。問題番号・評価・回答・成績は保持し、`generated/problems.jsonl` も更新する。補完前の問題はリーチ者自身の宣言牌以降だけを囲み、他家の境界は推測しない。
 
+## 運営による成績の復旧
+
+復活の呪文を保存していない利用者への発行手順は [tools/recovery/README.md](tools/recovery/README.md)。
+
 ## ライセンス
 
 [GNU Affero General Public License v3.0 or later](LICENSE)。第三者の素材は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) を参照。
