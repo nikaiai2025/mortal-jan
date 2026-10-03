@@ -44,6 +44,8 @@ try {
 		& $python -m @step
 		if ($LASTEXITCODE -ne 0) { throw "$($step[0]) が失敗しました (exit code: $LASTEXITCODE)" }
 	}
+	& $python -m generator.export_logs
+	if ($LASTEXITCODE -ne 0) { throw "generator.export_logs が失敗しました (exit code: $LASTEXITCODE)" }
 	Write-Output "完了: generated/problems.jsonl"
 } finally {
 	Pop-Location

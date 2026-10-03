@@ -837,6 +837,77 @@ button {
 	color: var(--muted);
 }
 
+.log-viewer {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 8px;
+	min-width: 0;
+	margin-top: 12px;
+}
+
+.log-viewer .ghost-button {
+	min-height: 44px;
+	font-size: 0.85rem;
+}
+
+.log-viewer__panel {
+	box-sizing: border-box;
+	display: grid;
+	gap: 10px;
+	width: 100%;
+	min-width: 0;
+	padding: 12px;
+	border: 1px solid var(--muted);
+	border-radius: 6px;
+}
+
+.log-viewer__panel[hidden] {
+	display: none;
+}
+
+.log-viewer__help {
+	margin: 0;
+	font-size: 0.85rem;
+	line-height: 1.6;
+}
+
+.log-viewer__help strong {
+	font-size: 1.2rem;
+}
+
+.log-viewer__text {
+	box-sizing: border-box;
+	display: block;
+	width: 100%;
+	min-width: 0;
+	padding: 6px;
+	font: 10px/1.4 monospace;
+	color: var(--ink);
+	background: var(--paper);
+	border: 1px solid var(--muted);
+	border-radius: 3px;
+	resize: vertical;
+}
+
+.log-viewer__actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 12px;
+	font-size: 0.85rem;
+}
+
+.log-viewer__message {
+	margin: 0;
+	font-size: 0.8rem;
+	color: var(--muted);
+}
+
+.log-viewer__message:empty {
+	display: none;
+}
+
 .rules-note a {
 	margin-left: 0.5em;
 }

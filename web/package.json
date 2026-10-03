@@ -11,6 +11,7 @@
     "types": "wrangler types worker/worker-configuration.d.ts",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "db:load:local": "wrangler d1 execute DB --local --file ../generated/problems.sql",
+    "db:load:logs:local": "wrangler d1 execute DB --local --file ../generated/problem-logs.sql",
     "deploy": "wrangler deploy"
   },
   "devDependencies": {

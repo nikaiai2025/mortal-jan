@@ -45,17 +45,26 @@ beforeAll(async () => {
 	);
 });
 
+const clientAddresses = new Map<string, string>();
+
 async function call<T>(path: string, session?: Session, init: RequestInit = {}): Promise<{ status: number; body: T }> {
 	const headers = new Headers(init.headers);
-	if (session) headers.set("Authorization", `Bearer ${session.token}`);
+	if (session) {
+		headers.set("Authorization", `Bearer ${session.token}`);
+		if (!headers.has("CF-Connecting-IP")) headers.set("CF-Connecting-IP", clientAddresses.get(session.publicId) ?? "10.0.0.254");
+	}
 	const response = await SELF.fetch(`https://example.com${path}`, { ...init, headers });
 	return { status: response.status, body: (await response.json()) as T };
 }
 
 let clients = 0;
 // Each test player comes from its own address so that the per-IP issue limit stays out of the way.
-const newPlayer = async () =>
-	(await call<Session>("/api/players", undefined, { method: "POST", headers: { "CF-Connecting-IP": `10.0.0.${++clients}` } })).body;
+const newPlayer = async () => {
+	const address = `10.0.0.${++clients}`;
+	const session = (await call<Session>("/api/players", undefined, { method: "POST", headers: { "CF-Connecting-IP": address } })).body;
+	clientAddresses.set(session.publicId, address);
+	return session;
+};
 const today = () => new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10);
 const setStats = (session: Session, period: string, answers: number, scoreSum: number, pitari: number) =>
 	env.DB.prepare(
@@ -135,6 +144,36 @@ describe("questions", () => {
 	it("reject an unknown player", async () => {
 		const { status } = await call("/api/problems/current", { token: "nope", publicId: "x" });
 		expect(status).toBe(401);
+	});
+});
+
+describe("problem logs", () => {
+	it("return the log only after this player answered, without changing their records", async () => {
+		const id = 3;
+		const log = JSON.stringify({ name: ["A", "B", "C", "D"], rule: { disp: "四人南喰赤" }, log: [], mortalJan: { problemId: id, targetPlayer: 1 } });
+		await env.DB.prepare("INSERT INTO problem_logs (problem_id, tenhou_json) VALUES (?, ?)").bind(id, log).run();
+		const player = await newPlayer();
+		const other = await newPlayer();
+		expect((await call(`/api/problems/${id}/log`)).status).toBe(401);
+		expect((await call(`/api/problems/${id}/log`, player)).status).toBe(403);
+		await call(`/api/problems/${id}`, player);
+		await answer(player, id, "d:2m");
+		const before = (await call<Me>("/api/me", player)).body;
+		const response = await SELF.fetch(`https://example.com/api/problems/${id}/log`, { headers: { Authorization: `Bearer ${player.token}` } });
+		expect(response.status).toBe(200);
+		expect(await response.text()).toBe(log);
+		expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+		expect(response.headers.get("Content-Type")).toContain("application/json");
+		expect((await call(`/api/problems/${id}/log`, other)).status).toBe(403);
+		expect((await call<Me>("/api/me", player)).body).toEqual(before);
+	});
+
+	it("return a recoverable error when an answered problem's log has not been loaded", async () => {
+		const player = await newPlayer();
+		await call("/api/problems/4", player);
+		await answer(player, 4, "d:1m");
+		expect(await call("/api/problems/4/log", player)).toEqual({ status: 404, body: { error: "log_unavailable" } });
+		expect((await call("/api/problems/0/log", player)).status).toBe(404);
 	});
 });
 

@@ -17,6 +17,8 @@ pwsh -File tools/generate-problems.ps1     # 自己対局→全判断の評価�
 
 `generate-problems.ps1` は中断しても、再実行すれば続きから処理する。導出した抽出の設定（鳴きの閾値・鳴き枠とリーチ枠の確率）は `generator/calibration.json` に保存される。
 
+問題ごとの1局ぶんの牌譜も天鳳JSONに変換し、`generated/problem-logs/` とD1投入用の `generated/problem-logs.sql` に出力する。既存の問題から牌譜だけを作る場合は `.mortal/venv/Scripts/python.exe -m generator.export_logs`。元ログのハッシュと問題の局面を照合してから出力する。元ログに記録されていない符・翻・役名・途中流局の理由は含まない。公式レビューの判断に必要な手牌・行動・点数移動は含む。生成物はGit管理対象外。
+
 公開後に難易度の閾値（`generator/scoring.py` の `DISCARD_THRESHOLDS`）を変えるときは、`python -m generator.calibrate` で鳴きの閾値を導き直してから `python -m generator.relabel` を実行し、できた `generated/relabel.sql` を本番D1に流す（`npx wrangler d1 execute DB --remote --file ../generated/relabel.sql`）。問題・回答・成績はそのままで、問題の難易度と難易度別問題集の並び、ランキングの難易度別の回答数だけが変わる（Workerのテーマ別の問題数は最大10分で追従する）。
 
 公開後に問題を増やすときは、`pwsh -File tools/generate-problems.ps1 -Hanchan 1500 -Problems 12000 -Extend` のように半荘数と総問題数を増やして実行する（自己対局と評価は済んだ分を飛ばし、抽出の設定は導き直さず、投入済みの問題と番号はそのまま末尾に追加する）。追加分は `python -m generator.load --after 10000`（投入済みの問題数）でSQLにして本番D1に流す。回答・成績は残り、問題集はテーマごとに末尾に増える。
@@ -32,11 +34,14 @@ cd web
 npm ci
 npm run db:migrate:local    # ローカルD1にテーブルを作る
 npm run db:load:local       # ローカルD1に問題を入れる
+npm run db:load:logs:local  # 変換済み牌譜を入れる
 npm run dev                 # http://localhost:5173
 npm test; npm run typecheck
 ```
 
 配信はGitHub Actionsの「Deploy」ワークフローを手動で実行する（リポジトリのSecretに `CLOUDFLARE_API_TOKEN` が必要）。本番D1への問題投入は `npx wrangler d1 execute DB --remote --file ../generated/problems.sql` で行う。すでに問題が入っているDB（試験配信の問題など）を入れ替えるときは、`generator.load --replace` で作ったSQLを使う（問題・回答・成績をすべて消してから入れる。プレイヤーと名前は残る）。
+
+牌譜はマイグレーション0004の適用後に `npx wrangler d1 execute DB --remote --file ../generated/problem-logs.sql` で追加する。繰り返しても問題・回答・成績は変わらず、生成元の一致する問題だけに対応する牌譜が入る。問題の追加分だけなら `generator.export_logs --after N`（投入済みの問題数）でSQLを作る。
 
 ## ライセンス
 

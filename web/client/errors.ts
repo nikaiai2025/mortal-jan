@@ -6,6 +6,8 @@ const MESSAGES: Record<string, string> = {
 	daily_limit: `今日の回答数の上限（${DAILY_ANSWER_LIMIT}問）に達しました。明日また挑戦してください。`,
 	not_assigned: "ほかの画面で別の問題を開いたため、この回答は受け付けられません。ページを再読み込みしてください。",
 	not_found: "ページが見つかりません。",
+	answer_required: "回答後に牌譜を表示できます。",
+	log_unavailable: "この問題の牌譜はまだ用意されていません。",
 	name_too_long: `${NAME_MAX_LENGTH}文字以内にしてください。`,
 	name_ng: "使えない言葉が含まれています。",
 	name_invalid: "使えない文字が含まれています。",

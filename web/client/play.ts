@@ -11,6 +11,7 @@ import { hanamaruFor } from "./marks";
 import { DIFFICULTY_LABELS, actionElement } from "./labels";
 import { chosenSlot, handBars } from "./evaluation";
 import { openShare, problemCard } from "./share";
+import { logViewer } from "./paifu";
 
 export interface PlayOptions {
 	/** Shown after the answer, never between the board and it: a message to the player, and set progress. */
@@ -187,6 +188,7 @@ function resultCard(result: Result, options: PlayOptions): HTMLElement {
 		{ class: "result", "aria-label": "結果" },
 		result.kind === "call" ? h("div", { class: "result__list" }, h("h3", {}, "候補ごとのAI評価"), list) : null,
 		meta,
+		logViewer(result),
 		h(
 			"div",
 			{ class: "result__actions" },

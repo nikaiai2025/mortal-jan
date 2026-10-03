@@ -76,6 +76,7 @@ const routes: [string, RegExp, Handler][] = [
 	["GET", /^\/api\/problems\/current$/, getCurrent],
 	["GET", /^\/api\/problems\/next$/, getNext],
 	["GET", /^\/api\/problems\/(\d+)$/, getProblem],
+	["GET", /^\/api\/problems\/(\d+)\/log$/, getProblemLog],
 	["POST", /^\/api\/problems\/(\d+)\/answer$/, postAnswer],
 	["GET", /^\/api\/daily$/, getDaily],
 	["GET", /^\/api\/sets$/, getSets],
@@ -247,6 +248,22 @@ async function loadAnswer(db: D1Database, playerId: number, problemId: number): 
 		.bind(playerId, problemId)
 		.first<AnswerRow>();
 	return toAnswer(row);
+}
+
+/** Logs contain the AI's actual actions, so only the player who answered can read them. */
+async function getProblemLog(ctx: Ctx): Promise<Response> {
+	const player = await authenticate(ctx);
+	const id = positiveInt(ctx.params[0]);
+	if (!(await loadAnswer(ctx.env.DB, player.id, id))) throw new HttpError(403, "answer_required");
+	const log = await ctx.env.DB.prepare("SELECT tenhou_json FROM problem_logs WHERE problem_id = ?").bind(id).first<string>("tenhou_json");
+	if (!log) throw new HttpError(404, "log_unavailable");
+	return new Response(log, {
+		headers: {
+			"Content-Type": "application/json; charset=utf-8",
+			"Cache-Control": "private, no-store",
+			"X-Content-Type-Options": "nosniff",
+		},
+	});
 }
 
 /** The player's answers to the given problems (one index probe each). */
