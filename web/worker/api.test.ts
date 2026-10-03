@@ -1,8 +1,9 @@
 import { SELF, applyD1Migrations, env } from "cloudflare:test";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { Me, ProblemResponse, Profile, Result, Session, SetProblem } from "../shared/types";
 import { DAILY_ANSWER_LIMIT } from "../shared/rules";
 import { aggregate, fold, readCursor } from "./aggregate";
+import { route } from "./api";
 
 declare global {
 	namespace Cloudflare {
@@ -47,14 +48,32 @@ beforeAll(async () => {
 
 const clientAddresses = new Map<string, string>();
 
-async function call<T>(path: string, session?: Session, init: RequestInit = {}): Promise<{ status: number; body: T }> {
+function playerHeaders(session?: Session, init: RequestInit = {}): Headers {
 	const headers = new Headers(init.headers);
 	if (session) {
 		headers.set("Authorization", `Bearer ${session.token}`);
 		if (!headers.has("CF-Connecting-IP")) headers.set("CF-Connecting-IP", clientAddresses.get(session.publicId) ?? "10.0.0.254");
 	}
+	return headers;
+}
+
+async function call<T>(path: string, session?: Session, init: RequestInit = {}): Promise<{ status: number; body: T }> {
+	const headers = playerHeaders(session, init);
 	const response = await SELF.fetch(`https://example.com${path}`, { ...init, headers });
 	return { status: response.status, body: (await response.json()) as T };
+}
+
+/** Invoke the same API in this isolate so the test controls the Japan date across midnight. */
+async function callAt<T>(now: string, path: string, session: Session, init: RequestInit = {}): Promise<{ status: number; body: T }> {
+	vi.useFakeTimers({ toFake: ["Date"] });
+	vi.setSystemTime(new Date(now));
+	try {
+		const url = new URL(`https://example.com${path}`);
+		const response = await route(new Request(url, { ...init, headers: playerHeaders(session, init) }), env, url);
+		return { status: response.status, body: await response.json() as T };
+	} finally {
+		vi.useRealTimers();
+	}
 }
 
 let clients = 0;
@@ -445,6 +464,95 @@ describe("today's ten", () => {
 		const [top, second] = ranking.body.entries;
 		expect(top).toMatchObject({ rank: 1, publicId: late.publicId, value: 100, pitari: 10 });
 		expect(second).toMatchObject({ rank: 2, publicId: early.publicId, value: 96.3, pitari: 9 });
+	});
+
+	it.each(["resubmit", "view"] as const)("repairs a failed completion through %s without changing answers or the tenth answer's time", async (recovery) => {
+		const player = await newPlayer();
+		const daily = (await call<Daily>("/api/daily", player)).body;
+		const ids = daily.problems.map((p) => p.id);
+		for (const id of ids.slice(0, -1)) {
+			await call(`/api/problems/${id}`, player);
+			expect((await answer(player, id, "d:1m")).status).toBe(200);
+		}
+		const last = ids.at(-1)!;
+		await call(`/api/problems/${last}`, player);
+		await env.DB.exec("CREATE TRIGGER fail_completion BEFORE INSERT ON daily_results BEGIN SELECT RAISE(FAIL, 'injected completion failure'); END");
+		try {
+			expect((await answer(player, last, "d:2m")).status).toBe(500);
+		} finally {
+			await env.DB.exec("DROP TRIGGER fail_completion");
+		}
+		const answers = () => env.DB.prepare("SELECT a.* FROM answers a JOIN players p ON p.id = a.player_id WHERE p.public_id = ? ORDER BY a.id").bind(player.publicId).all<{ answered_at: string }>();
+		const saved = (await answers()).results;
+		expect(saved).toHaveLength(10);
+		expect((await call<Me>("/api/me", player)).body.all).toEqual({ answers: 10, scoreSum: 963, pitari: 9 });
+		if (recovery === "resubmit") {
+			expect(result(await answer(player, last, "d:1m")).answer).toEqual({ action: "d:2m", score: 63, pitari: false });
+		} else {
+			await call("/api/daily", player);
+		}
+		const completed = await env.DB.prepare("SELECT d.* FROM daily_results d JOIN players p ON p.id = d.player_id WHERE p.public_id = ?").bind(player.publicId).first();
+		expect(completed).toMatchObject({ score_sum: 963, pitari: 9, completed_at: saved.map((a) => a.answered_at).sort().at(-1) });
+		expect((await answers()).results).toEqual(saved);
+		await call("/api/daily", player);
+		expect(await env.DB.prepare("SELECT d.* FROM daily_results d JOIN players p ON p.id = d.player_id WHERE p.public_id = ?").bind(player.publicId).first()).toEqual(completed);
+	});
+
+	it("uses the first opening time when all ten were answered before the day began", async () => {
+		const player = await newPlayer();
+		const insert = env.DB.prepare("INSERT INTO answers (player_id, problem_id, action, score, pitari, answered_at, jst_date) SELECT id, ?, 'd:1m', 100, 1, '2000-01-01T00:00:00.000Z', '2000-01-01' FROM players WHERE public_id = ?");
+		await env.DB.batch(Array.from({ length: PROBLEMS }, (_, i) => insert.bind(i + 1, player.publicId)));
+		const ids = (await call<Daily>("/api/daily", await newPlayer())).body.problems.map((p) => p.id);
+		await answer(player, ids[0], "d:3m");
+		expect(await env.DB.prepare("SELECT 1 FROM daily_results WHERE player_id = (SELECT id FROM players WHERE public_id = ?)").bind(player.publicId).first()).toBeNull();
+		const before = new Date().toISOString();
+		const first = (await call<Daily>("/api/daily", player)).body;
+		const after = new Date().toISOString();
+		expect(first.result).toMatchObject({ scoreSum: 1000, pitari: 10 });
+		expect(first.result!.completedAt >= before && first.result!.completedAt <= after).toBe(true);
+		expect((await call<Daily>("/api/daily", player)).body.result).toEqual(first.result);
+	});
+
+	it("repairs a pre-midnight answer on next-day resubmission and keeps today's ten available", async () => {
+		const player = await newPlayer();
+		const before = "2040-05-01T23:59:50+09:00";
+		const daily = (await callAt<Daily>(before, "/api/daily", player)).body;
+		const ids = daily.problems.map((p) => p.id);
+		for (const id of ids.slice(0, -1)) {
+			await callAt(before, `/api/problems/${id}`, player);
+			await callAt(before, `/api/problems/${id}/answer`, player, { method: "POST", body: JSON.stringify({ action: "d:1m" }) });
+		}
+		const last = ids.at(-1)!;
+		await callAt(before, `/api/problems/${last}`, player);
+		await env.DB.exec("CREATE TRIGGER fail_midnight_completion BEFORE INSERT ON daily_results BEGIN SELECT RAISE(FAIL, 'injected midnight failure'); END");
+		try {
+			expect((await callAt("2040-05-01T23:59:59+09:00", `/api/problems/${last}/answer`, player, { method: "POST", body: JSON.stringify({ action: "d:2m" }) })).status).toBe(500);
+		} finally {
+			await env.DB.exec("DROP TRIGGER fail_midnight_completion");
+		}
+		const repeated = await callAt<ProblemResponse>("2040-05-02T00:00:05+09:00", `/api/problems/${last}/answer`, player, { method: "POST", body: JSON.stringify({ action: "d:1m" }) });
+		expect(result(repeated).answer.score).toBe(63);
+		expect(await env.DB.prepare("SELECT day, score_sum, completed_at FROM daily_results WHERE day = '2040-05-01' AND player_id = (SELECT id FROM players WHERE public_id = ?)").bind(player.publicId).first()).toEqual({ day: "2040-05-01", score_sum: 963, completed_at: "2040-05-01T14:59:59.000Z" });
+		expect((await callAt("2040-05-02T00:00:05+09:00", "/api/daily", player)).status).toBe(200);
+	});
+
+	it("completes yesterday's ten after midnight and keeps the saved time on resubmission", async () => {
+		const player = await newPlayer();
+		const before = "2040-06-01T23:59:50+09:00";
+		const daily = (await callAt<Daily>(before, "/api/daily", player)).body;
+		const ids = daily.problems.map((p) => p.id);
+		for (const id of ids.slice(0, -1)) {
+			await callAt(before, `/api/problems/${id}`, player);
+			await callAt(before, `/api/problems/${id}/answer`, player, { method: "POST", body: JSON.stringify({ action: "d:1m" }) });
+		}
+		const last = ids.at(-1)!;
+		const after = "2040-06-02T00:00:03+09:00";
+		await callAt(after, `/api/problems/${last}`, player);
+		expect((await callAt(after, `/api/problems/${last}/answer`, player, { method: "POST", body: JSON.stringify({ action: "d:1m" }) })).status).toBe(200);
+		const completed = () => env.DB.prepare("SELECT score_sum, completed_at FROM daily_results WHERE day = '2040-06-01' AND player_id = (SELECT id FROM players WHERE public_id = ?)").bind(player.publicId).first();
+		expect(await completed()).toEqual({ score_sum: 1000, completed_at: "2040-06-01T15:00:03.000Z" });
+		await callAt("2040-06-02T00:00:08+09:00", `/api/problems/${last}/answer`, player, { method: "POST", body: JSON.stringify({ action: "d:3m" }) });
+		expect(await completed()).toEqual({ score_sum: 1000, completed_at: "2040-06-01T15:00:03.000Z" });
 	});
 });
 

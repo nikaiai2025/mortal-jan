@@ -267,11 +267,11 @@ async function getProblemLog(ctx: Ctx): Promise<Response> {
 }
 
 /** The player's answers to the given problems (one index probe each). */
-async function answersFor(db: D1Database, playerId: number, ids: number[]): Promise<Map<number, AnswerRow>> {
+async function answersFor(db: D1Database, playerId: number, ids: number[]): Promise<Map<number, AnswerRow & { answered_at: string }>> {
 	const { results } = await db
-		.prepare(`SELECT problem_id, action, score, pitari FROM answers WHERE player_id = ? AND problem_id IN (${ids.map(() => "?").join(",")})`)
+		.prepare(`SELECT problem_id, action, score, pitari, answered_at FROM answers WHERE player_id = ? AND problem_id IN (${ids.map(() => "?").join(",")})`)
 		.bind(playerId, ...ids)
-		.all<AnswerRow & { problem_id: number }>();
+		.all<AnswerRow & { problem_id: number; answered_at: string }>();
 	return new Map(results.map((r) => [r.problem_id, r]));
 }
 
@@ -489,36 +489,40 @@ async function postAnswer(ctx: Ctx): Promise<Response> {
 	const row = await loadProblem(db, id);
 
 	const sharerId = ctx.url.searchParams.get("from");
-	const existing = await loadAnswer(db, player.id, id);
-	if (existing) return json({ state: "result", result: await resultOf(db, player, row, existing, sharerId) } satisfies ProblemResponse);
-	if (player.current_problem_id !== id) throw new HttpError(409, "not_assigned");
+	let saved = await loadAnswer(db, player.id, id);
 	const now = new Date();
-	const choices: Choice[] = JSON.parse(row.choices);
-	if (typeof action !== "string" || !choices.some((c) => c.action === action)) throw new HttpError(400, "invalid_action");
-
-	const evaluation: Evaluation = JSON.parse(row.evaluation);
-	const score = evaluation.candidates.find((c) => c.action === action)?.score ?? 0;
-	const pitari = action === evaluation.best ? 1 : 0;
-	// The only write of an answer; rankings and players' averages follow from aggregate().
-	try {
-		await db
-			.prepare("INSERT INTO answers (player_id, problem_id, action, score, pitari, answered_at, jst_date) VALUES (?, ?, ?, ?, ?, ?, ?)")
-			.bind(player.id, id, action, score, pitari, now.toISOString(), jstDate(now))
-			.run();
-	} catch (error) {
-		// A concurrent submission already stored the answer; return that one.
-		const stored = await loadAnswer(db, player.id, id);
-		if (!stored) throw error;
-		return json({ state: "result", result: await resultOf(db, player, row, stored, sharerId) } satisfies ProblemResponse);
+	if (!saved) {
+		if (player.current_problem_id !== id) throw new HttpError(409, "not_assigned");
+		const choices: Choice[] = JSON.parse(row.choices);
+		if (typeof action !== "string" || !choices.some((c) => c.action === action)) throw new HttpError(400, "invalid_action");
+		const evaluation: Evaluation = JSON.parse(row.evaluation);
+		const score = evaluation.candidates.find((c) => c.action === action)?.score ?? 0;
+		const pitari = action === evaluation.best ? 1 : 0;
+		// Keep the answer even if recording the completed ten fails; a resubmission repairs it.
+		try {
+			await db
+				.prepare("INSERT INTO answers (player_id, problem_id, action, score, pitari, answered_at, jst_date) VALUES (?, ?, ?, ?, ?, ?, ?)")
+				.bind(player.id, id, action, score, pitari, now.toISOString(), jstDate(now))
+				.run();
+			saved = { action, score, pitari: pitari === 1 };
+		} catch (error) {
+			// A concurrent submission already stored the answer; use that one throughout.
+			saved = await loadAnswer(db, player.id, id);
+			if (!saved) throw error;
+		}
 	}
+	await completeDaily(db, player.id, id, now);
+	const result = await resultOf(db, player, row, saved, sharerId);
+	return json({ state: "result", result } satisfies ProblemResponse);
+}
+
+async function completeDaily(db: D1Database, playerId: number, problemId: number, now: Date): Promise<void> {
 	// The tenth answer of a day's ten records the player's result, wherever the problem was opened.
 	// Yesterday's ten (if it exists) still completes after midnight, as yesterday's result.
 	for (const [day, create] of [[jstDate(now), true], [jstDate(new Date(now.getTime() - 24 * 3600_000)), false]] as const) {
 		const ids = await dailySet(db, day, create);
-		if (ids.includes(id)) await recordDaily(db, player.id, day, ids, await answersFor(db, player.id, ids), now);
+		if (ids.includes(problemId)) await recordDaily(db, playerId, day, ids, await answersFor(db, playerId, ids), now);
 	}
-	const result = await resultOf(db, player, row, { action, score, pitari: pitari === 1 }, sharerId);
-	return json({ state: "result", result } satisfies ProblemResponse);
 }
 
 // ---- today's ten ----
@@ -559,24 +563,29 @@ interface DailyRow {
 }
 
 /** Record the player's completed ten once (answers from any day count); null while problems remain. */
-async function recordDaily(db: D1Database, playerId: number, day: string, ids: number[], answers: Map<number, AnswerRow>, now: Date): Promise<DailyRow | null> {
+async function recordDaily(db: D1Database, playerId: number, day: string, ids: number[], answers: Awaited<ReturnType<typeof answersFor>>, now: Date, opened = false): Promise<DailyRow | null> {
 	if (ids.some((id) => !answers.has(id))) return null;
-	const existing = await db
+	const rows = [...answers.values()];
+	const latest = rows.reduce((last, a) => a.answered_at > last ? a.answered_at : last, "");
+	const completedAt = jstDate(new Date(latest)) >= day ? latest : null;
+	// Old answers qualify only when the player opens today's ten, never just by resubmitting one.
+	if (!completedAt && !opened) return null;
+	const read = () => db
 		.prepare("SELECT score_sum, pitari, completed_at FROM daily_results WHERE day = ? AND player_id = ?")
 		.bind(day, playerId)
 		.first<DailyRow>();
+	const existing = await read();
 	if (existing) return existing;
-	const rows = [...answers.values()];
 	const row: DailyRow = {
 		score_sum: rows.reduce((sum, a) => sum + a.score, 0),
 		pitari: rows.reduce((sum, a) => sum + a.pitari, 0),
-		completed_at: now.toISOString(),
+		completed_at: completedAt ?? now.toISOString(),
 	};
-	await db
+	const { meta } = await db
 		.prepare("INSERT OR IGNORE INTO daily_results (day, player_id, score_sum, pitari, completed_at) VALUES (?, ?, ?, ?, ?)")
 		.bind(day, playerId, row.score_sum, row.pitari, row.completed_at)
 		.run();
-	return row;
+	return meta.changes === 1 ? row : read();
 }
 
 async function getDaily(ctx: Ctx): Promise<Response> {
@@ -596,7 +605,7 @@ async function getDaily(ctx: Ctx): Promise<Response> {
 		difficulty: rows.find((r) => r.id === id)?.difficulty ?? "normal",
 		answer: toAnswer(answers.get(id)),
 	}));
-	const recorded = await recordDaily(db, player.id, day, ids, answers, now);
+	const recorded = await recordDaily(db, player.id, day, ids, answers, now, true);
 	const result: DailySet["result"] = recorded && { scoreSum: recorded.score_sum, pitari: recorded.pitari, completedAt: recorded.completed_at };
 	return json({ day, problems, result, playerName: displayName(player.name, player.public_id) } satisfies DailySet);
 }

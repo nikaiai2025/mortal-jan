@@ -204,6 +204,8 @@ interface TenSummary {
 
 /** The first unanswered problem of the ten, or the summary once all are answered. */
 async function playTen(root: HTMLElement, app: App, title: string, problems: SetProblem[], options: { lastLabel: string; summary: TenSummary }): Promise<void> {
+	// A delayed response of a page we left must not change the player's assignment.
+	if (!root.isConnected) return;
 	const next = problems.find((p) => !p.answer);
 	if (!next) return tenSummary(root, options.summary, app);
 	const position = problems.indexOf(next) + 1;
