@@ -644,25 +644,45 @@ function drawOpponentRow(ctx: CanvasRenderingContext2D, scene: Scene, seat: numb
 /** AI evaluation of each hand tile as bars rising from the hand into the room below the own river (after answering). */
 function drawBars(ctx: CanvasRenderingContext2D, scene: Scene, bars: HandBar[], progress: number): void {
 	const slots = handSlots(scene);
-	// Clear of a selected tile, which rises by RAISE.
-	const base = slots[0].y - RAISE - BAR_GAP;
+	// Leave room for riichi markers below the bars, clear of a selected tile.
+	const markerRadius = 11;
+	const markerSpace = bars.some((bar) => bar.riichi !== undefined) ? 2 * markerRadius : 0;
+	const base = slots[0].y - RAISE - BAR_GAP - markerSpace;
+	const maxHeight = BAR_MAX - markerSpace;
 	ctx.textAlign = "center";
 	ctx.textBaseline = "alphabetic";
 	for (const slot of slots) {
 		const bar = bars[slot.index];
 		if (!bar) continue;
-		const columns: { value: number; color: string }[] = [];
-		if (bar.dama !== undefined) columns.push({ value: bar.dama, color: bar.best && !(bar.riichi !== undefined && bar.riichi > bar.dama) ? COLORS.red : "#efe7cf" });
-		if (bar.riichi !== undefined) columns.push({ value: bar.riichi, color: bar.best && bar.riichi >= (bar.dama ?? 0) ? COLORS.red : "#ff9f43" });
+		const columns: { value: number; color: string; riichi: boolean }[] = [];
+		if (bar.dama !== undefined) columns.push({ value: bar.dama, color: bar.best && !(bar.riichi !== undefined && bar.riichi > bar.dama) ? COLORS.red : "#efe7cf", riichi: false });
+		if (bar.riichi !== undefined) columns.push({ value: bar.riichi, color: bar.best && bar.riichi >= (bar.dama ?? 0) ? COLORS.red : "#ff9f43", riichi: true });
 		const width = (slot.w * 0.62) / columns.length;
 		let tallest = 0;
 		columns.forEach((column, i) => {
 			const x = slot.x + slot.w * 0.19 + i * width;
-			const height = Math.max(3, column.value * BAR_MAX * progress);
+			const height = Math.max(3, column.value * maxHeight * progress);
 			tallest = Math.max(tallest, height);
 			ctx.fillStyle = column.color;
 			roundRect(ctx, x, base - height, width - 3, height, 3);
 			ctx.fill();
+			if (column.riichi) {
+				const cx = x + (width - 3) / 2;
+				const cy = base + 2 + markerRadius;
+				ctx.save();
+				ctx.strokeStyle = COLORS.red;
+				ctx.fillStyle = "#fff";
+				ctx.lineWidth = 1.8;
+				ctx.beginPath();
+				ctx.arc(cx, cy, markerRadius, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.stroke();
+				ctx.fillStyle = COLORS.red;
+				ctx.font = `700 16px ${FONT}`;
+				ctx.textBaseline = "middle";
+				ctx.fillText("リ", cx, cy + 0.5);
+				ctx.restore();
+			}
 		});
 		if (progress < 1) continue;
 		// Labels stack above the taller bar, in the bars' order (dama on top).

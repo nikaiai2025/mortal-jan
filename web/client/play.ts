@@ -160,7 +160,7 @@ function resultCard(result: Result, options: PlayOptions): HTMLElement {
 			h("dt", {}, "あなた"),
 			h("dd", {}, answer.action.startsWith("r:") ? "リーチ" : "ダマ"),
 			h("dt", {}, "グラフ"),
-			h("dd", { class: "bars-legend" }, h("i", { class: "bars-legend__dama" }), "ダマ", h("i", { class: "bars-legend__riichi" }), "リーチ"),
+			h("dd", { class: "bars-legend" }, h("span", { class: "bars-legend__riichi", "aria-hidden": "true" }, "リ"), "リーチ／無印はダマ"),
 		);
 	}
 	if (result.sharer) {

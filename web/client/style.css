@@ -1538,26 +1538,20 @@ button {
 	opacity: 0.65;
 }
 
-/* ---- legend of the riichi bars (the colours of drawBars in scene.ts) ---- */
-
-.bars-legend i {
-	display: inline-block;
-	width: 0.8em;
-	height: 0.8em;
-	margin: 0 0.25em 0 0.6em;
-	border-radius: 2px;
-	vertical-align: -0.05em;
-}
-
-.bars-legend i:first-child {
-	margin-left: 0;
-}
-
-.bars-legend__dama {
-	background: #efe7cf;
-	box-shadow: inset 0 0 0 1px rgba(29, 40, 48, 0.35);
-}
+/* ---- legend of the circled riichi marker in scene.ts ---- */
 
 .bars-legend__riichi {
-	background: #ff9f43;
+	display: inline-flex;
+	color: var(--red);
+	align-items: center;
+	justify-content: center;
+	width: 1.4em;
+	height: 1.4em;
+	margin-right: 0.3em;
+	border: 1px solid currentColor;
+	border-radius: 50%;
+	font-size: 0.8em;
+	font-weight: 700;
+	line-height: 1;
+	vertical-align: 0.05em;
 }
