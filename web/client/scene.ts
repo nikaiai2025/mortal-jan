@@ -15,6 +15,7 @@ const SCORE_SIZE = 32;
 const RIVER_GAP = 26; // room for a riichi stick between the panel and a river
 const RIVER_X = -3 * RIVER_W;
 const RIVER_ROW = 6;
+const RIVER_HIGHLIGHT_PAD = 4;
 const RIVER_DEPTH = 3 * RIVER_H; // rows of six; the third row takes the rest
 const OPPONENT_GAP = 10; // between a river and its owner's row
 const MARGIN = 8;
@@ -59,6 +60,26 @@ const COLORS = {
 	oya: "#ff8f70",
 	red: "#d62a1e",
 };
+
+const RIICHI_COLORS = [
+	{ label: "#d62a1e", wash: "rgba(214, 42, 30, 0.3)", outline: "#ff7864" },
+	{ label: "#977000", wash: "rgba(255, 209, 70, 0.3)", outline: "#ffdd64" },
+	{ label: "#8246a8", wash: "rgba(180, 100, 225, 0.3)", outline: "#d79bff" },
+];
+
+/** Declaration counts increase in event order, including when calls skip a player's turn. */
+export function riichiOrder(scene: Scene): number[] {
+	return scene.riichi.flatMap((active, actor) => active ? [actor] : []).sort((a, b) => {
+		const total = (actor: number) => scene.riichiDiscardCounts?.[actor]?.reduce((sum, count) => sum + count, 0) ?? 0;
+		return total(a) - total(b);
+	});
+}
+
+function riichiColor(scene: Scene, seat: number) {
+	const order = riichiOrder(scene);
+	const index = order.every((actor) => scene.riichiDiscardCounts?.[actor]) ? order.indexOf(seat) : 0;
+	return RIICHI_COLORS[Math.max(0, Math.min(index, RIICHI_COLORS.length - 1))];
+}
 
 const FONT = "'Zen Kaku Gothic New', 'Hiragino Sans', 'Noto Sans JP', sans-serif";
 const MINCHO = "'Shippori Mincho B1', 'Hiragino Mincho ProN', serif";
@@ -187,8 +208,12 @@ export function drawScene(ctx: CanvasRenderingContext2D, scene: Scene, width: nu
 		ctx.rotate(ROTATIONS[relative]);
 		// Distance from the centre to the panel's edge on this seat's side.
 		const panelEdge = relative % 2 === 0 ? PANEL_HALF_Y : PANEL_HALF_X;
-		if (scene.riichi[seat]) drawRiichi(ctx, panelEdge);
 		drawRiver(ctx, scene, seat, riverY(relative), ROTATIONS[relative]);
+		if (scene.riichi[seat]) {
+			const order = riichiOrder(scene);
+			const numbered = order.length > 1 && order.every((actor) => scene.riichiDiscardCounts?.[actor]);
+			drawRiichi(ctx, panelEdge, riichiColor(scene, seat).label, numbered ? order.indexOf(seat) + 1 : null);
+		}
 		if (relative > 0) {
 			const half = relative === 2 ? ACROSS_ROW_HALF : SIDE_ROW_HALF;
 			// After rotation, the across row's end is beside the problem number on the left.
@@ -434,12 +459,92 @@ function riverBoxes(river: RiverTile[], top: number): { x: number; y: number; w:
 /** `turn` is the seat's rotation, which the mark on a called tile undoes so that it stands upright. */
 function drawRiver(ctx: CanvasRenderingContext2D, scene: Scene, seat: number, top: number, turn: number): void {
 	const river = scene.rivers[seat];
+	const highlights = postRiichiRiverHighlights(scene, seat, top);
+	highlights.forEach((highlight, index) => {
+		const color = riichiColor(scene, highlight.actor);
+		ctx.beginPath();
+		tracePolygon(ctx, highlight.points);
+		if (highlights[index + 1]) tracePolygon(ctx, highlights[index + 1].points);
+		ctx.fillStyle = color.wash;
+		ctx.fill("evenodd");
+	});
 	riverBoxes(river, top).forEach((box, index) => {
 		const tile = river[index];
 		drawTile(ctx, tile.pai, box.x, box.y, RIVER_W, RIVER_H, { sideways: tile.riichi, dim: tile.tsumogiri });
 		// A called tile stays in the river, marked.
 		if (tile.called) drawCalledMark(ctx, box.x + box.w / 2, box.y + box.h / 2, turn);
 	});
+	// The wash sits behind the tiles, while the boundary stays visible above them.
+	for (const highlight of highlights) {
+		ctx.beginPath();
+		tracePolygon(ctx, highlight.points);
+		ctx.strokeStyle = riichiColor(scene, highlight.actor).outline;
+		ctx.lineWidth = 6;
+		ctx.lineJoin = "round";
+		ctx.stroke();
+	}
+}
+
+interface RiverHighlight {
+	actor: number;
+	start: number;
+	points: { x: number; y: number }[];
+}
+
+/** All four rivers use the same declaration boundaries, including each declarer's own tile. */
+export function postRiichiRiverHighlights(scene: Scene, seat: number, top = 0): RiverHighlight[] {
+	const order = riichiOrder(scene);
+	if (order.some((actor) => !scene.riichiDiscardCounts?.[actor])) {
+		// Old scenes still identify their own declaration tile exactly.
+		const start = scene.riichi[seat] ? scene.rivers[seat].findIndex((tile) => tile.riichi) : -1;
+		return start < 0 ? [] : [{ actor: seat, start, points: postRiichiRiverPolygon(scene.rivers[seat], start, top) }];
+	}
+	return order.flatMap((actor) => {
+		const start = scene.riichiDiscardCounts![actor]![seat];
+		const points = postRiichiRiverPolygon(scene.rivers[seat], start, top);
+		return points.length ? [{ actor, start, points }] : [];
+	});
+}
+
+function tracePolygon(ctx: CanvasRenderingContext2D, points: { x: number; y: number }[]): void {
+	ctx.moveTo(points[0].x, points[0].y);
+	for (const point of points.slice(1)) ctx.lineTo(point.x, point.y);
+	ctx.closePath();
+}
+
+/** One stepped contour around the marked suffix, following row folds and the extended third row. */
+export function postRiichiRiverPolygon(river: RiverTile[], start: number, top = 0): { x: number; y: number }[] {
+	const boxes = riverBoxes(river, top);
+	if (start >= boxes.length) return [];
+	const rows: { left: number; right: number; top: number; bottom: number }[] = [];
+	for (let index = start; index < boxes.length; index++) {
+		const row = Math.min(Math.floor(index / RIVER_ROW), 2);
+		const box = boxes[index];
+		const y = top + row * RIVER_H;
+		let bounds = rows.at(-1);
+		if (!bounds || bounds.top !== y - RIVER_HIGHLIGHT_PAD) {
+			bounds = { left: box.x - RIVER_HIGHLIGHT_PAD, right: 0, top: y - RIVER_HIGHLIGHT_PAD, bottom: y + RIVER_H + RIVER_HIGHLIGHT_PAD };
+			rows.push(bounds);
+		}
+		bounds.right = box.x + box.w + RIVER_HIGHLIGHT_PAD;
+	}
+	const first = rows[0];
+	const last = rows.at(-1)!;
+	const points = [{ x: first.left, y: first.top }, { x: first.right, y: first.top }];
+	for (let index = 1; index < rows.length; index++) {
+		const upper = rows[index - 1];
+		const lower = rows[index];
+		const y = upper.right >= lower.right ? upper.bottom : lower.top;
+		points.push({ x: upper.right, y }, { x: lower.right, y });
+	}
+	points.push({ x: last.right, y: last.bottom }, { x: last.left, y: last.bottom });
+	for (let index = rows.length - 1; index > 0; index--) {
+		const lower = rows[index];
+		const upper = rows[index - 1];
+		const y = upper.left >= lower.left ? lower.top : upper.bottom;
+		points.push({ x: lower.left, y }, { x: upper.left, y });
+	}
+	return points;
 }
 
 /** Centre of the discard a call problem asks about (the last of its river), in scene coordinates. */
@@ -520,19 +625,12 @@ function drawCalledMark(ctx: CanvasRenderingContext2D, x: number, y: number, tur
 	ctx.restore();
 }
 
-/** A riichi player: a lit stick, a label, and a red wash under the river. */
-function drawRiichi(ctx: CanvasRenderingContext2D, panelEdge: number): void {
-	const top = panelEdge + RIVER_GAP;
+/** A riichi player: a lit stick and a label matching its river highlight. */
+function drawRiichi(ctx: CanvasRenderingContext2D, panelEdge: number, color: string, order: number | null): void {
 	const washRight = -RIVER_X + 10;
-	ctx.fillStyle = "rgba(214, 42, 30, 0.3)";
-	roundRect(ctx, -washRight, top - 8, 2 * washRight, RIVER_H * 3 + 16, 12);
-	ctx.fill();
-	ctx.strokeStyle = "rgba(255, 120, 100, 0.7)";
-	ctx.lineWidth = 3;
-	ctx.stroke();
 
 	// The stick in the middle, the label ending at the wash's edge.
-	const labelW = 74;
+	const labelW = order === null ? 74 : 94;
 	const w = 120;
 	const h = 13;
 	const y = panelEdge + 8;
@@ -543,19 +641,19 @@ function drawRiichi(ctx: CanvasRenderingContext2D, panelEdge: number): void {
 	roundRect(ctx, -w / 2, y, w, h, h / 2);
 	ctx.fill();
 	ctx.restore();
-	ctx.fillStyle = COLORS.red;
+	ctx.fillStyle = color;
 	ctx.beginPath();
 	ctx.arc(0, y + h / 2, 4, 0, Math.PI * 2);
 	ctx.fill();
 
-	ctx.fillStyle = COLORS.red;
+	ctx.fillStyle = color;
 	roundRect(ctx, washRight - labelW, y - 7, labelW, 27, 6);
 	ctx.fill();
 	ctx.fillStyle = "#fff6ea";
 	ctx.font = `700 18px ${FONT}`;
 	ctx.textAlign = "center";
 	ctx.textBaseline = "middle";
-	ctx.fillText("リーチ", washRight - labelW / 2, y + 7);
+	ctx.fillText(order === null ? "リーチ" : `リーチ${["①", "②", "③", "④"][order - 1]}`, washRight - labelW / 2, y + 7);
 }
 
 // ---- hands and melds ----

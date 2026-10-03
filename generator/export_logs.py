@@ -9,8 +9,6 @@ Only problem_logs is written. Existing problems, answers and scores are untouche
 from __future__ import annotations
 
 import argparse
-import gzip
-import hashlib
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -18,7 +16,7 @@ from typing import Any
 
 from . import runtime
 from .load import sql_text
-from .scene import SceneTracker
+from .problem_source import load_events, problem_round, verified_scene
 from .tenhou import kyoku_label, round_to_tenhou
 
 
@@ -26,25 +24,9 @@ def compact(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
 
 
-def problem_round(events: list[dict[str, Any]], problem: dict[str, Any]) -> tuple[list[dict[str, Any]], int]:
-    source = problem["source"]
-    starts = [i for i, e in enumerate(events) if e["type"] == "start_kyoku"]
-    start = starts[source["kyokuIndex"]]
-    end = next(i + 1 for i in range(start, len(events)) if events[i]["type"] == "end_kyoku")
-    target = source["eventIndex"] - start
-    if not 0 <= target < end - start:
-        raise ValueError(f"problem {problem['id']}: decision lies outside its round")
-    round_events = [{k: v for k, v in e.items() if k != "meta"} for e in events[start:end]]
-    tracker = SceneTracker()
-    for event in round_events[:target + 1]:
-        tracker.update(event)
-    if tracker.snapshot(source["seat"], call_decision=problem["kind"] == "call") != problem["scene"]:
-        raise ValueError(f"problem {problem['id']}: original log no longer matches the scene")
-    return round_events, target
-
-
 def export_problem(events: list[dict[str, Any]], problem: dict[str, Any]) -> dict[str, Any]:
     round_events, target = problem_round(events, problem)
+    verified_scene(round_events, target, problem)
     log = round_to_tenhou(round_events)
     scene = problem["scene"]
     seat = scene["seat"]
@@ -93,15 +75,7 @@ def main() -> None:
     written = size = 0
     with sql_tmp.open("w", encoding="utf-8", newline="\n") as sql:
         for game, group in sorted(by_game.items()):
-            path = args.logs / f"{game}.json.gz"
-            with gzip.open(args.decisions / path.name, "rt", encoding="utf-8") as f:
-                evaluated = json.load(f)
-            if evaluated["identity"] != runtime.IDENTITY:
-                raise ValueError(f"{game}: evaluated with a different model")
-            if hashlib.sha256(path.read_bytes()).hexdigest() != evaluated["logSha256"]:
-                raise ValueError(f"{game}: source log changed after evaluation")
-            with gzip.open(path, "rt", encoding="utf-8") as f:
-                events = [json.loads(line) for line in f]
+            events = load_events(game, args.logs, args.decisions)
             for problem in group:
                 tenhou = export_problem(events, problem)
                 text = compact(tenhou)

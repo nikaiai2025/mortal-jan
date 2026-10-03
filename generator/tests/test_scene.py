@@ -52,7 +52,31 @@ def test_riichi_declaration_tile_deposit_and_call_marks():
     assert scene["drawn"] is None
     assert scene["rivers"][1] == [{"pai": "F", "tsumogiri": False, "riichi": True, "called": False}]
     assert scene["riichi"] == [False, True, False, False]
+    assert scene["riichiDiscardCounts"] == [None, [0, 0, 0, 0], None, None]
     assert scene["scores"][1] == 24000 and scene["kyotaku"] == 1
+
+
+def test_riichi_boundaries_follow_calls_and_are_independent_snapshots():
+    tracker = SceneTracker()
+    start(tracker)
+    tracker.update({"type": "dahai", "actor": 0, "pai": "S", "tsumogiri": False})
+    tracker.update({"type": "pon", "actor": 3, "target": 0, "pai": "S", "consumed": ["S", "S"]})
+    tracker.update({"type": "dahai", "actor": 3, "pai": "F", "tsumogiri": False})
+    tracker.update({"type": "reach", "actor": 0})
+    tracker.update({"type": "dahai", "actor": 0, "pai": "W", "tsumogiri": False})
+    tracker.update({"type": "reach_accepted", "actor": 0})
+    first = tracker.snapshot(1, call_decision=True)
+    assert first["riichiDiscardCounts"] == [[1, 0, 0, 1], None, None, None]
+    tracker.update({"type": "reach", "actor": 2})
+    tracker.update({"type": "dahai", "actor": 2, "pai": "W", "tsumogiri": False})
+    tracker.update({"type": "reach_accepted", "actor": 2})
+    second = tracker.snapshot(1, call_decision=True)
+    assert second["riichiDiscardCounts"] == [[1, 0, 0, 1], None, [2, 0, 0, 1], None]
+    assert first["riichiDiscardCounts"][2] is None
+    second["riichiDiscardCounts"][0][0] = 99
+    assert tracker.snapshot(1, call_decision=True)["riichiDiscardCounts"][0][0] == 1
+    start(tracker)
+    assert tracker.snapshot(1, call_decision=False)["riichiDiscardCounts"] == [None] * 4
 
 
 def test_pon_then_kakan_and_dora():

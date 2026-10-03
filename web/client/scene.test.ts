@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Scene } from "../shared/types";
-import { RAISE, SCENE_WIDTH, callableSlots, handBand, handSlots, meldTiles, questionText, sceneHeight, targetCentre } from "./scene";
+import { RAISE, SCENE_WIDTH, callableSlots, handBand, handSlots, meldTiles, postRiichiRiverHighlights, postRiichiRiverPolygon, questionText, riichiOrder, sceneHeight, targetCentre } from "./scene";
 
 describe("meldTiles", () => {
 	const pon = (target: number) => meldTiles({ type: "pon", pai: "5p", consumed: ["5pr", "5p"], target }, 0);
@@ -89,5 +89,62 @@ describe("call marks", () => {
 	it("marks every hand tile of a kind the choices use, a red five as a five", () => {
 		const choices = [{ action: "chi_low", consumed: ["5sr", "6s"] }, { action: "pass" }];
 		expect(callableSlots(scene(3), choices).map((slot) => slot.pai)).toEqual(["5s", "5sr", "6s"]);
+	});
+});
+
+describe("discards after riichi", () => {
+	const river = (n: number) => Array.from({ length: n }, () => ({ pai: "1m", tsumogiri: false, riichi: false, called: false }));
+	const scene = () => ({
+		seat: 0, rivers: [river(22), river(20), river(21), river(20)], riichi: [false, true, true, true],
+		riichiDiscardCounts: [null, [11, 11, 11, 11], [5, 5, 4, 5], [15, 15, 15, 14]],
+	}) as unknown as Scene;
+
+	it("uses declaration order rather than seat or river length, with distinct nested boundaries", () => {
+		expect(riichiOrder(scene())).toEqual([2, 1, 3]);
+		expect(postRiichiRiverHighlights(scene(), 0).map(({ actor, start }) => [actor, start])).toEqual([[2, 5], [1, 11], [3, 15]]);
+		// The owner's declaration tile starts their color; other declarations use the same rule.
+		expect(postRiichiRiverHighlights(scene(), 2).map(({ actor, start }) => [actor, start])).toEqual([[2, 4], [1, 11], [3, 15]]);
+		expect(postRiichiRiverHighlights(scene(), 3).map(({ actor, start }) => [actor, start])).toEqual([[2, 5], [1, 11], [3, 14]]);
+	});
+
+	it("uses only the declaration tile onward for a legacy riichi river", () => {
+		const current = scene();
+		delete current.riichiDiscardCounts;
+		current.rivers[1][7].riichi = true;
+		expect(postRiichiRiverHighlights(current, 1).map(({ actor, start }) => [actor, start])).toEqual([[1, 7]]);
+		expect(postRiichiRiverHighlights(current, 0)).toEqual([]);
+	});
+
+	it("does not infer a boundary from old or incomplete data, or mark an unaccepted declaration", () => {
+		const current = scene();
+		delete current.riichiDiscardCounts;
+		expect(postRiichiRiverHighlights(current, 0)).toEqual([]);
+		current.riichiDiscardCounts = [null, null, [5, 5, 4, 5], null];
+		expect(postRiichiRiverHighlights(current, 0)).toEqual([]);
+		current.riichi = [false, false, true, false];
+		expect(postRiichiRiverHighlights(current, 0).map(({ actor, start }) => [actor, start])).toEqual([[2, 5]]);
+		current.riichi = [false, false, false, false];
+		expect(postRiichiRiverHighlights(current, 0)).toEqual([]);
+	});
+
+	it("never covers pre-declaration tiles across row folds or an extended third row", () => {
+		const contains = (points: { x: number; y: number }[], x: number, y: number) => {
+			let inside = false;
+			for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+				const a = points[i], b = points[j];
+				if ((a.y > y) !== (b.y > y) && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x) inside = !inside;
+			}
+			return inside;
+		};
+		for (let length = 1; length <= 24; length++) {
+			for (let start = 0; start <= length; start++) {
+				const polygon = postRiichiRiverPolygon(river(length), start, 100);
+				for (let index = 0; index < length; index++) {
+					const row = Math.min(Math.floor(index / 6), 2);
+					const col = index - row * 6;
+					expect(contains(polygon, -132 + (col + 0.5) * 44, 100 + (row + 0.5) * 59)).toBe(index >= start);
+				}
+			}
+		}
 	});
 });

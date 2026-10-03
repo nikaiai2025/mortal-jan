@@ -37,6 +37,8 @@ export interface Scene {
 	rivers: RiverTile[][];
 	melds: Meld[][];
 	riichi: boolean[];
+	/** Per declarer (absolute seat): each river's length at declaration. Absent in older data. */
+	riichiDiscardCounts?: (number[] | null)[];
 	concealedCounts: number[];
 	/** Sorted concealed hand, without the drawn tile. */
 	hand: Pai[];

@@ -41,7 +41,9 @@ class SceneTracker:
             self.drawn[actor] = None
             self.last_discard = {"actor": actor, "pai": event["pai"]}
         elif kind == "reach":
-            self._declaring[event["actor"]] = True
+            actor = event["actor"]
+            self._declaring[actor] = True
+            self.riichi_discard_counts[actor] = [len(river) for river in self.rivers]
         elif kind == "reach_accepted":
             actor = event["actor"]
             self.riichi[actor] = True
@@ -86,6 +88,7 @@ class SceneTracker:
         self.rivers: list[list[dict[str, Any]]] = [[] for _ in range(4)]
         self.melds: list[list[dict[str, Any]]] = [[] for _ in range(4)]
         self.riichi = [False] * 4
+        self.riichi_discard_counts: list[list[int] | None] = [None] * 4
         self.drawn: list[str | None] = [None] * 4
         self.last_discard: dict[str, Any] | None = None
         self.tiles_left = INITIAL_TILES_LEFT
@@ -110,6 +113,7 @@ class SceneTracker:
             "rivers": deepcopy(self.rivers),
             "melds": deepcopy(self.melds),
             "riichi": list(self.riichi),
+            "riichiDiscardCounts": deepcopy(self.riichi_discard_counts),
             "concealedCounts": [len(h) for h in self.hands],
             "hand": sorted(hand, key=tile_sort_key),
             "drawn": drawn,
