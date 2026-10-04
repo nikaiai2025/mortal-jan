@@ -16,11 +16,12 @@
 			"migrations_dir": "./migrations"
 		}
 	],
-	// Keeps one client from spending the D1 free tier (an answer writes about 3 rows).
+	// Keeps one client from spending the D1 free tier (answers write rows and indexes).
 	"ratelimits": [
 		{ "name": "PLAYER_LIMITER", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } },
 		{ "name": "ANSWER_LIMITER", "namespace_id": "1002", "simple": { "limit": 15, "period": 60 } },
-		{ "name": "IP_LIMITER", "namespace_id": "1003", "simple": { "limit": 60, "period": 60 } }
+		{ "name": "IP_LIMITER", "namespace_id": "1003", "simple": { "limit": 60, "period": 60 } },
+		{ "name": "ACQUISITION_LIMITER", "namespace_id": "1004", "simple": { "limit": 30, "period": 60 } }
 	],
 	// Rankings and players' averages are counted from new answers every 10 minutes.
 	"triggers": { "crons": ["*/10 * * * *"] },

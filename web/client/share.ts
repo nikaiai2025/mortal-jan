@@ -1,7 +1,7 @@
 // Share images (portrait 3:4, a problem without its result shorter) drawn in the browser, handed to the OS share sheet or saved.
 
 import { type Mark, displayName, markOf } from "../shared/rules";
-import { SITE_NAME } from "../shared/site";
+import { SITE_NAME, SITE_URL } from "../shared/site";
 import type { Candidate, Profile, Question, Result, SetProblem, Stats } from "../shared/types";
 import { currentPublicId } from "./api";
 import { h } from "./dom";
@@ -12,6 +12,7 @@ import { type HandTag, SCENE_WIDTH, type TagBox, drawScene, drawTile, handTiles,
 import { tileOrder } from "./tiles";
 
 const GOLD = "#b8860b";
+const PUBLIC_HOST = new URL(SITE_URL).host;
 
 export { SITE_NAME } from "../shared/site";
 /** Ends every post text, after what is shared (e.g. 第12問); the link follows. */
@@ -30,7 +31,7 @@ const DIGITS = "0123456789.,%—";
 
 /** Japanese web fonts load in pieces on demand: fetch every piece this text needs before drawing it. */
 async function loadGlyphs(text: string): Promise<void> {
-	const used = `${text}${DIGITS}${SITE_NAME}${location.host}`;
+	const used = `${text}${DIGITS}${SITE_NAME}${PUBLIC_HOST}`;
 	const fonts = [`600 40px ${HAND}`, `500 40px ${GOTHIC}`, `700 40px ${GOTHIC}`, `700 40px ${MINCHO}`, `800 40px ${MINCHO}`];
 	await Promise.all(fonts.map((font) => document.fonts.load(font, used)));
 }
@@ -65,8 +66,8 @@ function footer(ctx: CanvasRenderingContext2D): void {
 	// One line at the very bottom, clear of the content above it.
 	const baseline = ctx.canvas.height - 24;
 	ctx.font = `500 22px ${GOTHIC}`;
-	ctx.fillText(location.host, WIDTH - 48, baseline);
-	const hostWidth = ctx.measureText(location.host).width;
+	ctx.fillText(PUBLIC_HOST, WIDTH - 48, baseline);
+	const hostWidth = ctx.measureText(PUBLIC_HOST).width;
 	ctx.font = `700 28px ${MINCHO}`;
 	ctx.fillText(SITE_NAME, WIDTH - 48 - hostWidth - 18, baseline);
 }

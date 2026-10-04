@@ -1,4 +1,6 @@
 import type { Session } from "../shared/types";
+import { VISITOR_HEADER } from "../shared/acquisition";
+import { acquisitionVisitorId, reportArrival } from "./acquisition";
 
 export const SESSION_KEY = "mortal-jan.session";
 
@@ -61,6 +63,8 @@ let creating: Promise<Session> | null = null;
 async function request<T>(path: string, init: RequestInit = {}, session?: Session): Promise<T> {
 	const headers = new Headers(init.headers);
 	if (session) headers.set("Authorization", `Bearer ${session.token}`);
+	const visitorId = acquisitionVisitorId();
+	if (session && visitorId) headers.set(VISITOR_HEADER, visitorId);
 	if (init.body) headers.set("Content-Type", "application/json");
 	const response = await fetch(path, { ...init, headers });
 	const body = (await response.json().catch(() => ({}))) as { error?: string };
@@ -107,6 +111,8 @@ function unchanged(session: Session | null): void {
 /** A 401 never discards the player or retries as someone else. */
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
 	const session = await ensureSession();
+	await reportArrival(session);
+	unchanged(session);
 	try {
 		const result = await request<T>(path, init, session);
 		unchanged(session);
@@ -140,6 +146,8 @@ export async function startNewPlayer(): Promise<Session> {
 }
 
 export const publicApi = <T>(path: string): Promise<T> => request<T>(path);
+
+export const reportInitialArrival = (): Promise<void> => reportArrival(current ?? undefined);
 
 export const post = <T>(path: string, body: unknown): Promise<T> =>
 	api<T>(path, { method: "POST", body: JSON.stringify(body) });

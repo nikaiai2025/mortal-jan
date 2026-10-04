@@ -7,8 +7,12 @@ import { effectsSetting } from "./effects";
 import { SITE_NAME, NAV_LINKS, footerContent, publicContent } from "../shared/site";
 import { updatePageMeta } from "./seo";
 import { sound } from "./sound";
-import { ApiError, SESSION_KEY, sessionIsPersistent, startNewPlayer, syncSessionFromStorage } from "./api";
+import { ApiError, SESSION_KEY, reportInitialArrival, sessionIsPersistent, startNewPlayer, syncSessionFromStorage } from "./api";
 import { recoveryPage } from "./recovery";
+import { startAcquisition, measurementControl } from "./acquisition";
+
+startAcquisition(new URL(location.href), document.referrer);
+void reportInitialArrival();
 
 const main = h("main", { class: "sheet", id: "main" });
 const footer = h("footer", { class: "site-footer" });
@@ -60,6 +64,7 @@ async function render(): Promise<void> {
 	}
 	try {
 		await route[1](view, location.pathname.match(route[0]) as RegExpMatchArray, app);
+		measurementControl(view);
 		updatePageMeta(location.pathname);
 	} catch (error) {
 		console.error(error);

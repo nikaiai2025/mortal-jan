@@ -31,12 +31,15 @@ import type {
 import { HttpError, addressKey, json, positiveInt, randomId, randomInt, randomToken, readJson, sha256Hex } from "./http";
 import { validateName } from "./names";
 import { formatSpell, normalizeSpell, spellHashInput } from "../shared/recovery";
+import { VISITOR_HEADER, VISITOR_ID_PATTERN } from "../shared/acquisition";
+import { collectArrival, collectAnswer } from "./acquisition";
 
 interface Ctx {
 	request: Request;
 	env: Env;
 	url: URL;
 	params: string[];
+	execution?: ExecutionContext;
 }
 
 const PLAYER_COLUMNS = "id, public_id, name, token_hash, recovery_hash, recovery_hash IS NOT NULL AS recovery_enabled, current_problem_id, assigned_day, assigned_count";
@@ -74,6 +77,7 @@ interface AnswerRow {
 type Handler = (ctx: Ctx) => Promise<Response>;
 
 const routes: [string, RegExp, Handler][] = [
+	["POST", /^\/api\/acquisition$/, postAcquisition],
 	["POST", /^\/api\/players$/, createPlayer],
 	["GET", /^\/api\/me$/, getMe],
 	["PUT", /^\/api\/me\/name$/, putName],
@@ -91,12 +95,12 @@ const routes: [string, RegExp, Handler][] = [
 	["GET", /^\/api\/ranking$/, getRanking],
 ];
 
-export async function route(request: Request, env: Env, url: URL): Promise<Response> {
+export async function route(request: Request, env: Env, url: URL, execution?: ExecutionContext): Promise<Response> {
 	for (const [method, pattern, handler] of routes) {
 		const match = url.pathname.match(pattern);
 		if (!match || request.method !== method) continue;
 		try {
-			return await handler({ request, env, url, params: match.slice(1) });
+			return await handler({ request, env, url, params: match.slice(1), execution });
 		} catch (error) {
 			if (error instanceof HttpError) return json({ error: error.code }, error.status);
 			console.error(error);
@@ -150,6 +154,37 @@ async function createPlayer(ctx: Ctx): Promise<Response> {
 		}
 	}
 	throw new HttpError(500, "id_exhausted");
+}
+
+async function postAcquisition(ctx: Ctx): Promise<Response> {
+	if (ctx.request.headers.get("Origin") !== ctx.url.origin) throw new HttpError(403, "cross_origin");
+	await limit(ctx.env.ACQUISITION_LIMITER, `ip:${clientIp(ctx)}`);
+	// This unauthenticated endpoint accepts only a small, same-origin JSON message.
+	const reader = ctx.request.body?.getReader();
+	if (!reader) throw new HttpError(400, "invalid_body");
+	let text = "";
+	let size = 0;
+	const decoder = new TextDecoder();
+	try {
+		for (;;) {
+			const chunk = await reader.read();
+			if (chunk.done) break;
+			size += chunk.value.byteLength;
+			if (size > 1024) { await reader.cancel(); throw new HttpError(413, "body_too_large"); }
+			text += decoder.decode(chunk.value, { stream: true });
+		}
+		text += decoder.decode();
+	} finally { reader.releaseLock(); }
+	let body: Record<string, unknown>;
+	try {
+		const value: unknown = JSON.parse(text);
+		if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error();
+		body = value as Record<string, unknown>;
+	} catch { throw new HttpError(400, "invalid_body"); }
+	if (typeof body.visitorId !== "string" || !VISITOR_ID_PATTERN.test(body.visitorId)) throw new HttpError(400, "invalid_visitor");
+	const player = ctx.request.headers.has("Authorization") ? await authenticate(ctx) : null;
+	await collectArrival(ctx.env.DB, body, player?.id ?? null);
+	return new Response(null, { status: 204, headers: { "Cache-Control": "no-store" } });
 }
 
 interface PlayerAnswers {
@@ -561,6 +596,12 @@ async function postAnswer(ctx: Ctx): Promise<Response> {
 			saved = await loadAnswer(db, player.id, id);
 			if (!saved) throw error;
 		}
+	}
+	const visitorId = ctx.request.headers.get(VISITOR_HEADER);
+	if (visitorId) {
+		const measurement = collectAnswer(db, player.id, id, visitorId).catch(() => { console.error("acquisition_answer_failed"); });
+		if (ctx.execution) ctx.execution.waitUntil(measurement);
+		else await measurement; // Direct invocations can await completion, including the API tests.
 	}
 	await completeDaily(db, player.id, id, now);
 	const result = await resultOf(db, player, row, saved, sharerId);

@@ -5,6 +5,7 @@
 
 - 仕様: [docs/spec/プロダクト仕様.md](docs/spec/プロダクト仕様.md)
 - 構成: [docs/spec/アーキテクチャ.md](docs/spec/アーキテクチャ.md)
+- 集客の計測と投稿リンク: [tools/acquisition/README.md](tools/acquisition/README.md)
 
 ## 問題生成（Windows）
 

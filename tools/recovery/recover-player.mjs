@@ -32,7 +32,7 @@ export function createExecutor({ mode, persistTo } = {}) {
 			});
 			if (result.error || result.status !== 0) {
 				// Wrangler may include response data in errors; show only an actionable summary.
-				throw new Error("DB操作に失敗しました。Cloudflareの認証・権限と、マイグレーション0005の適用を確認してください。発行中に失敗した場合は、検索からやり直して再発行してください。");
+				throw new Error("DB操作に失敗しました。Cloudflareの認証・権限と、必要なマイグレーションの適用を確認してください。呪文の発行中に失敗した場合は、検索からやり直して再発行してください。");
 			}
 			const output = JSON.parse(result.stdout);
 			if (!Array.isArray(output) || output.length !== 1 || output[0].success !== true) throw new Error("DBから想定外の応答が返りました。");

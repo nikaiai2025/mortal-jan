@@ -63,7 +63,8 @@ export function publicContent(path: "/rules" | "/about"): string {
 	return `<header class="page-head"><h1>麻雀の何切る問題をAIで採点</h1><p>${escapeHtml(SITE_NAME)}は、登録不要・無料で使える麻雀の練習サイトです。</p></header>
 		<section class="rules__section"><h2>1万問から、練習したい問題を選ぶ</h2><p>打牌・リーチ・鳴きの問題を、ランダムや番号順で出題します。問題集では難易度や種類を選べます。今日の10問は全員共通で、日本時間0時に入れ替わります。</p><p><a href="/" class="stamp-button">何切る問題を解く</a> <a href="/sets">問題集を選ぶ</a></p></section>
 		<section class="rules__section"><h2>回答後にAIの評価を確認する</h2><p>問題は麻雀AI Mortal同士の対局から作っています。採点には第三者配布のモデル mortal-298k を使い、公式モデルではありません。回答後に候補ごとのAI評価を見て、自分の判断と比べられます。</p><p><a href="/rules">遊び方と採点のルール</a></p></section>
-		<section class="rules__section"><h2>最初の回答を記録して、後から見直す</h2><p>同じ問題への回答は1回だけ記録されます。成績表で回答数・平均点・ピタリ率を確認し、間違えた問題を見直せます。別の端末へ成績を引き継ぐときは、成績表で復活の呪文を発行して保存してください。</p><p><a href="/daily">今日の10問に挑戦する</a></p></section>`;
+		<section class="rules__section"><h2>最初の回答を記録して、後から見直す</h2><p>同じ問題への回答は1回だけ記録されます。成績表で回答数・平均点・ピタリ率を確認し、間違えた問題を見直せます。別の端末へ成績を引き継ぐときは、成績表で復活の呪文を発行して保存してください。</p><p><a href="/daily">今日の10問に挑戦する</a></p></section>
+		<section class="rules__section"><h2>利用状況の計測</h2><p>サイトの改善のため、端末に匿名の識別番号を保存し、最初の訪問元・回答を始めた時期・7日以内に再び回答したかを集計します。氏名・IPアドレス・復活の呪文は、この計測に保存しません。集計は運営者だけが確認し、利用状況の計測を止めても問題を解けます。</p><p data-measurement-control>計測の設定はJavaScriptを有効にすると変更できます。</p></section>`;
 }
 
 export function footerContent(path: string): string {
