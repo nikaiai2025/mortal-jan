@@ -1,6 +1,7 @@
 // Share images (portrait 3:4, a problem without its result shorter) drawn in the browser, handed to the OS share sheet or saved.
 
 import { type Mark, displayName, markOf } from "../shared/rules";
+import { SITE_NAME } from "../shared/site";
 import type { Candidate, Profile, Question, Result, SetProblem, Stats } from "../shared/types";
 import { currentPublicId } from "./api";
 import { h } from "./dom";
@@ -12,7 +13,7 @@ import { tileOrder } from "./tiles";
 
 const GOLD = "#b8860b";
 
-export const SITE_NAME = "もーたる何切る教室";
+export { SITE_NAME } from "../shared/site";
 /** Ends every post text, after what is shared (e.g. 第12問); the link follows. */
 const HASHTAG = "#もーたる何切る教室";
 

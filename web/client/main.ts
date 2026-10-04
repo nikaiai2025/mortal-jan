@@ -4,12 +4,14 @@ import { errorMessage } from "./errors";
 import { SET_THEMES, type SetTheme } from "../shared/rules";
 import { type App, dailyPlay, freePlay, meLink, problemPage, profilePage, rankingPage, rulesPage, setList, setPlay } from "./screens";
 import { effectsSetting } from "./effects";
-import { SITE_NAME } from "./share";
+import { SITE_NAME, NAV_LINKS, footerContent, publicContent } from "../shared/site";
+import { updatePageMeta } from "./seo";
 import { sound } from "./sound";
 import { ApiError, SESSION_KEY, sessionIsPersistent, startNewPlayer, syncSessionFromStorage } from "./api";
 import { recoveryPage } from "./recovery";
 
 const main = h("main", { class: "sheet", id: "main" });
+const footer = h("footer", { class: "site-footer" });
 
 type Render = (root: HTMLElement, match: RegExpMatchArray, app: App) => Promise<void>;
 
@@ -20,6 +22,7 @@ const routes: [RegExp, Render][] = [
 	[/^\/sets$/, (root, _, app) => setList(root, themeParam(), Number(new URLSearchParams(location.search).get("page") ?? 1) || 1, app)],
 	[/^\/sets\/([a-z]+)\/(\d+)$/, (root, m, app) => setPlay(root, m[1] as SetTheme, Number(m[2]), app)],
 	[/^\/rules$/, (root) => rulesPage(root)],
+	[/^\/about$/, (root) => { root.innerHTML = publicContent("/about"); return Promise.resolve(); }],
 	[/^\/recover$/, (root, _, app) => recoveryPage(root, app)],
 	[/^\/u\/([a-z0-9]+)$/, (root, m, app) => profilePage(root, m[1], app)],
 	[/^\/ranking$/, (root) => rankingPage(root)],
@@ -48,6 +51,8 @@ async function render(): Promise<void> {
 	window.scrollTo(0, 0);
 	updateNav();
 	updateStorageWarning();
+	updatePageMeta(location.pathname);
+	footer.innerHTML = footerContent(location.pathname);
 	const route = routes.find(([pattern]) => pattern.test(location.pathname));
 	if (!route) {
 		view.replaceChildren(h("section", { class: "notice" }, h("h2", {}, "ページが見つかりません")));
@@ -55,6 +60,7 @@ async function render(): Promise<void> {
 	}
 	try {
 		await route[1](view, location.pathname.match(route[0]) as RegExpMatchArray, app);
+		updatePageMeta(location.pathname);
 	} catch (error) {
 		console.error(error);
 		if (error instanceof ApiError && error.status === 401) {
@@ -100,14 +106,7 @@ function updateStorageWarning(): void {
 	storageWarning.hidden = sessionIsPersistent();
 }
 
-const navLinks: [string, string | (() => string)][] = [
-	["出題", "/"],
-	["今日の10問", "/daily"],
-	["問題集", "/sets"],
-	["成績", meLink],
-	["ランキング", "/ranking"],
-	["ルール", "/rules"],
-];
+const navLinks: [string, string | (() => string)][] = NAV_LINKS.map(([label, href]) => [label, href === "/u/me" ? meLink : href]);
 const nav = h("nav", { class: "site-nav", "aria-label": "メニュー" });
 
 function updateNav(): void {
@@ -146,28 +145,12 @@ const settings = h(
 	}),
 );
 
+document.getElementById("static-page")?.remove();
 document.body.append(
 	h("header", { class: "site-header" }, h("a", { class: "brand", href: "/" }, SITE_NAME), nav, settings),
 	storageWarning,
 	main,
-	h(
-		"footer",
-		{ class: "site-footer" },
-		h("p", {}, h("a", { href: "/recover" }, "成績を復旧する")),
-		h(
-			"p",
-			{},
-			"制作: ",
-			h("a", { href: "https://x.com/shika_bakudan" }, "@shika_bakudan"),
-			"（AIで開発。Cloudflareの無料枠で動かしているのでサーバー代は0円。使用ツール: Claude, ChatGPT）",
-			h("br"),
-			"採点: 麻雀AI ",
-			h("a", { href: "https://github.com/Equim-chan/Mortal" }, "Mortal"),
-			"（第三者配布の重み mortal-298k） / ",
-			h("a", { href: "https://github.com/nikaiai2025/mortal-jan" }, "ソースコードは公開しています"),
-			"（AGPL-3.0）",
-		),
-	),
+	footer,
 );
 
 // Same-origin links navigate without reloading.

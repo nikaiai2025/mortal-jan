@@ -1,5 +1,4 @@
 import {
-	DAILY_ANSWER_LIMIT,
 	NAME_MAX_LENGTH,
 	RANKING_MIN_ANSWERS,
 	SET_THEMES,
@@ -32,6 +31,7 @@ import { advancePick, loadPick, modeSwitch, pickPath, savePick } from "./picker"
 import { showProblem } from "./play";
 import { reviewNext, saveReview } from "./review";
 import { openShare, profileCard, setCard } from "./share";
+import { publicContent } from "../shared/site";
 
 /** Navigation shared by the screens. */
 export interface App {
@@ -261,39 +261,7 @@ function tenSummary(root: HTMLElement, summary: TenSummary, app: App): void {
 // ---- rules ----
 
 export function rulesPage(root: HTMLElement): Promise<void> {
-	const section = (title: string, ...items: string[]) =>
-		h("section", { class: "rules__section" }, h("h2", {}, title), h("ul", {}, ...items.map((item) => h("li", {}, item))));
-	replace(
-		root,
-		h("header", { class: "page-head" }, h("h1", {}, "ルール")),
-		section(
-			"対局ルール",
-			"四人麻雀の東南戦（半荘戦）で、ルールは天鳳準拠です。4人とも同じAIが打っていて、全員ガチレベルの打ち手です。天鳳の上級者の対局で学習したAIで、配布者によると雀魂のMAKAテストで平均S+です。",
-			"持ち点25,000点。オーラスで30,000点に誰も届かなければ西入します。持ち点がマイナスになると終了（トビ）。",
-			"赤ドラあり（5萬・5筒・5索に各1枚）。喰いタン・後付けあり。一発・裏ドラ・槓ドラあり。",
-			"途中流局あり（九種九牌・四風連打・四家立直・四槓散了）。3人が同時にロンしても流局になりません。",
-		),
-		section(
-			"遊び方",
-			"出題は「ランダム」か「番号順」を、回答後の「次の問題へ」の近くで切り替えられます。難易度や種類で選ぶときと、番号を指定して開くときは問題集のページを使います。",
-			"「今日の10問」は全員に同じ10問が日替わり（日本時間0時）で出ます。別の画面で先に解いた問題は、その回答を使います。",
-			"同じ問題は1回だけ解けます。解き直しはできず、最初の回答が記録に残ります。回答済みの問題はいつでも見直せます（成績表の「間違い」から順にたどれます）。",
-			`出題は1日${DAILY_ANSWER_LIMIT.toLocaleString("ja-JP")}問までです（日本時間0時に戻ります）。`,
-		),
-		section(
-			"採点",
-			"AIは候補ごとに評価（%）を出します。得点は「あなたの手の評価 ÷ 最善手の評価 × 100」で、最善手と同じなら100点です。",
-			"難易度（かんたん・ふつう・むずかしい）は、AIが最善手をどれだけ確信しているかで分けています。",
-			"評価に使うAIは、Mortal用に第三者が配布している重み mortal-298k です（公式モデルではありません）。",
-		),
-		section(
-			"成績とランキング",
-			"成績表では、全期間と今日の回答数・平均点・ピタリ率と、1日ごとの平均点のグラフを見られます（回答のない日は除きます）。",
-			`全期間のランキングは回答数・平均点・ピタリ率です。平均点とピタリ率には${RANKING_MIN_ANSWERS}問以上回答した人が載ります。各行の帯は、かんたん・ふつう・むずかしいの回答数の比です。`,
-			"今日のランキングは、今日の10問を解き終えた人の得点順です（同点はピタリ数、次に早く終えた順）。",
-			"全期間のランキングと、ほかの人の成績表は10分ごとに更新します。",
-		),
-	);
+	root.innerHTML = publicContent("/rules");
 	return Promise.resolve();
 }
 

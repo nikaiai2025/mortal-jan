@@ -16,3 +16,10 @@
 
 /recover
   X-Robots-Tag: noindex
+
+# Individual play screens contain personalized results and Canvas boards, not public articles.
+/q/*
+  X-Robots-Tag: noindex
+
+/sets/*
+  X-Robots-Tag: noindex
