@@ -58,19 +58,29 @@ export function pageMeta(path: string): { title: string; description: string; ca
 }
 
 /** The same public text is used in the built HTML and after SPA navigation. */
-export function publicContent(path: "/rules" | "/about"): string {
+export function publicContent(path: PublicPath): string {
 	if (path === "/rules") return '<header class="page-head"><h1>ルール</h1></header>' + RULE_SECTIONS.map(([title, items]) => `<section class="rules__section"><h2>${escapeHtml(title)}</h2><ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>`).join("");
-	return `<header class="page-head"><h1>麻雀の何切る問題をAIで採点</h1><p>${escapeHtml(SITE_NAME)}は、登録不要・無料で使える麻雀の練習サイトです。</p></header>
+	if (path === "/about") return `<header class="page-head"><h1>麻雀の何切る問題をAIで採点</h1><p>${escapeHtml(SITE_NAME)}は、登録不要・無料で使える麻雀の練習サイトです。</p></header>
 		<section class="rules__section"><h2>1万問から、練習したい問題を選ぶ</h2><p>打牌・リーチ・鳴きの問題を、ランダムや番号順で出題します。問題集では難易度や種類を選べます。今日の10問は全員共通で、日本時間0時に入れ替わります。</p><p><a href="/" class="stamp-button">何切る問題を解く</a> <a href="/sets">問題集を選ぶ</a></p></section>
 		<section class="rules__section"><h2>回答後にAIの評価を確認する</h2><p>問題は麻雀AI Mortal同士の対局から作っています。採点には第三者配布のモデル mortal-298k を使い、公式モデルではありません。回答後に候補ごとのAI評価を見て、自分の判断と比べられます。</p><p><a href="/rules">遊び方と採点のルール</a></p></section>
 		<section class="rules__section"><h2>最初の回答を記録して、後から見直す</h2><p>同じ問題への回答は1回だけ記録されます。成績表で回答数・平均点・ピタリ率を確認し、間違えた問題を見直せます。別の端末へ成績を引き継ぐときは、成績表で復活の呪文を発行して保存してください。</p><p><a href="/daily">今日の10問に挑戦する</a></p></section>
 		<section class="rules__section"><h2>利用状況の計測</h2><p>サイトの改善のため、端末に匿名の識別番号を保存し、最初の訪問元・回答を始めた時期・7日以内に再び回答したかを集計します。氏名・IPアドレス・復活の呪文は、この計測に保存しません。集計は運営者だけが確認し、利用状況の計測を止めても問題を解けます。</p><p data-measurement-control>計測の設定はJavaScriptを有効にすると変更できます。</p></section>`;
+	const introductions: Record<Exclude<PublicPath, "/about" | "/rules">, string> = {
+		"/": `<header class="page-head"><h1>麻雀の何切る問題をAIで採点</h1><p>${escapeHtml(SITE_NAME)}は、登録不要・無料で何切るの判断を練習できるサイトです。麻雀AI Mortal用に第三者が配布するモデル mortal-298k の評価を使い、回答後に自分の判断と比べられます。</p></header>
+			<section class="rules__section"><h2>打牌・リーチ・鳴きの問題に挑戦</h2><p>1万問の中からランダムや番号順で問題を選べます。今日の10問や難易度別の問題集から、練習したい問題へ進めます。</p><p><a href="/daily" class="stamp-button">今日の10問に挑戦</a> <a href="/sets">問題集を選ぶ</a> <a href="/rules">遊び方と採点のルール</a></p></section>
+			<section class="rules__section"><h2>回答後にAIの評価を見直す</h2><p>候補ごとの評価を確認し、どの選択肢をAIが高く評価したかを比べられます。AI評価は参考情報で、実戦の正解や上達を保証するものではありません。</p><p><a href="/about">サイトと採点モデルについて</a></p></section>`,
+		"/daily": `<header class="page-head"><h1>今日の10問</h1><p>全員共通の麻雀の何切る問題に、毎日10問挑戦できます。出題は日本時間の0時に切り替わります。</p></header>
+			<section class="rules__section"><h2>10問を解いて、今日の成績を確認</h2><p>回答後に10問の得点とピタリ数を確認できます。今日のランキングは、10問を解き終えた人が対象です。</p><p><a href="/" class="stamp-button">何切る問題を解く</a> <a href="/ranking">ランキングを見る</a> <a href="/rules">遊び方と採点のルール</a></p></section>`,
+		"/sets": `<header class="page-head"><h1>麻雀の何切る問題集</h1><p>難易度や問題の種類から、取り組みたい問題を選べます。</p></header>
+			<section class="rules__section"><h2>難易度・打牌・リーチ・鳴きから選ぶ</h2><p>かんたん・ふつう・むずかしいの難易度や、打牌・リーチ・鳴きのテーマ別に10問ずつ練習できます。問題番号を指定して開くこともできます。</p><p><a href="/rules">難易度と採点のルール</a> <a href="/daily">今日の10問</a></p></section>`,
+		"/ranking": `<header class="page-head"><h1>何切る問題のランキング</h1><p>麻雀の何切る問題の回答数・平均点・ピタリ率や、今日の10問の成績を確認できます。</p></header>
+			<section class="rules__section"><h2>全期間と今日の10問の成績</h2><p>全期間のランキングでは回答数・平均点・ピタリ率を見られます。今日のランキングは全員共通の10問を解き終えた人が対象で、得点順（同点はピタリ数、次に早く終えた順）です。</p><p><a href="/daily" class="stamp-button">今日の10問に挑戦</a> <a href="/rules">ランキングの採点条件</a></p></section>`,
+	};
+	return introductions[path];
 }
 
-export function footerContent(path: string): string {
-	const meta = pageMeta(path);
-	const summary = meta.canonical && path !== "/about" && path !== "/rules" ? `<p>${escapeHtml(meta.description)}</p>` : "";
-	return `${summary}<p><a href="/about">このサイトについて</a> · <a href="/recover">成績を復旧する</a></p>
+export function footerContent(_path: string): string {
+	return `<p><a href="/about">このサイトについて</a> · <a href="/recover">成績を復旧する</a></p>
 		<p>制作: <a href="https://x.com/shika_bakudan">@shika_bakudan</a>（AIで開発。Cloudflareの無料枠で動かしているのでサーバー代は0円。使用ツール: Claude, ChatGPT）<br>採点: 麻雀AI <a href="https://github.com/Equim-chan/Mortal">Mortal</a>（第三者配布の重み mortal-298k） / <a href="https://github.com/nikaiai2025/mortal-jan">ソースコードは公開しています</a>（AGPL-3.0）</p>`;
 }
 
@@ -80,12 +90,13 @@ export function seoHtml(template: string, path: string): string {
 	const canonical = meta.canonical && path !== "/" ? `<link rel="canonical" href="${escapeHtml(meta.canonical)}" />` : "";
 	const structured = path === "/" ? `<script type="application/ld+json">${JSON.stringify({ "@context": "https://schema.org", "@type": "WebSite", name: SITE_NAME, url: `${SITE_URL}/` })}</script>` : "";
 	const imageAlt = `${SITE_NAME}の紹介。登録不要・1万問。赤い花丸と100点の文字。`;
+	const robots = meta.noindex ? '<meta name="robots" content="noindex" />' : "";
 	const head = `<title>${escapeHtml(meta.title)}</title><meta name="description" content="${escapeHtml(meta.description)}" />
 		<meta property="og:site_name" content="${SITE_NAME}" /><meta property="og:locale" content="ja_JP" /><meta property="og:type" content="website" />
 		<meta property="og:title" content="${escapeHtml(meta.title)}" /><meta property="og:description" content="${escapeHtml(meta.description)}" /><meta property="og:url" content="${escapeHtml(meta.canonical ?? SITE_URL + "/")}" />
 		<meta property="og:image" content="${SITE_URL}/og.png" /><meta property="og:image:type" content="image/png" /><meta property="og:image:width" content="1200" /><meta property="og:image:height" content="630" />
-		<meta property="og:image:alt" content="${escapeHtml(imageAlt)}" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:image:alt" content="${escapeHtml(imageAlt)}" />${canonical}${structured}`;
-	const content = path === "/rules" || path === "/about" ? publicContent(path) : '<p class="loading">読み込み中…</p>';
+		<meta property="og:image:alt" content="${escapeHtml(imageAlt)}" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:image:alt" content="${escapeHtml(imageAlt)}" />${canonical}${robots}${structured}`;
+	const content = Object.hasOwn(PUBLIC_PAGES, path) ? publicContent(path as PublicPath) : '<p class="loading">読み込み中…</p>';
 	const body = `<div id="static-page"><header class="site-header"><a class="brand" href="/">${SITE_NAME}</a><nav class="site-nav" aria-label="メニュー">${NAV_LINKS.map(([label, href]) => `<a href="${href}">${label}</a>`).join("")}</nav></header><main class="sheet">${content}</main><footer class="site-footer">${footerContent(path)}</footer></div>`;
 	return template.replace(/<!-- site-meta -->[\s\S]*?<!-- \/site-meta -->/, `<!-- site-meta -->${head}<!-- /site-meta -->`).replace(/<!-- static-page -->[\s\S]*?<!-- \/static-page -->/, `<!-- static-page -->${body}<!-- /static-page -->`);
 }
