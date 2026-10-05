@@ -5,11 +5,25 @@ const template = '<html><head><!-- site-meta --><!-- /site-meta --><meta name="g
 
 it.each(["/q/12", "/sets/all/2", "/u/me", "/u/abc123", "/recover", "/missing", "/q/<script>"])("keeps personalized or unavailable page %s out of search", (path) => {
 	expect(pageMeta(path)).toMatchObject({ noindex: true, canonical: null });
+	const html = seoHtml(template, path);
+	expect(html).toContain('<meta name="robots" content="noindex" />');
+	expect(html).not.toContain('rel="canonical"');
 });
 
 it("keeps public pages discoverable with distinct titles and canonical URLs", () => {
 	expect(new Set(Object.values(PUBLIC_PAGES).map((page) => page.title)).size).toBe(Object.keys(PUBLIC_PAGES).length);
-	for (const path of Object.keys(PUBLIC_PAGES)) expect(pageMeta(path)).toMatchObject({ noindex: false, canonical: SITE_URL + path });
+	for (const path of Object.keys(PUBLIC_PAGES)) {
+		expect(pageMeta(path)).toMatchObject({ noindex: false, canonical: SITE_URL + path });
+		expect(seoHtml(template, path)).not.toContain('name="robots"');
+	}
+});
+
+it.each(Object.keys(PUBLIC_PAGES) as (keyof typeof PUBLIC_PAGES)[])("renders useful initial HTML for %s", (path) => {
+	const html = seoHtml(template, path);
+	const main = /<main class="sheet">([\s\S]*?)<\/main>/.exec(html)?.[1];
+	expect(main).toContain(publicContent(path));
+	expect(main).toMatch(/<h1>[^<]+<\/h1>/);
+	expect(main).not.toContain('class="loading"');
 });
 
 it("does not canonicalize the shared SPA fallback to the home page", () => {
