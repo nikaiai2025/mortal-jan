@@ -7,12 +7,38 @@
 - 構成: [docs/spec/アーキテクチャ.md](docs/spec/アーキテクチャ.md)
 - 集客の計測と投稿リンク: [tools/acquisition/README.md](tools/acquisition/README.md)
 
-## 問題生成（Windows）
+## 導入（Windows）
 
-Python 3.12・Rust（cargo）・gitが必要。生成物は `generated/` に出る。
+[PowerShell 7](https://learn.microsoft.com/en-us/powershell/scripting/install/install-powershell-on-windows)（`pwsh`）と[git](https://git-scm.com/install/windows)を導入し、初めて使う場合はリポジトリを取得する。
 
 ```powershell
-pwsh -File tools/mortal/setup.ps1          # Mortal環境を .mortal/ に構築
+git clone https://github.com/nikaiai2025/mortal-jan.git
+cd mortal-jan
+```
+
+以降は、指定がなければリポジトリ直下で実行する。既存の問題データやローカルD1がある場合、Web開発は下の「Web」の手順で再開できる。問題生成を再開する場合は「問題生成」の環境を構築する。
+
+`generated/`と`generator/seeds.local.json`はGit管理対象外。別のPCで同じ問題集を扱う場合はバックアップを引き継ぐ。
+
+## 問題生成（Windows）
+
+[Python 3.12（64-bit）](https://www.python.org/downloads/windows/)と[Rust（cargo、MSVC版）](https://rust-lang.org/tools/install/)が必要。`python --version`で3.12系が選ばれるようPATHを設定する。Rustのビルドには[Visual StudioのC++ビルドツールとWindows SDK](https://rust-lang.github.io/rustup/installation/windows-msvc.html)も必要。
+
+初回導入・`.mortal/`削除後の再構築は次の手順で行う。
+
+```powershell
+pwsh -File tools/mortal/setup.ps1
+.mortal/venv/Scripts/python.exe -c "from generator.runtime import load_model; load_model()"  # 重みの読み込みを確認
+.mortal/venv/Scripts/python.exe -m pytest generator/tests
+```
+
+セットアップは固定版のソース・重みを取得し、保存済みパッチの適用、Python仮想環境の作成、libriichiのビルドを行う。生成済みの問題データやseedは変更しない。
+
+Python依存の版は固定していないため、再構築時も上の読み込み確認とテストを実行する。
+
+問題を初めて生成するときは次を実行する。生成物は `generated/` に出る。公開済みの問題に追加する場合は、下の `-Extend` の手順を使う。
+
+```powershell
 pwsh -File tools/generate-problems.ps1     # 自己対局→全判断の評価→抽出の設定の導出→問題データ
 ```
 
@@ -28,19 +54,19 @@ pwsh -File tools/generate-problems.ps1     # 自己対局→全判断の評価�
 
 ## Web（`web/`）
 
-Node.js 24が必要。問題データは `.mortal/venv/Scripts/python.exe -m generator.load` でSQL（`generated/problems.sql`）にしてから投入する。
+Node.js 24が必要。ローカルD1への初回投入には `generated/problems.sql` と `generated/problem-logs.sql` が必要。SQLがない場合は上の問題生成手順を済ませ、`.mortal/venv/Scripts/python.exe -m generator.load` で問題投入用SQLを作る。既存のローカルD1を使う場合は、問題・牌譜の投入コマンドを省く。
 
 ```powershell
 cd web
 npm ci
 npm run db:migrate:local    # ローカルD1にテーブルを作る
-npm run db:load:local       # ローカルD1に問題を入れる
-npm run db:load:logs:local  # 変換済み牌譜を入れる
+npm run db:load:local       # 初回のみ: ローカルD1に問題を入れる
+npm run db:load:logs:local  # 初回のみ: 変換済み牌譜を入れる
 npm run dev                 # http://localhost:5173
 npm test; npm run typecheck
 ```
 
-配信はGitHub Actionsの「Deploy」ワークフローを手動で実行する（リポジトリのSecretに `CLOUDFLARE_API_TOKEN` が必要）。本番D1への問題投入は `npx wrangler d1 execute DB --remote --file ../generated/problems.sql` で行う。すでに問題が入っているDB（試験配信の問題など）を入れ替えるときは、`generator.load --replace` で作ったSQLを使う（問題・回答・成績をすべて消してから入れる。プレイヤーと名前は残る）。
+配信はGitHub Actionsの「Deploy」ワークフローを手動で実行する（リポジトリのSecretに `CLOUDFLARE_API_TOKEN` が必要）。本番D1への初回問題投入は `npx wrangler d1 execute DB --remote --file ../generated/problems.sql` で行う。公開後の問題追加は上の `--after` の手順に従い、既存の問題・回答・成績を保持する。
 
 牌譜はマイグレーション0004の適用後に `npx wrangler d1 execute DB --remote --file ../generated/problem-logs.sql` で追加する。繰り返しても問題・回答・成績は変わらず、生成元の一致する問題だけに対応する牌譜が入る。問題の追加分だけなら `generator.export_logs --after N`（投入済みの問題数）でSQLを作る。
 
