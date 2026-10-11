@@ -1,10 +1,11 @@
+import { localizedPlayerName } from "./player-label";
 import { t, getLocale } from "./i18n";
 // Share images (portrait 3:4, a problem without its result shorter) drawn in the browser, handed to the OS share sheet or saved.
 
 import { type Mark, displayName as japaneseDisplayName, markOf } from "../shared/rules";
 import { EN_SITE_NAME } from "../shared/site-en";
 import { SITE_NAME, SITE_URL } from "../shared/site";
-import type { Candidate, Profile, Question, Result, SetProblem, Stats } from "../shared/types";
+import type { Candidate, PlayerLabel, Profile, Question, Result, SetProblem, Stats } from "../shared/types";
 import { currentPublicId } from "./api";
 import { h } from "./dom";
 import { chosenSlot } from "./evaluation";
@@ -98,7 +99,8 @@ function handScore(ctx: CanvasRenderingContext2D, score: string, x: number, y: n
 
 /** Labels for the band: the player's answer over the chosen tile, the AI's best over its tile (one label when they agree). */
 function answerTags(result: Result): HandTag[] {
-	const name = t(`${result.playerName}さんの回答`, `${result.playerName}’s answer`);
+	const playerName = localizedPlayerName(result.playerName, result.playerIdentity);
+	const name = t(`${playerName}さんの回答`, `${playerName}’s answer`);
 	const best = result.evaluation.best;
 	const mine = result.answer.action;
 	if (result.kind === "call") {
@@ -309,7 +311,8 @@ export async function problemCard(question: Question, result: Result, includeRes
 }
 
 /** A set is always shared with its result. */
-export async function setCard(title: string, problems: SetProblem[], playerName: string): Promise<HTMLCanvasElement> {
+export async function setCard(title: string, problems: SetProblem[], playerName: string, identity?: PlayerLabel): Promise<HTMLCanvasElement> {
+	playerName = localizedPlayerName(playerName, identity);
 	await loadGlyphs(`${title}${playerName} さんピタリ /第問点`);
 	const [element, ctx] = canvas();
 	paper(ctx, 0);

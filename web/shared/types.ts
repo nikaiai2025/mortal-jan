@@ -86,6 +86,9 @@ export interface AnswerResult {
 	pitari: boolean;
 }
 
+/** Raw name identity, so locale-specific defaults never rewrite a chosen name. */
+export interface PlayerLabel { name: string | null; publicId: string; }
+
 export interface Result extends Question {
 	difficulty: Difficulty;
 	answer: AnswerResult;
@@ -93,9 +96,11 @@ export interface Result extends Question {
 	/** Players' average score, shown once enough players answered. */
 	human: { answers: number; average: number } | null;
 	/** The answer of the player who shared the link, when requested. */
-	sharer: (AnswerResult & { name: string }) | null;
+	sharer: (AnswerResult & { name: string; identity?: PlayerLabel }) | null;
 	/** The answering player's display name, for their share image. */
 	playerName: string;
+	/** Additive identity metadata; older API responses retain their display-name fallback. */
+	playerIdentity?: PlayerLabel;
 }
 
 export type ProblemResponse =
@@ -148,6 +153,8 @@ export interface DailySet {
 	/** Recorded once all ten are answered; the day's ranking is built from these. */
 	result: { scoreSum: number; pitari: number; completedAt: string } | null;
 	playerName: string;
+	/** Additive identity metadata; older API responses retain their display-name fallback. */
+	playerIdentity?: PlayerLabel;
 }
 
 /** Answers by problem kind and by difficulty; each answer counts once in each. */

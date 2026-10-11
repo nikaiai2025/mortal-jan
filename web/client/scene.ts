@@ -91,7 +91,7 @@ const ROTATIONS = [0, -Math.PI / 2, Math.PI, Math.PI / 2];
 
 export function questionText(kind: ProblemKind): string {
 	if (kind === "discard") return t("何を切る？", "What would you discard?");
-	if (kind === "riichi") return t("リーチする？ 何を切る？", "Riichi? What would you discard?");
+	if (kind === "riichi") return t("リーチする？ 何を切る？", "Riichi? Which tile?");
 	return t("鳴く？", "Would you call?");
 }
 

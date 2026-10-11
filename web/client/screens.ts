@@ -11,6 +11,7 @@ import {
 } from "../shared/rules";
 import type {
 	Breakdown,
+	PlayerLabel,
 	DailySet,
 	Difficulty,
 	ProblemResponse,
@@ -170,7 +171,7 @@ export async function setList(root: HTMLElement, theme: SetTheme, page: number, 
 }
 
 export async function setPlay(root: HTMLElement, theme: SetTheme, set: number, app: App): Promise<void> {
-	const data = await api<{ set: number; problems: SetProblem[]; playerName: string }>(`/api/sets/${theme}/${set}`);
+	const data = await api<{ set: number; problems: SetProblem[]; playerName: string; playerIdentity?: PlayerLabel }>(`/api/sets/${theme}/${set}`);
 	const title = () => setTitle(theme, set);
 	await playTen(root, app, title, data.problems, {
 		get lastLabel() { return t("問題集の結果へ", "View set results"); },
@@ -178,6 +179,7 @@ export async function setPlay(root: HTMLElement, theme: SetTheme, set: number, a
 			get title() { return title(); },
 			problems: data.problems,
 			playerName: data.playerName,
+			playerIdentity: data.playerIdentity,
 			shareUrl: `${location.origin}/sets/${theme}/${set}`,
 			shareFile: `mortal-nanikiru-${theme}-${set}.png`,
 			next: { get label() { return t("次の問題集へ", "Next set"); }, href: `/sets/${theme}/${set + 1}` },
@@ -200,6 +202,7 @@ export async function dailyPlay(root: HTMLElement, app: App): Promise<void> {
 			get title() { return title(); },
 			problems: data.problems,
 			playerName: data.playerName,
+			playerIdentity: data.playerIdentity,
 			shareUrl: `${location.origin}/daily`,
 			shareFile: `mortal-nanikiru-daily-${data.day}.png`,
 			next: { get label() { return t("今日のランキングへ", "Today’s leaderboard"); }, href: "/ranking?period=today" },
@@ -212,6 +215,7 @@ interface TenSummary {
 	title: string;
 	problems: SetProblem[];
 	playerName: string;
+	playerIdentity?: PlayerLabel;
 	shareUrl: string;
 	shareFile: string;
 	next: { label: string; href: string };
@@ -251,7 +255,7 @@ function tenSummary(root: HTMLElement, summary: TenSummary, app: App): void {
 		);
 	}
 	const share = async () => {
-		await openShare(await setCard(summary.title, problems, summary.playerName), summary.title, summary.shareUrl, summary.shareFile);
+		await openShare(await setCard(summary.title, problems, summary.playerName, summary.playerIdentity), summary.title, summary.shareUrl, summary.shareFile);
 	};
 	replace(
 		root,

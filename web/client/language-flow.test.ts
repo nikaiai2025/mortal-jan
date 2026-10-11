@@ -51,7 +51,7 @@ vi.mock("./api", async (original) => {
 		answer: { action: "r:1m", score: 100, pitari: true },
 		evaluation: { best: "r:1m", candidates: [{ action: "r:1m", q: 0, p: 1, score: 100 }] },
 		human: null,
-		sharer: null,
+		sharer: { action: "r:1m", score: 100, pitari: true, name: "名無し#shared", identity: { name: null, publicId: "shared" } },
 		playerName: "Fixture",
 	};
 	const stats = { answers: 1, scoreSum: 100, pitari: 1 };
@@ -114,9 +114,10 @@ it("switches the active UI without losing an answer draft or a one-time recovery
 	expect(document.querySelector(".riichi-toggle")?.getAttribute("aria-pressed")).toBe("true");
 	expect(document.querySelector(".fixture-tile")?.getAttribute("aria-pressed")).toBe("true");
 	expect(document.querySelector<HTMLButtonElement>(".answer__actions button")?.disabled).toBe(false);
-	expect(document.querySelector(".answer__question")?.textContent).toBe("Riichi? What would you discard?");
+	expect(document.querySelector(".answer__question")?.textContent).toBe("Riichi? Which tile?");
 	click(".answer__actions button");
 	await vi.waitFor(() => expect(document.querySelector(".result__actions")).not.toBeNull());
+	expect(document.body.textContent).toContain("Anonymous#shared");
 	await language("ja");
 	await language("en");
 	expect(vi.mocked(api)).toHaveBeenCalledTimes(requests);

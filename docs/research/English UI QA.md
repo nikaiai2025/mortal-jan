@@ -25,3 +25,16 @@ From `web/`: `npm run typecheck`, `npm test`, `npm run build`.
 Cloud Chromium could not start in the command sandbox (`socket() failed: Operation not permitted`). The supported dot cloud browser was available, but the local preview URL returned `ERR_CONNECTION_REFUSED`. No production preview was published to work around this.
 
 Before merging, inspect narrow and desktop layouts in a reachable local browser, especially the English riichi prompt, rankings, recovery form and share image. Exercise Back/Forward, reload, repeated language switches and result-sharing dialog Close. Tests/build do not prove text fits visually.
+
+## Review follow-up 2026-10-11
+
+Review: https://github.com/nikaiai2025/mortal-jan/pull/3#issuecomment-6107776683
+
+- Narrow English riichi controls: shorten the question to `Riichi? Which tile?`, remove the redundant dash before Confirm, and reduce horizontal button padding at widths up to 600px. Preserve 44px minimum control height and Japanese copy/layout.
+- Narrow English ranking: use three columns and move completion details to a separate row; allow the title to wrap within its column.
+- Narrow English breakdown: wrap column headings and constrain any remaining overflow to the table container, not the page.
+- Anonymous names: add optional `playerIdentity` / `sharer.identity` metadata (raw nullable name and already-public player ID). Keep all existing display-name fields for compatibility. Localize only missing names; never infer anonymity from `名無し#...`. Use the metadata in problem/set/daily share images and the shared answer UI. Old responses without metadata keep their original display string.
+
+Validation: 19 test files / 151 tests passed, including API identity data for result/sharer/daily/set, explicit anonymous-looking chosen names, runtime locale changes, captured canvas share text, and shared-answer UI text. Type checks and production build passed. These tests use local fixtures and do not send answers or analytics to production.
+
+Visual QA remains open. On this follow-up, the dot cloud browser could not reach `http://127.0.0.1:5173/` (`ERR_CONNECTION_REFUSED`); the local dev command also reported `uv_interface_addresses` restrictions. The browser's URL policy rejected local file navigation. No alternate publishing or security bypass was used. Canvas/DOM tests do not establish rendered dimensions. Before merge, repeat the reviewer's English 320px riichi case (toggle on, then select 6m), 375px daily ranking, and 320px breakdown, both before and after selection, plus Japanese regression checks. The CSS changes address the reported causes but have not been visually reverified in this environment.

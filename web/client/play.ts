@@ -1,3 +1,4 @@
+import { localizedPlayerName } from "./player-label";
 import { t } from "./i18n";
 // Question → answer → grading → result. Used by free play, shared links and problem sets.
 
@@ -182,7 +183,7 @@ function resultCard(result: Result, options: PlayOptions): HTMLElement {
 	}
 	if (result.sharer) {
 		meta.append(
-			h("dt", {}, t(`${result.sharer.name}さん`, result.sharer.name)),
+			h("dt", {}, t(`${localizedPlayerName(result.sharer.name, result.sharer.identity)}さん`, localizedPlayerName(result.sharer.name, result.sharer.identity))),
 			h("dd", {}, actionElement(result.sharer.action, result), t(` ${result.sharer.score}点`, ` ${result.sharer.score} pts`)),
 		);
 	}

@@ -27,7 +27,7 @@ export function answerWindow(question: Question, view: Board, onConfirm: (action
 
 	const showSelection = () => {
 		confirm.disabled = !selected || locked;
-		confirm.replaceChildren(...(selected ? [actionElement(selected, question, "tile tile--confirm"), t("で確定", " — confirm")] : [t("確定", "Confirm")]));
+		confirm.replaceChildren(...(selected ? [actionElement(selected, question, "tile tile--confirm"), t("で確定", " Confirm")] : [t("確定", "Confirm")]));
 	};
 	const choose = (action: string | null) => {
 		selected = action;
