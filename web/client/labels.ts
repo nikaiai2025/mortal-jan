@@ -1,15 +1,19 @@
+import { t } from "./i18n";
 import type { Difficulty, Question } from "../shared/types";
 import { h } from "./dom";
 import { tileElement, tileLabel, tileOrder } from "./tiles";
 
-export const DIFFICULTY_LABELS: Record<Difficulty, string> = { easy: "かんたん", normal: "ふつう", hard: "むずかしい" };
-export const CALL_LABELS: Record<string, string> = { chi_low: "チー", chi_mid: "チー", chi_high: "チー", pon: "ポン", pass: "スルー" };
+export const DIFFICULTY_LABELS: Record<Difficulty, string> = { get easy() { return t("かんたん", "Easy"); }, get normal() { return t("ふつう", "Normal"); }, get hard() { return t("むずかしい", "Hard"); } };
+export const CALL_LABELS: Record<string, string> = {
+ get chi_low() { return t("チー", "Chi"); }, get chi_mid() { return t("チー", "Chi"); }, get chi_high() { return t("チー", "Chi"); },
+ get pon() { return t("ポン", "Pon"); }, get pass() { return t("スルー", "Pass"); },
+};
 
 /** An answer drawn with tiles, e.g. [リーチ][3萬] or [ポン][5筒][5筒][5筒]. */
 export function actionElement(action: string, question: Question, tileClass = "tile tile--small"): HTMLElement {
 	const wrap = h("span", { class: "action" });
 	if (action.startsWith("d:") || action.startsWith("r:")) {
-		if (action.startsWith("r:")) wrap.append(h("span", { class: "action__tag action__tag--riichi" }, "リーチ"));
+		if (action.startsWith("r:")) wrap.append(h("span", { class: "action__tag action__tag--riichi" }, t("リーチ", "Riichi")));
 		wrap.append(tileElement(action.slice(2), tileClass));
 		return wrap;
 	}
@@ -28,7 +32,7 @@ export function actionElement(action: string, question: Question, tileClass = "t
 /** Plain-text answer for share texts and screen readers. */
 export function actionText(action: string, question: Question): string {
 	if (action.startsWith("d:")) return tileLabel(action.slice(2));
-	if (action.startsWith("r:")) return `リーチ${tileLabel(action.slice(2))}`;
+	if (action.startsWith("r:")) return t(`リーチ${tileLabel(action.slice(2))}`, `Riichi ${tileLabel(action.slice(2))}`);
 	const choice = question.choices.find((c) => c.action === action);
 	const tiles = choice?.consumed?.map(tileLabel).join("") ?? "";
 	return `${CALL_LABELS[action] ?? action}${tiles ? `(${tiles})` : ""}`;

@@ -1,3 +1,4 @@
+import { localePath } from "./i18n";
 type Child = Node | string | number | null | undefined | false;
 type Props = Record<string, unknown>;
 
@@ -8,7 +9,8 @@ export function h<K extends keyof HTMLElementTagNameMap>(
 	...children: Child[]
 ): HTMLElementTagNameMap[K] {
 	const element = document.createElement(tag);
-	for (const [key, value] of Object.entries(props)) {
+	for (const [key, original] of Object.entries(props)) {
+		const value = key === "href" && typeof original === "string" && original.startsWith("/") && !original.startsWith("//") ? localePath(original) : original;
 		if (value === undefined || value === null || value === false) continue;
 		if (key.startsWith("on") && typeof value === "function") {
 			element.addEventListener(key.slice(2), value as EventListener);

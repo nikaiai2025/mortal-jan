@@ -1,10 +1,11 @@
+import { getLocale, t } from "./i18n";
 import {
 	NAME_MAX_LENGTH,
 	RANKING_MIN_ANSWERS,
 	SET_THEMES,
 	SET_THEME_LABELS,
 	type SetTheme,
-	displayName,
+	displayName as japaneseDisplayName,
 	markOf,
 	setOf,
 } from "../shared/rules";
@@ -33,6 +34,15 @@ import { reviewNext, saveReview } from "./review";
 import { openShare, profileCard, setCard } from "./share";
 import { publicContent } from "../shared/site";
 
+// Repaint cached profile data when changing language, without losing a newly issued code.
+const screenLocalizers = new WeakMap<HTMLElement, () => void>();
+export function localizeScreen(root: HTMLElement): boolean {
+	const render = screenLocalizers.get(root);
+	if (!render) return false;
+	render();
+	return true;
+}
+
 /** Navigation shared by the screens. */
 export interface App {
 	navigate(path: string): void;
@@ -56,21 +66,21 @@ export async function freePlay(root: HTMLElement, app: App): Promise<void> {
 			h(
 				"section",
 				{ class: "notice" },
-				h("h2", {}, pick.mode === "order" ? "番号順に最後まで解きました" : "全問解きました"),
+				h("h2", {}, pick.mode === "order" ? t("番号順に最後まで解きました", "You’ve reached the last problem") : t("全問解きました", "You’ve answered every problem")),
 				h("div", { class: "notice__switch" }, modeSwitch()),
 				pick.mode === "order"
-					? h("button", { class: "stamp-button", type: "button", onclick: restart }, "最初から")
-					: h("p", {}, "すべての問題に回答済みです。"),
+					? h("button", { class: "stamp-button", type: "button", onclick: restart }, t("最初から", "Start over"))
+					: h("p", {}, t("すべての問題に回答済みです。", "You’ve already answered all the problems.")),
 			),
 		);
 		return;
 	}
 	await showProblem(root, response, {
 		from: null,
-		nextLabel: "次の問題へ",
+		get nextLabel() { return t("次の問題へ", "Next problem"); },
 		onNext: app.refresh,
 		onAnswered: (result) => advancePick(pick, result.id),
-		nextSwitch: modeSwitch(),
+		get nextSwitch() { return modeSwitch(); },
 	});
 }
 
@@ -78,20 +88,25 @@ export async function problemPage(root: HTMLElement, id: number, app: App): Prom
 	const params = new URLSearchParams(location.search);
 	const from = params.get("from");
 	const response = await api<ProblemResponse>(`/api/problems/${id}${from ? `?from=${encodeURIComponent(from)}` : ""}`);
-	if (!params.has("review")) return showProblem(root, response, { from, nextLabel: "次の問題へ", onNext: () => app.navigate("/"), nextSwitch: modeSwitch() });
+	if (!params.has("review")) return showProblem(root, response, { from, get nextLabel() { return t("次の問題へ", "Next problem"); }, onNext: () => app.navigate("/"), get nextSwitch() { return modeSwitch(); } });
 	// Reviewing misses from the profile: on to the next one in the list, or back to the profile.
 	const next = reviewNext(id);
 	await showProblem(root, response, {
 		from,
-		nextLabel: next ? "次の間違いへ" : "成績表へ",
+		get nextLabel() { return next ? t("次の間違いへ", "Next mistake") : t("成績表へ", "View stats"); },
 		onNext: () => app.navigate(next ? `/q/${next}?review` : `${meLink()}?history=miss`),
 	});
 }
 
 // ---- ten problems: problem sets and today's ten ----
 
+const themeLabel = (theme: SetTheme): string => t(SET_THEME_LABELS[theme], {
+ all: "All", easy: "Easy", normal: "Normal", hard: "Hard", discard: "Discard", riichi: "Riichi", call: "Calls",
+}[theme]);
+const displayName = (name: string | null, publicId: string): string => name ?? t(japaneseDisplayName(name, publicId), `Anonymous#${publicId}`);
+
 const setTitle = (theme: SetTheme, set: number) =>
-	theme === "all" ? `問題集 第${set}集` : `問題集 ${SET_THEME_LABELS[theme]}編 第${set}集`;
+	theme === "all" ? t(`問題集 第${set}集`, `Problem set ${set}`) : t(`問題集 ${SET_THEME_LABELS[theme]}編 第${set}集`, `${themeLabel(theme)} · Set ${set}`);
 
 export async function setList(root: HTMLElement, theme: SetTheme, page: number, app: App): Promise<void> {
 	const data = await api<{ page: number; totalSets: number; setsPerPage: number; sets: SetSummary[] }>(
@@ -112,25 +127,25 @@ export async function setList(root: HTMLElement, theme: SetTheme, page: number, 
 					"a",
 					{ class: `set-cell${done ? " is-done" : summary ? " is-started" : ""}`, href: `/sets/${theme}/${set}` },
 					h("span", { class: "set-cell__no" }, String(set)),
-					h("span", { class: "set-cell__state" }, done ? `${(summary.scoreSum / 10).toFixed(1)}点` : summary ? `${summary.answered}/10` : ""),
+					h("span", { class: "set-cell__state" }, done ? t(`${(summary.scoreSum / 10).toFixed(1)}点`, `${(summary.scoreSum / 10).toFixed(1)} pts`) : summary ? `${summary.answered}/10` : ""),
 				),
 			),
 		);
 	}
 	const pages = Math.ceil(data.totalSets / data.setsPerPage);
-	const pager = h("nav", { class: "pager", "aria-label": "ページ" });
+	const pager = h("nav", { class: "pager", "aria-label": t("ページ", "Pages") });
 	if (pages > 1) {
 		for (let p = 1; p <= pages; p++) {
-			pager.append(h("a", { class: p === data.page ? "is-current" : "", href: `/sets?theme=${theme}&page=${p}` }, `${(p - 1) * data.setsPerPage + 1}〜`));
+			pager.append(h("a", { class: p === data.page ? "is-current" : "", href: `/sets?theme=${theme}&page=${p}` }, t(`${(p - 1) * data.setsPerPage + 1}〜`, `${(p - 1) * data.setsPerPage + 1}+`)));
 		}
 	}
 	const themes = h(
 		"nav",
-		{ class: "tabs", "aria-label": "テーマ" },
-		...SET_THEMES.map((t) => h("a", { class: t === theme ? "is-current" : "", href: `/sets?theme=${t}` }, SET_THEME_LABELS[t])),
+		{ class: "tabs", "aria-label": t("テーマ", "Category") },
+		...SET_THEMES.map((key) => h("a", { class: key === theme ? "is-current" : "", href: `/sets?theme=${key}` }, themeLabel(key))),
 	);
 	// Opening a problem by number belongs with the lists, not on the question page.
-	const number = h("input", { type: "number", min: 1, step: 1, inputMode: "numeric", placeholder: "番号", "aria-label": "問題番号" });
+	const number = h("input", { type: "number", min: 1, step: 1, inputMode: "numeric", placeholder: t("番号", "Number"), "aria-label": t("問題番号", "Problem number") });
 	const jump = h(
 		"form",
 		{
@@ -141,54 +156,54 @@ export async function setList(root: HTMLElement, theme: SetTheme, page: number, 
 				if (Number.isInteger(id) && id >= 1) app.navigate(`/q/${id}`);
 			},
 		},
-		h("span", { class: "set-jump__label" }, "1問だけ解く"),
-		h("label", {}, "第", number, "問を"),
-		h("button", { class: "ghost-button ghost-button--small", type: "submit" }, "開く"),
+		h("span", { class: "set-jump__label" }, t("1問だけ解く", "Open a single problem")),
+		h("label", {}, t("第", "Problem "), number, t("問を", "")),
+		h("button", { class: "ghost-button ghost-button--small", type: "submit" }, t("開く", "Open")),
 	);
 	replace(
 		root,
-		h("header", { class: "page-head" }, h("h1", {}, "問題集"), h("p", {}, "10問ずつの問題集です。10問そろうと合計点（100点満点）が出ます。"), jump),
+		h("header", { class: "page-head" }, h("h1", {}, t("問題集", "Problem sets")), h("p", {}, t("10問ずつの問題集です。10問そろうと合計点（100点満点）が出ます。", "Each set has 10 problems. Complete a set to see your overall score out of 100.")), jump),
 		themes,
 		pager,
-		data.totalSets ? grid : h("p", { class: "empty" }, "このテーマの問題集はまだありません。"),
+		data.totalSets ? grid : h("p", { class: "empty" }, t("このテーマの問題集はまだありません。", "There are no problem sets in this category yet.")),
 	);
 }
 
 export async function setPlay(root: HTMLElement, theme: SetTheme, set: number, app: App): Promise<void> {
 	const data = await api<{ set: number; problems: SetProblem[]; playerName: string }>(`/api/sets/${theme}/${set}`);
-	const title = setTitle(theme, set);
+	const title = () => setTitle(theme, set);
 	await playTen(root, app, title, data.problems, {
-		lastLabel: "問題集の結果へ",
+		get lastLabel() { return t("問題集の結果へ", "View set results"); },
 		summary: {
-			title,
+			get title() { return title(); },
 			problems: data.problems,
 			playerName: data.playerName,
 			shareUrl: `${location.origin}/sets/${theme}/${set}`,
 			shareFile: `mortal-nanikiru-${theme}-${set}.png`,
-			next: { label: "次の問題集へ", href: `/sets/${theme}/${set + 1}` },
+			next: { get label() { return t("次の問題集へ", "Next set"); }, href: `/sets/${theme}/${set + 1}` },
 		},
 	});
 }
 
 /** "10月2日" from a Japan date "2026-10-02". */
-const dateLabel = (day: string) => `${Number(day.slice(5, 7))}月${Number(day.slice(8, 10))}日`;
+const dateLabel = (day: string) => t(`${Number(day.slice(5, 7))}月${Number(day.slice(8, 10))}日`, new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(`${day}T00:00:00Z`)));
 
 /** "12:34" in Japan time. */
 const jstTime = (iso: string) => new Date(new Date(iso).getTime() + 9 * 3600_000).toISOString().slice(11, 16);
 
 export async function dailyPlay(root: HTMLElement, app: App): Promise<void> {
 	const data = await api<DailySet>("/api/daily");
-	const title = `今日の10問（${dateLabel(data.day)}）`;
+	const title = () => t(`今日の10問（${dateLabel(data.day)}）`, `Today’s 10 (${dateLabel(data.day)})`);
 	await playTen(root, app, title, data.problems, {
-		lastLabel: "今日の結果へ",
+		get lastLabel() { return t("今日の結果へ", "View today’s results"); },
 		summary: {
-			title,
+			get title() { return title(); },
 			problems: data.problems,
 			playerName: data.playerName,
 			shareUrl: `${location.origin}/daily`,
 			shareFile: `mortal-nanikiru-daily-${data.day}.png`,
-			next: { label: "今日のランキングへ", href: "/ranking?period=today" },
-			note: data.result ? `${jstTime(data.result.completedAt)} に完了。今日のランキングに載ります。` : null,
+			next: { get label() { return t("今日のランキングへ", "Today’s leaderboard"); }, href: "/ranking?period=today" },
+			get note() { return data.result ? t(`${jstTime(data.result.completedAt)} に完了。今日のランキングに載ります。`, `Completed at ${jstTime(data.result.completedAt)} JST. Your score appears on today’s leaderboard.`) : null; },
 		},
 	});
 }
@@ -204,7 +219,7 @@ interface TenSummary {
 }
 
 /** The first unanswered problem of the ten, or the summary once all are answered. */
-async function playTen(root: HTMLElement, app: App, title: string, problems: SetProblem[], options: { lastLabel: string; summary: TenSummary }): Promise<void> {
+async function playTen(root: HTMLElement, app: App, title: () => string, problems: SetProblem[], options: { lastLabel: string; summary: TenSummary }): Promise<void> {
 	// A delayed response of a page we left must not change the player's assignment.
 	if (!root.isConnected) return;
 	const next = problems.find((p) => !p.answer);
@@ -214,8 +229,8 @@ async function playTen(root: HTMLElement, app: App, title: string, problems: Set
 	const response = await api<ProblemResponse>(`/api/problems/${next.id}`);
 	await showProblem(root, response, {
 		from: null,
-		progress: `${title} ${position}/10`,
-		nextLabel: remaining > 1 ? "次の問題へ" : options.lastLabel,
+		get progress() { return `${title()} ${position}/10`; },
+		get nextLabel() { return remaining > 1 ? t("次の問題へ", "Next problem") : options.lastLabel; },
 		onNext: app.refresh,
 	});
 }
@@ -231,7 +246,7 @@ function tenSummary(root: HTMLElement, summary: TenSummary, app: App): void {
 			h(
 				"li",
 				{},
-				h("a", { href: `/q/${problem.id}` }, icon, h("span", {}, `第${problem.id}問`), h("strong", {}, `${problem.answer?.score ?? 0}点`)),
+				h("a", { href: `/q/${problem.id}` }, icon, h("span", {}, t(`第${problem.id}問`, `Problem ${problem.id}`)), h("strong", {}, t(`${problem.answer?.score ?? 0}点`, `${problem.answer?.score ?? 0} pts`))),
 			),
 		);
 	}
@@ -244,14 +259,14 @@ function tenSummary(root: HTMLElement, summary: TenSummary, app: App): void {
 			"section",
 			{ class: "set-summary" },
 			h("p", { class: "set-summary__title" }, summary.title),
-			h("p", { class: "set-summary__score" }, total.toFixed(1), h("small", {}, "点")),
-			h("p", { class: "set-summary__pitari" }, `ピタリ ${pitari} / 10`),
+			h("p", { class: "set-summary__score" }, total.toFixed(1), h("small", {}, t("点", " pts"))),
+			h("p", { class: "set-summary__pitari" }, t(`ピタリ ${pitari} / 10`, `Perfect matches ${pitari} / 10`)),
 			summary.note ? h("p", { class: "note" }, summary.note) : null,
 			list,
 			h(
 				"div",
 				{ class: "result__actions" },
-				h("button", { class: "ghost-button", type: "button", onclick: share }, "結果を共有"),
+				h("button", { class: "ghost-button", type: "button", onclick: share }, t("結果を共有", "Share results")),
 				h("button", { class: "stamp-button", type: "button", onclick: () => app.navigate(summary.next.href) }, summary.next.label),
 			),
 		),
@@ -261,7 +276,7 @@ function tenSummary(root: HTMLElement, summary: TenSummary, app: App): void {
 // ---- rules ----
 
 export function rulesPage(root: HTMLElement): Promise<void> {
-	root.innerHTML = publicContent("/rules");
+	root.innerHTML = publicContent("/rules", getLocale());
 	return Promise.resolve();
 }
 
@@ -280,11 +295,11 @@ function statBlock(label: string, stats: Stats): HTMLElement {
 		h(
 			"dl",
 			{},
-			h("dt", {}, "回答数"),
+			h("dt", {}, t("回答数", "Answers")),
 			h("dd", {}, `${stats.answers}`),
-			h("dt", {}, "平均点"),
+			h("dt", {}, t("平均点", "Average score")),
 			h("dd", {}, average),
-			h("dt", {}, "ピタリ率"),
+			h("dt", {}, t("ピタリ率", "Perfect match rate")),
 			h("dd", {}, pitari),
 		),
 	);
@@ -300,9 +315,9 @@ function breakdownTable(breakdown: Breakdown): HTMLElement {
 		h(
 			"table",
 			{},
-			h("thead", {}, h("tr", {}, h("td"), h("th", { scope: "col" }, "回答数"), h("th", { scope: "col" }, "平均点"), h("th", { scope: "col" }, "ピタリ率"))),
-			h("tbody", {}, ...(["easy", "normal", "hard"] as const).map((d) => row(SET_THEME_LABELS[d], breakdown.difficulty[d]))),
-			h("tbody", {}, ...(["discard", "riichi", "call"] as const).map((k) => row(SET_THEME_LABELS[k], breakdown.kind[k]))),
+			h("thead", {}, h("tr", {}, h("td"), h("th", { scope: "col" }, t("回答数", "Answers")), h("th", { scope: "col" }, t("平均点", "Average score")), h("th", { scope: "col" }, t("ピタリ率", "Perfect match rate")))),
+			h("tbody", {}, ...(["easy", "normal", "hard"] as const).map((d) => row(themeLabel(d), breakdown.difficulty[d]))),
+			h("tbody", {}, ...(["discard", "riichi", "call"] as const).map((k) => row(themeLabel(k), breakdown.kind[k]))),
 		),
 	);
 }
@@ -317,63 +332,67 @@ export async function profilePage(root: HTMLElement, publicId: string, app: App)
 	// The owner asks with their token and gets live stats and history; others get the aggregated stats.
 	const path = `/api/players/${encodeURIComponent(publicId)}${misses ? "?history=miss" : ""}`;
 	const profile = currentPublicId() === publicId ? await api<Profile>(path) : await publicApi<Profile>(path);
-	const isMe = currentPublicId() === profile.publicId;
-	if (misses) saveReview(profile.history.map((item) => item.id));
-	const recent = h("ol", { class: "history" });
-	for (const item of profile.history) {
-		recent.append(
-			h(
-				"li",
-				{},
+	const draw = () => {
+		const isMe = currentPublicId() === profile.publicId;
+		if (misses) saveReview(profile.history.map((item) => item.id));
+		const recent = h("ol", { class: "history" });
+		for (const item of profile.history) {
+			recent.append(
 				h(
-					"a",
-					{ href: `/q/${item.id}${misses ? "?review" : ""}` },
-					markIcon(markOf(item.score, item.pitari), "history__mark", hanamaruFor(profile.publicId, item.id, item.difficulty)),
-					h("span", {}, `第${item.id}問（問題集 第${setOf(item.id)}集）`),
-					h("strong", {}, `${item.score}点`),
+					"li",
+					{},
+					h(
+						"a",
+						{ href: `/q/${item.id}${misses ? "?review" : ""}` },
+						markIcon(markOf(item.score, item.pitari), "history__mark", hanamaruFor(profile.publicId, item.id, item.difficulty)),
+						h("span", {}, t(`第${item.id}問（問題集 第${setOf(item.id)}集）`, `Problem ${item.id} (Set ${setOf(item.id)})`)),
+						h("strong", {}, t(`${item.score}点`, `${item.score} pts`)),
+					),
 				),
-			),
+			);
+		}
+		const historyTabs = h(
+			"nav",
+			{ class: "tabs", "aria-label": t("回答履歴の絞り込み", "Filter answer history") },
+			h("a", { class: misses ? "" : "is-current", href: `/u/${profile.publicId}` }, t("すべて", "All")),
+			h("a", { class: misses ? "is-current" : "", href: `/u/${profile.publicId}?history=miss` }, t("間違い（△・✕）", "Mistakes (△ / ✕)")),
 		);
-	}
-	const historyTabs = h(
-		"nav",
-		{ class: "tabs", "aria-label": "回答履歴の絞り込み" },
-		h("a", { class: misses ? "" : "is-current", href: `/u/${profile.publicId}` }, "すべて"),
-		h("a", { class: misses ? "is-current" : "", href: `/u/${profile.publicId}?history=miss` }, "間違い（△・✕）"),
-	);
-	const share = async () => openShare(await profileCard(profile), "私の成績", `${location.origin}/u/${profile.publicId}`, "mortal-nanikiru-profile.png");
-	replace(
-		root,
-		h(
-			"header",
-			{ class: "page-head" },
-			h("h1", {}, "成績表"),
-			h("p", { class: "profile__name" }, displayName(profile.name, profile.publicId)),
-			isMe ? nameEditor(profile, app.refresh) : null,
-		),
-		h("div", { class: "stat-row" }, statBlock("全期間", profile.all), statBlock("今日", profile.today)),
-		isMe ? h("div", { class: "result__actions" }, h("button", { class: "ghost-button", type: "button", onclick: share }, "成績を共有")) : null,
-		isMe ? recoveryPanel(profile.recoveryEnabled ?? false) : null,
-		profile.breakdown && profile.all.answers ? h("h2", { class: "section-title" }, "難易度別・種類別の成績") : null,
-		profile.breakdown && profile.all.answers ? breakdownTable(profile.breakdown) : null,
-		h("h2", { class: "section-title" }, "1日ごとの成績"),
-		profile.daily.length ? dailyChart(profile.daily) : h("p", { class: "empty" }, "まだ回答がありません。"),
-		isMe ? h("h2", { class: "section-title" }, misses ? "最近の間違い" : "最近の回答") : null,
-		isMe ? historyTabs : null,
-		isMe ? (profile.history.length ? recent : h("p", { class: "empty" }, misses ? "間違いはありません。" : "まだ回答がありません。")) : null,
-		isMe && misses && profile.history.length ? h("p", { class: "note" }, "開いた結果から「次の間違いへ」で順に見直せます。") : null,
-		isMe ? null : h("p", { class: "note" }, "成績は10分ごとに更新します。"),
-	);
+		const share = async () => openShare(await profileCard(profile), t("私の成績", "My stats"), `${location.origin}/u/${profile.publicId}`, "mortal-nanikiru-profile.png");
+		replace(
+			root,
+			h(
+				"header",
+				{ class: "page-head" },
+				h("h1", {}, t("成績表", "Stats")),
+				h("p", { class: "profile__name" }, displayName(profile.name, profile.publicId)),
+				isMe ? nameEditor(profile, app.refresh) : null,
+			),
+			h("div", { class: "stat-row" }, statBlock(t("全期間", "All time"), profile.all), statBlock(t("今日", "Today"), profile.today)),
+			isMe ? h("div", { class: "result__actions" }, h("button", { class: "ghost-button", type: "button", onclick: share }, t("成績を共有", "Share stats"))) : null,
+			isMe ? recoveryPanel(profile.recoveryEnabled ?? false) : null,
+			profile.breakdown && profile.all.answers ? h("h2", { class: "section-title" }, t("難易度別・種類別の成績", "Stats by difficulty and type")) : null,
+			profile.breakdown && profile.all.answers ? breakdownTable(profile.breakdown) : null,
+			h("h2", { class: "section-title" }, t("1日ごとの成績", "Daily stats")),
+			profile.daily.length ? dailyChart(profile.daily) : h("p", { class: "empty" }, t("まだ回答がありません。", "No answers yet.")),
+			isMe ? h("h2", { class: "section-title" }, misses ? t("最近の間違い", "Recent mistakes") : t("最近の回答", "Recent answers")) : null,
+			isMe ? historyTabs : null,
+			isMe ? (profile.history.length ? recent : h("p", { class: "empty" }, misses ? t("間違いはありません。", "No mistakes to review.") : t("まだ回答がありません。", "No answers yet."))) : null,
+			isMe && misses && profile.history.length ? h("p", { class: "note" }, t("開いた結果から「次の間違いへ」で順に見直せます。", "Open a result, then choose “Next mistake” to work through your review.")) : null,
+			isMe ? null : h("p", { class: "note" }, t("成績は10分ごとに更新します。", "Stats update every 10 minutes.")),
+		);
+	};
+	screenLocalizers.set(root, draw);
+	draw();
 }
 
 function nameEditor(profile: Profile, onSaved: () => void): HTMLElement {
-	const input = h("input", { type: "text", value: profile.name ?? "", maxLength: NAME_MAX_LENGTH * 2, placeholder: "ランキングに表示する名前" });
+	const input = h("input", { type: "text", value: profile.name ?? "", maxLength: NAME_MAX_LENGTH * 2, placeholder: t("ランキングに表示する名前", "Name shown on the leaderboard") });
 	const message = h("p", { class: "form-message", role: "status" });
 	const form = h(
 		"form",
 		{ class: "name-form" },
-		h("label", {}, "名前", input),
-		h("button", { class: "ghost-button", type: "submit" }, "保存"),
+		h("label", {}, t("名前", "Name"), input),
+		h("button", { class: "ghost-button", type: "submit" }, t("保存", "Save")),
 		message,
 	);
 	form.addEventListener("submit", async (event) => {
@@ -382,7 +401,7 @@ function nameEditor(profile: Profile, onSaved: () => void): HTMLElement {
 			await put<{ name: string | null }>("/api/me/name", { name: input.value });
 			onSaved();
 		} catch (error) {
-			message.textContent = errorMessage(error, "保存できませんでした。");
+			message.textContent = errorMessage(error, t("保存できませんでした。", "Couldn’t save your changes."));
 		}
 	});
 	return form;
@@ -390,14 +409,14 @@ function nameEditor(profile: Profile, onSaved: () => void): HTMLElement {
 
 // ---- ranking ----
 
-const PERIODS: [RankingPeriod, string][] = [
-	["all", "全期間"],
-	["today", "今日"],
+const periods = (): [RankingPeriod, string][] => [
+	["all", t("全期間", "All time")],
+	["today", t("今日", "Today")],
 ];
-const AXES: [RankingAxis, string][] = [
-	["answers", "回答数"],
-	["average", "平均点"],
-	["pitari", "ピタリ率"],
+const axes = (): [RankingAxis, string][] => [
+	["answers", t("回答数", "Answers")],
+	["average", t("平均点", "Average score")],
+	["pitari", t("ピタリ率", "Perfect match rate")],
 ];
 
 const MEDALS = ["gold", "silver", "bronze"] as const;
@@ -406,7 +425,7 @@ const DIFFICULTIES: Difficulty[] = ["easy", "normal", "hard"];
 /** The answers by difficulty as one bar; the counts are in the tooltip and for screen readers. */
 function mixBar(mix: Record<Difficulty, number>): HTMLElement {
 	const total = DIFFICULTIES.reduce((sum, d) => sum + mix[d], 0) || 1;
-	const text = DIFFICULTIES.map((d) => `${SET_THEME_LABELS[d]} ${mix[d]}`).join("・");
+	const text = DIFFICULTIES.map((d) => `${themeLabel(d)} ${mix[d]}`).join(t("・", " / "));
 	return h(
 		"span",
 		{ class: "ranking__mix", role: "img", title: text, "aria-label": text },
@@ -420,7 +439,7 @@ export async function rankingPage(root: HTMLElement): Promise<void> {
 	const axis = (params.get("axis") as RankingAxis) ?? "answers";
 	const data = await publicApi<{ entries: RankingEntry[] }>(`/api/ranking?period=${period}${period === "all" ? `&axis=${axis}` : ""}`);
 	const format = (entry: RankingEntry) =>
-		period === "today" || axis === "average" ? `${entry.value.toFixed(1)}点` : axis === "answers" ? `${entry.value}問` : `${(entry.value * 100).toFixed(1)}%`;
+		period === "today" || axis === "average" ? t(`${entry.value.toFixed(1)}点`, `${entry.value.toFixed(1)} pts`) : axis === "answers" ? t(`${entry.value}問`, `${entry.value} answers`) : `${(entry.value * 100).toFixed(1)}%`;
 	const tabs = (items: [string, string][], key: string, active: string) =>
 		h(
 			"nav",
@@ -440,7 +459,7 @@ export async function rankingPage(root: HTMLElement): Promise<void> {
 				"li",
 				{ class: entry.publicId === me ? "is-me" : "" },
 				medal
-					? h("span", { class: `ranking__rank ranking__crown ranking__crown--${medal}`, role: "img", "aria-label": `${entry.rank}位` })
+					? h("span", { class: `ranking__rank ranking__crown ranking__crown--${medal}`, role: "img", "aria-label": t(`${entry.rank}位`, `Rank ${entry.rank}`) })
 					: h("span", { class: "ranking__rank" }, String(entry.rank)),
 				h(
 					"span",
@@ -451,25 +470,25 @@ export async function rankingPage(root: HTMLElement): Promise<void> {
 				),
 				h("span", { class: "ranking__value" }, format(entry)),
 				period === "today"
-					? h("span", { class: "ranking__answers" }, `ピタリ ${entry.pitari ?? 0}　${entry.completedAt ? jstTime(entry.completedAt) : ""}`)
+					? h("span", { class: "ranking__answers" }, t(`ピタリ ${entry.pitari ?? 0}　${entry.completedAt ? jstTime(entry.completedAt) : ""}`, `Perfect matches ${entry.pitari ?? 0} · ${entry.completedAt ? `${jstTime(entry.completedAt)} JST` : ""}`))
 					: axis === "answers"
 						? null
-						: h("span", { class: "ranking__answers" }, `${entry.answers}問`),
+						: h("span", { class: "ranking__answers" }, t(`${entry.answers}問`, `${entry.answers} answers`)),
 			),
 		);
 	}
 	const note =
 		period === "today"
-			? "今日の10問を解き終えた人の得点順です（同点はピタリ数、次に早く終えた順）。"
-			: `10分ごとに更新します。${axis === "answers" ? "" : `${RANKING_MIN_ANSWERS}問以上回答したプレイヤーが対象です。`}帯は回答の難易度の内訳（かんたん・ふつう・むずかしい）です。`;
+			? t("今日の10問を解き終えた人の得点順です（同点はピタリ数、次に早く終えた順）。", "Ranked by score on today’s 10 problems. Ties are broken by perfect matches, then by who finished first.")
+			: t(`10分ごとに更新します。${axis === "answers" ? "" : `${RANKING_MIN_ANSWERS}問以上回答したプレイヤーが対象です。`}帯は回答の難易度の内訳（かんたん・ふつう・むずかしい）です。`, `Updated every 10 minutes. ${axis === "answers" ? "" : `Players need at least ${RANKING_MIN_ANSWERS} answers to qualify. `}The bar shows the breakdown by difficulty: easy, normal and hard.`);
 	replace(
 		root,
-		h("header", { class: "page-head" }, h("h1", {}, "ランキング")),
-		tabs(PERIODS, "period", period),
-		period === "all" ? tabs(AXES, "axis", axis) : null,
+		h("header", { class: "page-head" }, h("h1", {}, t("ランキング", "Leaderboard"))),
+		tabs(periods(), "period", period),
+		period === "all" ? tabs(axes(), "axis", axis) : null,
 		h("p", { class: "note" }, note),
-		period === "today" ? h("p", {}, h("a", { class: "stamp-button", href: "/daily" }, "今日の10問を解く")) : null,
-		data.entries.length ? table : h("p", { class: "empty" }, "まだ記録がありません。"),
+		period === "today" ? h("p", {}, h("a", { class: "stamp-button", href: "/daily" }, t("今日の10問を解く", "Play today’s 10"))) : null,
+		data.entries.length ? table : h("p", { class: "empty" }, t("まだ記録がありません。", "No results yet.")),
 	);
 }
 

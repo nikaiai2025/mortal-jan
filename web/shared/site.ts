@@ -1,3 +1,4 @@
+import { EN_SITE_NAME, EN_PUBLIC_PAGES, EN_THEME_LABELS, englishContent, EN_FOOTER } from "./site-en.ts";
 import { DAILY_ANSWER_LIMIT, RANKING_MIN_ANSWERS, SET_THEME_LABELS, SET_THEMES } from "./rules.ts";
 
 export const SITE_NAME = "もーたる何切る教室";
@@ -45,10 +46,18 @@ export const RULE_SECTIONS: readonly (readonly [string, readonly string[]])[] = 
 
 export const escapeHtml = (value: string): string => value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!);
 
-export function pageMeta(path: string): { title: string; description: string; canonical: string | null; noindex: boolean } {
-	if (Object.hasOwn(PUBLIC_PAGES, path)) return { ...PUBLIC_PAGES[path as PublicPath], canonical: `${SITE_URL}${path}`, noindex: false };
+export function pageMeta(path: string, locale: "ja" | "en" = "ja"): { title: string; description: string; canonical: string | null; noindex: boolean } {
+	if (Object.hasOwn(PUBLIC_PAGES, path)) return { ...(locale === "en" ? EN_PUBLIC_PAGES : PUBLIC_PAGES)[path as PublicPath], canonical: `${SITE_URL}${path}`, noindex: false };
 	const problem = path.match(/^\/q\/([1-9]\d*)$/);
 	const set = path.match(/^\/sets\/([a-z]+)\/([1-9]\d*)$/);
+	if (locale === "en") {
+		let label = "Page not found";
+		if (problem) label = `Problem ${problem[1]}`;
+		else if (set && SET_THEMES.includes(set[1] as typeof SET_THEMES[number])) label = `${EN_THEME_LABELS[set[1]]} — Set ${set[2]}`;
+		else if (/^\/u\/[a-z0-9]+$/.test(path)) label = "Stats";
+		else if (path === "/recover") label = "Recover your progress";
+		return { title: `${label} | ${EN_SITE_NAME}`, description: "", canonical: null, noindex: true };
+	}
 	let label = "ページが見つかりません";
 	if (problem) label = `何切る問題 第${problem[1]}問`;
 	else if (set && SET_THEMES.includes(set[1] as typeof SET_THEMES[number])) label = `問題集 ${SET_THEME_LABELS[set[1] as typeof SET_THEMES[number]]}編 第${set[2]}集`;
@@ -58,7 +67,8 @@ export function pageMeta(path: string): { title: string; description: string; ca
 }
 
 /** The same public text is used in the built HTML and after SPA navigation. */
-export function publicContent(path: PublicPath): string {
+export function publicContent(path: PublicPath, locale: "ja" | "en" = "ja"): string {
+	if (locale === "en") return englishContent(path).replace(/href="(\/[^"?]*)"/g, 'href="$1?lang=en"');
 	if (path === "/rules") return '<header class="page-head"><h1>ルール</h1></header>' + RULE_SECTIONS.map(([title, items]) => `<section class="rules__section"><h2>${escapeHtml(title)}</h2><ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>`).join("");
 	if (path === "/about") return `<header class="page-head"><h1>麻雀の何切る問題をAIで採点</h1><p>${escapeHtml(SITE_NAME)}は、登録不要・無料で使える麻雀の練習サイトです。</p></header>
 		<section class="rules__section"><h2>1万問から、練習したい問題を選ぶ</h2><p>打牌・リーチ・鳴きの問題を、ランダムや番号順で出題します。問題集では難易度や種類を選べます。今日の10問は全員共通で、日本時間0時に入れ替わります。</p><p><a href="/" class="stamp-button">何切る問題を解く</a> <a href="/sets">問題集を選ぶ</a></p></section>
@@ -79,7 +89,8 @@ export function publicContent(path: PublicPath): string {
 	return introductions[path];
 }
 
-export function footerContent(_path: string): string {
+export function footerContent(_path: string, locale: "ja" | "en" = "ja"): string {
+	if (locale === "en") return EN_FOOTER.replace(/href="(\/[^"?]*)"/g, 'href="$1?lang=en"');
 	return `<p><a href="/about">このサイトについて</a> · <a href="/recover">成績を復旧する</a></p>
 		<p>制作: <a href="https://x.com/shika_bakudan">@shika_bakudan</a>（AIで開発。Cloudflareの無料枠で動かしているのでサーバー代は0円。使用ツール: Claude, ChatGPT）<br>採点: 麻雀AI <a href="https://github.com/Equim-chan/Mortal">Mortal</a>（第三者配布の重み mortal-298k） / <a href="https://github.com/nikaiai2025/mortal-jan">ソースコードは公開しています</a>（AGPL-3.0）</p>`;
 }

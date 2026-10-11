@@ -1,3 +1,4 @@
+import { t, getLocale } from "./i18n";
 // Draws a problem scene on a canvas in a 1000×1000 coordinate space.
 // Each seat is laid out as if it sat at the bottom, then rotated around the centre.
 
@@ -89,9 +90,9 @@ const BAKAZE: Record<string, string> = { E: "東", S: "南", W: "西", N: "北" 
 const ROTATIONS = [0, -Math.PI / 2, Math.PI, Math.PI / 2];
 
 export function questionText(kind: ProblemKind): string {
-	if (kind === "discard") return "何を切る？";
-	if (kind === "riichi") return "リーチする？ 何を切る？";
-	return "鳴く？";
+	if (kind === "discard") return t("何を切る？", "What would you discard?");
+	if (kind === "riichi") return t("リーチする？ 何を切る？", "Riichi? What would you discard?");
+	return t("鳴く？", "Would you call?");
 }
 
 /** Load all tile images the scene needs. Call before drawScene. */
@@ -621,7 +622,8 @@ function drawCalledMark(ctx: CanvasRenderingContext2D, x: number, y: number, tur
 	ctx.font = `700 19px ${FONT}`;
 	ctx.textAlign = "center";
 	ctx.textBaseline = "middle";
-	ctx.fillText("鳴", 0, 1);
+	ctx.font = `700 ${getLocale() === "en" ? 10 : 19}px ${FONT}`;
+	ctx.fillText(t("鳴", "Call"), 0, 1);
 	ctx.restore();
 }
 
@@ -653,7 +655,7 @@ function drawRiichi(ctx: CanvasRenderingContext2D, panelEdge: number, color: str
 	ctx.font = `700 18px ${FONT}`;
 	ctx.textAlign = "center";
 	ctx.textBaseline = "middle";
-	ctx.fillText(order === null ? "リーチ" : `リーチ${["①", "②", "③", "④"][order - 1]}`, washRight - labelW / 2, y + 7);
+	ctx.fillText(order === null ? t("リーチ", "Riichi") : t(`リーチ${["①", "②", "③", "④"][order - 1]}`, `Riichi ${order}`), washRight - labelW / 2, y + 7);
 }
 
 // ---- hands and melds ----
@@ -778,7 +780,7 @@ function drawBars(ctx: CanvasRenderingContext2D, scene: Scene, bars: HandBar[], 
 				ctx.fillStyle = COLORS.red;
 				ctx.font = `700 16px ${FONT}`;
 				ctx.textBaseline = "middle";
-				ctx.fillText("リ", cx, cy + 0.5);
+				ctx.fillText(t("リ", "R"), cx, cy + 0.5);
 				ctx.restore();
 			}
 		});
@@ -810,7 +812,7 @@ function drawPanel(ctx: CanvasRenderingContext2D, scene: Scene): void {
 	ctx.textBaseline = "middle";
 	ctx.fillStyle = COLORS.dim;
 	ctx.font = `500 17px ${FONT}`;
-	ctx.fillText(`残り${scene.tilesLeft}`, 0, 42);
+	ctx.fillText(t(`残り${scene.tilesLeft}`, `${scene.tilesLeft} left`), 0, 42);
 
 	// Every score stands upright, on its player's side: one line above and below (as far from the
 	// frame on both), two lines left and right.
@@ -822,7 +824,7 @@ function drawPanel(ctx: CanvasRenderingContext2D, scene: Scene): void {
 	];
 	for (const [relative, x, y] of sides) {
 		const seat = (scene.seat + relative) % 4;
-		const wind = WINDS[(seat - scene.oya + 4) % 4];
+		const wind = (getLocale() === "en" ? ["E", "S", "W", "N"] : WINDS)[(seat - scene.oya + 4) % 4];
 		const windColor = seat === scene.oya ? COLORS.oya : COLORS.text;
 		const score = scene.scores[seat].toLocaleString("en-US");
 		ctx.textBaseline = "middle";
@@ -851,8 +853,8 @@ function drawPanel(ctx: CanvasRenderingContext2D, scene: Scene): void {
 
 /** "東1局" in a framed box; beside it the deposited 1000-point sticks and the honba (100-point sticks). */
 function drawRound(ctx: CanvasRenderingContext2D, scene: Scene, y: number): void {
-	const wind = BAKAZE[scene.bakaze];
-	const label = `${scene.kyoku}局`;
+	const wind = getLocale() === "en" ? scene.bakaze : BAKAZE[scene.bakaze];
+	const label = t(`${scene.kyoku}局`, String(scene.kyoku));
 	ctx.font = `800 30px ${FONT}`;
 	const windWidth = ctx.measureText(wind).width + 2;
 	ctx.font = `800 22px ${FONT}`;
@@ -919,7 +921,7 @@ function drawCornerLabel(ctx: CanvasRenderingContext2D, problemId: number): numb
 	ctx.shadowBlur = 3;
 	ctx.shadowOffsetY = 2;
 	let right = 16;
-	for (const [text, size] of [["第", 22], [String(problemId), 44], ["問", 22]] as const) {
+	for (const [text, size] of [[t("第", "#"), 22], [String(problemId), 44], [t("問", ""), 22]] as const) {
 		ctx.font = `${size === 44 ? 800 : 700} ${size}px ${FONT}`;
 		ctx.fillText(text, right, 50);
 		right += ctx.measureText(text).width + 2;

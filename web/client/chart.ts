@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 // Daily results as a bar chart: one column per day with answers (days without answers are left out).
 
 import type { DailyStats } from "../shared/types";
@@ -21,7 +22,7 @@ const label = (date: string) => `${Number(date.slice(5, 7))}/${Number(date.slice
 /** Average score per day (bars), with the date and the number of answers under each bar. */
 export function dailyChart(days: DailyStats[]): HTMLElement {
 	const width = days.length * COLUMN + 8;
-	const bars = svg("svg", { width, height: HEIGHT, viewBox: `0 0 ${width} ${HEIGHT}`, role: "img", "aria-label": "1日ごとの平均点" });
+	const bars = svg("svg", { width, height: HEIGHT, viewBox: `0 0 ${width} ${HEIGHT}`, role: "img", "aria-label": t("1日ごとの平均点", "Average score by day") });
 	// The axis stays put while the bars scroll sideways.
 	const axis = svg("svg", { width: LEFT, height: HEIGHT, viewBox: `0 0 ${LEFT} ${HEIGHT}`, "aria-hidden": "true" });
 	for (const value of [0, 50, 100]) {
@@ -34,11 +35,11 @@ export function dailyChart(days: DailyStats[]): HTMLElement {
 		const x = i * COLUMN + COLUMN / 2 + 4;
 		const top = TOP + PLOT - (average / 100) * PLOT;
 		const bar = svg("rect", { x: x - 12, y: top, width: 24, height: TOP + PLOT - top, rx: 3, class: "daily-chart__bar" });
-		bar.append(svg("title", {}, `${label(day.date)} ${day.answers}問 平均${average.toFixed(1)}点 ピタリ${day.pitari}回`));
+		bar.append(svg("title", {}, t(`${label(day.date)} ${day.answers}問 平均${average.toFixed(1)}点 ピタリ${day.pitari}回`, `${label(day.date)}: ${day.answers} answers, average ${average.toFixed(1)}, ${day.pitari} perfect matches`)));
 		bars.append(bar);
 		bars.append(svg("text", { x, y: top - 5, class: "daily-chart__value" }, average.toFixed(0)));
 		bars.append(svg("text", { x, y: TOP + PLOT + 17, class: "daily-chart__date" }, label(day.date)));
-		bars.append(svg("text", { x, y: TOP + PLOT + 34, class: "daily-chart__count" }, `${day.answers}問`));
+		bars.append(svg("text", { x, y: TOP + PLOT + 34, class: "daily-chart__count" }, t(`${day.answers}問`, String(day.answers))));
 	});
 	const scroller = document.createElement("div");
 	scroller.className = "daily-chart__scroll";

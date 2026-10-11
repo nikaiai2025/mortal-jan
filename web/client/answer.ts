@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 // Answer window: pick a tile on the board (or an option for calls), then confirm (two steps).
 
 import type { Question } from "../shared/types";
@@ -8,19 +9,25 @@ import { actionElement } from "./labels";
 import { handTiles, questionText } from "./scene";
 import { sound } from "./sound";
 
+export interface AnswerDraft { action: string | null; index: number | null; riichi: boolean; }
+const drafts = new WeakMap<HTMLElement, () => AnswerDraft>();
+export function answerDraft(root: HTMLElement): AnswerDraft | undefined { return drafts.get(root)?.(); }
+
 /** `onConfirm` sends the answer; if it rejects, the window becomes usable again. */
-export function answerWindow(question: Question, view: Board, onConfirm: (action: string) => Promise<void>): HTMLElement {
+export function answerWindow(question: Question, view: Board, onConfirm: (action: string) => Promise<void>, initial?: AnswerDraft): HTMLElement {
 	const legal = new Set(question.choices.map((c) => c.action));
-	let selected: string | null = null;
+	let selected: string | null = initial?.action && legal.has(initial.action) ? initial.action : null;
+	let selectedIndex: number | null = initial?.index ?? null;
+	let riichi = initial?.riichi ?? false;
 	let locked = false;
 
-	const confirm = h("button", { class: "stamp-button", type: "button", disabled: true }, "確定");
+	const confirm = h("button", { class: "stamp-button", type: "button", disabled: true }, t("確定", "Confirm"));
 	const message = h("p", { class: "form-message answer__message", role: "alert" });
 	const body = h("div", { class: "answer__body" });
 
 	const showSelection = () => {
 		confirm.disabled = !selected || locked;
-		confirm.replaceChildren(...(selected ? [actionElement(selected, question, "tile tile--confirm"), "で確定"] : ["確定"]));
+		confirm.replaceChildren(...(selected ? [actionElement(selected, question, "tile tile--confirm"), t("で確定", " — confirm")] : [t("確定", "Confirm")]));
 	};
 	const choose = (action: string | null) => {
 		selected = action;
@@ -33,10 +40,10 @@ export function answerWindow(question: Question, view: Board, onConfirm: (action
 	let enable: () => void;
 	let hint: string;
 	if (question.kind === "call") {
-		hint = "選んで確定を押す";
+		hint = t("選んで確定を押す", "Choose an option, then confirm");
 		const options = h("div", { class: "answer__options" });
 		const buttons = question.choices.map((choice) => {
-			const button = h("button", { class: "option", type: "button", "aria-pressed": "false" }, actionElement(choice.action, question, "tile tile--option"));
+			const button = h("button", { class: selected === choice.action ? "option is-selected" : "option", type: "button", "aria-pressed": String(selected === choice.action) }, actionElement(choice.action, question, "tile tile--option"));
 			button.addEventListener("click", () => {
 				for (const other of buttons) {
 					other.classList.toggle("is-selected", other === button);
@@ -52,10 +59,8 @@ export function answerWindow(question: Question, view: Board, onConfirm: (action
 			for (const button of buttons) button.disabled = false;
 		};
 	} else {
-		hint = question.kind === "riichi" ? "リーチするなら押してから、手牌をタップして選ぶ" : "手牌をタップして選ぶ";
+		hint = question.kind === "riichi" ? t("リーチするなら押してから、手牌をタップして選ぶ", "To declare riichi, turn it on first. Then tap a tile to discard.") : t("手牌をタップして選ぶ", "Tap a tile in your hand to discard");
 		const tiles = handTiles(question.scene);
-		let riichi = false;
-		let selectedIndex: number | null = null;
 		const actionFor = (index: number) => `${riichi ? "r" : "d"}:${tiles[index]}`;
 		const enabled = () => tiles.map((_, index) => legal.has(actionFor(index)));
 		const redraw = () => view.setHand({ selected: selectedIndex, enabled: enabled() });
@@ -66,7 +71,7 @@ export function answerWindow(question: Question, view: Board, onConfirm: (action
 			redraw();
 		};
 		if (question.kind === "riichi") {
-			const toggle = h("button", { class: "riichi-toggle", type: "button", "aria-pressed": "false" }, "リーチ");
+			const toggle = h("button", { class: riichi ? "riichi-toggle is-on" : "riichi-toggle", type: "button", "aria-pressed": String(riichi) }, t("リーチ", "Riichi"));
 			toggle.addEventListener("click", () => {
 				riichi = !riichi;
 				toggle.setAttribute("aria-pressed", String(riichi));
@@ -91,6 +96,7 @@ export function answerWindow(question: Question, view: Board, onConfirm: (action
 		sound.unlock();
 		message.textContent = "";
 		locked = true;
+		window.dispatchEvent(new CustomEvent("answer-submitting", { detail: true }));
 		showSelection();
 		for (const button of body.querySelectorAll("button")) button.disabled = true;
 		view.onHandTap(null);
@@ -103,12 +109,15 @@ export function answerWindow(question: Question, view: Board, onConfirm: (action
 			for (const button of body.querySelectorAll("button")) button.disabled = false;
 			enable();
 			showSelection();
+		} finally {
+			window.dispatchEvent(new CustomEvent("answer-submitting", { detail: false }));
 		}
 	});
 
-	return h(
+	showSelection();
+	const element = h(
 		"section",
-		{ class: `answer answer--${question.kind}`, "aria-label": "回答" },
+		{ class: `answer answer--${question.kind}`, "aria-label": t("回答", "Answer") },
 		h(
 			"div",
 			{ class: "answer__prompt" },
@@ -119,4 +128,6 @@ export function answerWindow(question: Question, view: Board, onConfirm: (action
 		h("div", { class: "answer__actions" }, confirm),
 		message,
 	);
+	drafts.set(element, () => ({ action: selected, index: selectedIndex, riichi }));
+	return element;
 }

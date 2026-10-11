@@ -1,9 +1,10 @@
+import { t } from "./i18n";
 // Question → answer → grading → result. Used by free play, shared links and problem sets.
 
 import { markOf } from "../shared/rules";
 import type { Candidate, ProblemResponse, Question, Result } from "../shared/types";
 import { currentPublicId, post } from "./api";
-import { answerWindow } from "./answer";
+import { answerWindow, answerDraft, type AnswerDraft } from "./answer";
 import { board, type Board } from "./board";
 import { h, replace } from "./dom";
 import { Sequence, effectsSetting, markLayer, reveal } from "./effects";
@@ -17,7 +18,7 @@ export interface PlayOptions {
 	/** Shown after the answer, never between the board and it: a message to the player, and set progress. */
 	notice?: string;
 	progress?: string;
-	/** Beside "次の問題へ": the switch between random and number order (when the next problem is free play). */
+	/** Beside "Next problem": the switch between random and number order (when the next problem is free play). */
 	nextSwitch?: HTMLElement;
 	from: string | null;
 	nextLabel: string;
@@ -25,14 +26,28 @@ export interface PlayOptions {
 	onAnswered?(result: Result): void;
 }
 
+const localizers = new WeakMap<HTMLElement, () => Promise<void>>();
+/** A language switch must not fetch another random problem or submit an answer. */
+export async function localizeProblem(root: HTMLElement): Promise<boolean> {
+	const localize = localizers.get(root);
+	if (!localize) return false;
+	await localize();
+	return true;
+}
+
 export async function showProblem(root: HTMLElement, response: ProblemResponse, options: PlayOptions): Promise<void> {
+	localizers.set(root, async () => {
+		const answer = root.querySelector<HTMLElement>("section.answer");
+		if (response.state === "question") await showQuestion(root, response.question, options, answer ? answerDraft(answer) : undefined);
+		else await showProblem(root, response, options);
+	});
 	switch (response.state) {
 		case "question":
 			return showQuestion(root, response.question, options);
 		case "result":
 			return showResult(root, response.result, options);
 		case "finished":
-			replace(root, h("section", { class: "notice" }, h("h2", {}, "全問解きました"), h("p", {}, "すべての問題に回答済みです。")));
+			replace(root, h("section", { class: "notice" }, h("h2", {}, t("全問解きました", "You’ve answered every problem")), h("p", {}, t("すべての問題に回答済みです。", "You’ve already answered all the problems."))));
 	}
 }
 
@@ -40,13 +55,13 @@ const rulesNote = () =>
 	h(
 		"p",
 		{ class: "rules-note" },
-		"東南戦（半荘戦）・天鳳準拠　4人ともガチレベルの打ち手",
+		t("東南戦（半荘戦）・天鳳準拠　4人ともガチレベルの打ち手", "East–South game (hanchan), following Tenhou rules. All four players play at a competitive level."),
 		h("br"),
-		"赤ドラあり（5萬・5筒・5索に各1枚）。喰いタン・後付けあり。一発・裏ドラ・槓ドラあり。",
+		t("赤ドラあり（5萬・5筒・5索に各1枚）。喰いタン・後付けあり。一発・裏ドラ・槓ドラあり。", "One red five per suit. Open tanyao, atozuke, ippatsu, ura-dora and kan-dora are enabled."),
 		h("br"),
-		"暗い表示はツモ切り",
+		t("暗い表示はツモ切り", "Dimmed tiles were discarded straight from the draw."),
 		h("br"),
-		h("a", { href: "/rules" }, "詳細ルール"),
+		h("a", { href: "/rules" }, t("詳細ルール", "Full rules")),
 	);
 
 function info(options: PlayOptions): HTMLElement | null {
@@ -63,15 +78,16 @@ function info(options: PlayOptions): HTMLElement | null {
 const play = (view: Board, below: HTMLElement, options: PlayOptions) =>
 	h("div", { class: "play" }, view.element, below, info(options), rulesNote());
 
-async function showQuestion(root: HTMLElement, question: Question, options: PlayOptions): Promise<void> {
+async function showQuestion(root: HTMLElement, question: Question, options: PlayOptions, draft?: AnswerDraft): Promise<void> {
 	const view = await board(question);
 	const answer = answerWindow(question, view, async (action) => {
 		const from = options.from ? `?from=${encodeURIComponent(options.from)}` : "";
 		const response = await post<ProblemResponse>(`/api/problems/${question.id}/answer${from}`, { action });
 		if (response.state !== "result") return showProblem(root, response, options);
 		options.onAnswered?.(response.result);
+		localizers.set(root, () => showProblem(root, response, options));
 		await grade(root, view, below, response.result, options, true);
-	});
+	}, draft);
 	// The question stays above the hand; call choices and confirmation go under the board.
 	const below = question.kind === "call" ? answer : h("div");
 	view.prompt(question.kind === "call" ? h("div", { class: "answer answer--call" }, answer.querySelector<HTMLElement>(".answer__prompt")) : answer);
@@ -112,7 +128,7 @@ async function grade(root: HTMLElement, view: Board, replaced: HTMLElement, resu
 	root.removeEventListener("pointerdown", skip);
 	card.inert = false;
 	// Tapping the board fades the marks so the position can be studied.
-	view.element.title = "タップで印を薄くする";
+	view.element.title = t("タップで印を薄くする", "Tap to fade the marks");
 	view.element.addEventListener("click", () => view.element.classList.toggle("is-mark-faded"));
 }
 
@@ -137,12 +153,12 @@ function resultCard(result: Result, options: PlayOptions): HTMLElement {
 				h("span", { class: "candidate__action" }, actionElement(candidate.action, result)),
 				h(
 					"span",
-					{ class: "candidate__bar", "aria-label": `AI評価 ${percent.toFixed(1)}%` },
+					{ class: "candidate__bar", "aria-label": t(`AI評価 ${percent.toFixed(1)}%`, `AI evaluation ${percent.toFixed(1)}%`) },
 					h("span", { class: "candidate__fill", style: { width: `${Math.max(percent, 0.5)}%` } }),
 				),
 				h("span", { class: "candidate__percent" }, percent < 0.1 ? "0%" : `${percent.toFixed(percent < 10 ? 1 : 0)}%`),
-				h("span", { class: "candidate__score" }, `${candidate.score}点`),
-				isMine ? h("span", { class: "candidate__who" }, "あなた") : null,
+				h("span", { class: "candidate__score" }, t(`${candidate.score}点`, `${candidate.score} pts`)),
+				isMine ? h("span", { class: "candidate__who" }, t("あなた", "You")) : null,
 			),
 		);
 	}
@@ -150,24 +166,24 @@ function resultCard(result: Result, options: PlayOptions): HTMLElement {
 	const meta = h(
 		"dl",
 		{ class: "result__meta" },
-		h("dt", {}, "AIの判定"),
+		h("dt", {}, t("AIの判定", "AI difficulty")),
 		h("dd", {}, DIFFICULTY_LABELS[result.difficulty]),
-		h("dt", {}, "みんなの平均"),
-		h("dd", {}, result.human ? `${result.human.average.toFixed(1)}点（${result.human.answers}人）` : "集計中"),
+		h("dt", {}, t("みんなの平均", "Player average")),
+		h("dd", {}, result.human ? t(`${result.human.average.toFixed(1)}点（${result.human.answers}人）`, `${result.human.average.toFixed(1)} pts (${result.human.answers} players)`) : t("集計中", "Collecting results")),
 	);
 	if (result.kind === "riichi") {
 		// The board shows the chosen tile, not whether it was a riichi; the bars over the hand: one per way of discarding the tile.
 		meta.append(
-			h("dt", {}, "あなた"),
-			h("dd", {}, answer.action.startsWith("r:") ? "リーチ" : "ダマ"),
-			h("dt", {}, "グラフ"),
-			h("dd", { class: "bars-legend" }, h("span", { class: "bars-legend__riichi", "aria-hidden": "true" }, "リ"), "リーチ／無印はダマ"),
+			h("dt", {}, t("あなた", "You")),
+			h("dd", {}, answer.action.startsWith("r:") ? t("リーチ", "Riichi") : t("ダマ", "Dama (no riichi)")),
+			h("dt", {}, t("グラフ", "Chart")),
+			h("dd", { class: "bars-legend" }, h("span", { class: "bars-legend__riichi", "aria-hidden": "true" }, t("リ", "R")), t("リーチ／無印はダマ", "Riichi / unmarked bars: no riichi")),
 		);
 	}
 	if (result.sharer) {
 		meta.append(
-			h("dt", {}, `${result.sharer.name}さん`),
-			h("dd", {}, actionElement(result.sharer.action, result), ` ${result.sharer.score}点`),
+			h("dt", {}, t(`${result.sharer.name}さん`, result.sharer.name)),
+			h("dd", {}, actionElement(result.sharer.action, result), t(` ${result.sharer.score}点`, ` ${result.sharer.score} pts`)),
 		);
 	}
 
@@ -176,7 +192,7 @@ function resultCard(result: Result, options: PlayOptions): HTMLElement {
 		const problemUrl = `${location.origin}/q/${result.id}`;
 		await openShare(
 			await problemCard(result, result),
-			`第${result.id}問`,
+			t(`第${result.id}問`, `Problem ${result.id}`),
 			`${problemUrl}${publicId ? `?from=${publicId}` : ""}`,
 			`mortal-nanikiru-${result.id}.png`,
 			async () => ({ element: await problemCard(result, result, false), url: problemUrl }),
@@ -185,16 +201,16 @@ function resultCard(result: Result, options: PlayOptions): HTMLElement {
 
 	return h(
 		"section",
-		{ class: "result", "aria-label": "結果" },
-		result.kind === "call" ? h("div", { class: "result__list" }, h("h3", {}, "候補ごとのAI評価"), list) : null,
+		{ class: "result", "aria-label": t("結果", "Results") },
+		result.kind === "call" ? h("div", { class: "result__list" }, h("h3", {}, t("候補ごとのAI評価", "AI evaluation by choice")), list) : null,
 		meta,
 		logViewer(result),
 		h(
 			"div",
 			{ class: "result__actions" },
-			// The switch sits right above "次の問題へ", the same width: it belongs to that button.
+			// The switch sits right above "Next problem", the same width: it belongs to that button.
 			options.nextSwitch ?? null,
-			h("button", { class: "ghost-button", type: "button", onclick: share }, "結果を共有"),
+			h("button", { class: "ghost-button", type: "button", onclick: share }, t("結果を共有", "Share results")),
 			h("button", { class: "stamp-button", type: "button", onclick: () => options.onNext() }, options.nextLabel),
 		),
 	);

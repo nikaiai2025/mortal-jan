@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 // The problem image on the page: a crisp canvas that follows its box, an overlay for marks,
 // buttons over the own hand, where a discard is chosen, and the band above the hand for its question.
 
@@ -24,7 +25,7 @@ const percent = (value: number, whole: number) => `${(value / whole) * 100}%`;
 export async function board(question: Question): Promise<Board> {
 	await Promise.all([preloadScene(question.scene, question.choices), document.fonts.ready]);
 	const height = sceneHeight();
-	const canvas = h("canvas", { class: "board__canvas", role: "img", "aria-label": `第${question.id}問の局面` });
+	const canvas = h("canvas", { class: "board__canvas", role: "img", "aria-label": t(`第${question.id}問の局面`, `Position for problem ${question.id}`) });
 	const band = handBand();
 	const promptBox = h("div", { class: "board__prompt" });
 	Object.assign(promptBox.style, { top: percent(band.top, height), height: percent(band.bottom - band.top, height) });
@@ -61,7 +62,7 @@ export async function board(question: Question): Promise<Board> {
 
 	// One button over each hand tile; its hit area reaches above the tile for fingers.
 	const buttons = handSlots(question.scene).map((slot) => {
-		const button = h("button", { class: "board__tile", type: "button", "aria-label": `${tileLabel(slot.pai)}を選ぶ`, "aria-pressed": "false" });
+		const button = h("button", { class: "board__tile", type: "button", "aria-label": t(`${tileLabel(slot.pai)}を選ぶ`, `Select ${tileLabel(slot.pai)}`), "aria-pressed": "false" });
 		Object.assign(button.style, {
 			left: percent(slot.x, SCENE_WIDTH),
 			top: percent(slot.y, height),

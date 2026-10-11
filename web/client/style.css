@@ -1679,3 +1679,23 @@ button {
 	color: var(--red);
 	background: var(--paper);
 }
+
+/* English labels need room without changing the Japanese layout. */
+.language-select {
+	font: inherit;
+	font-size: .85rem;
+	color: inherit;
+	background: var(--paper, #f5efe1);
+	border: 1px solid currentColor;
+	border-radius: 4px;
+	padding: .25rem .35rem;
+	max-width: 8rem;
+}
+.language-select:focus-visible { outline: 3px solid #b83c2e; outline-offset: 2px; }
+html[lang="en"] .site-header { flex-wrap: wrap; }
+html[lang="en"] .site-nav { flex-wrap: wrap; }
+html[lang="en"] .answer__question { font-size: clamp(.9rem, 3.4vw, 1.55rem); }
+html[lang="en"] .answer__hint { font-size: clamp(.55rem, 1.7vw, .8rem); }
+html[lang="en"] .grade__seal { font-size: clamp(.7rem, 2.5vw, 1.5rem); }
+html[lang="en"] .result__meta { overflow-wrap: anywhere; }
+html[lang="en"] .tabs { flex-wrap: wrap; }

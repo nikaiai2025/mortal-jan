@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 // The grading moment: the red pen draws the mark, writes the score, and stamps ピタリ.
 
 import type { Mark } from "../shared/rules";
@@ -59,9 +60,9 @@ export function markLayer(mark: Mark, score: number, style?: HanamaruStyle): Mar
 		path.style.visibility = "hidden";
 		return { path, duration: drawing.strokes[i].duration };
 	});
-	const scoreText = h("div", { class: "grade__score" }, String(score), h("small", {}, "点"));
-	const seal = mark === "hanamaru" ? h("div", { class: "grade__seal" }, "ピタリ") : null;
-	const element = h("div", { class: `grade grade--${mark}`, role: "img", "aria-label": `${score}点` }, svg, scoreText, seal);
+	const scoreText = h("div", { class: "grade__score" }, String(score), h("small", {}, t("点", "pts")));
+	const seal = mark === "hanamaru" ? h("div", { class: "grade__seal" }, t("ピタリ", "Perfect")) : null;
+	const element = h("div", { class: `grade grade--${mark}`, role: "img", "aria-label": t(`${score}点`, `${score} points`) }, svg, scoreText, seal);
 
 	async function play(sequence: Sequence, drawMark = true): Promise<void> {
 		if (!drawMark) {
