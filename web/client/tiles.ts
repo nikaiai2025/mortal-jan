@@ -1,3 +1,4 @@
+import { getLocale } from "./i18n";
 import type { Pai } from "../shared/types";
 
 const SUITS: Record<string, string> = { m: "Man", p: "Pin", s: "Sou" };
@@ -25,6 +26,12 @@ export function tileOrder(pai: Pai): number {
 
 /** Human-readable tile name, e.g. "3萬", "赤5筒", "東". */
 export function tileLabel(pai: Pai): string {
+	if (getLocale() === "en") {
+		const honors: Record<string, string> = { E: "East", S: "South", W: "West", N: "North", P: "White dragon", F: "Green dragon", C: "Red dragon" };
+		if (pai in honors) return honors[pai];
+		const suits: Record<string, string> = { m: "characters", p: "circles", s: "bamboo" };
+		return `${pai.endsWith("r") ? "Red " : ""}${pai[0]} ${suits[pai[1]]}`;
+	}
 	if (pai in HONOR_LABELS) return HONOR_LABELS[pai];
 	return `${pai.endsWith("r") ? "赤" : ""}${pai[0]}${SUIT_LABELS[pai[1]]}`;
 }

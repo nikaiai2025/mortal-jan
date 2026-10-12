@@ -377,6 +377,7 @@ async function resultOf(db: D1Database, player: PlayerRow, row: ProblemRow, answ
 		if (found) {
 			sharer = {
 				name: displayName(found.name, found.public_id),
+				identity: { name: found.name, publicId: found.public_id },
 				action: found.action,
 				score: found.score,
 				pitari: found.pitari === 1,
@@ -394,6 +395,7 @@ async function resultOf(db: D1Database, player: PlayerRow, row: ProblemRow, answ
 				: null,
 		sharer,
 		playerName: displayName(player.name, player.public_id),
+		playerIdentity: { name: player.name, publicId: player.public_id },
 	};
 }
 
@@ -699,7 +701,7 @@ async function getDaily(ctx: Ctx): Promise<Response> {
 	}));
 	const recorded = await recordDaily(db, player.id, day, ids, answers, now, true);
 	const result: DailySet["result"] = recorded && { scoreSum: recorded.score_sum, pitari: recorded.pitari, completedAt: recorded.completed_at };
-	return json({ day, problems, result, playerName: displayName(player.name, player.public_id) } satisfies DailySet);
+	return json({ day, problems, result, playerName: displayName(player.name, player.public_id), playerIdentity: { name: player.name, publicId: player.public_id } } satisfies DailySet);
 }
 
 // ---- problem sets ----
@@ -759,7 +761,7 @@ async function getSet(ctx: Ctx): Promise<Response> {
 		entries.map((p) => p.id),
 	);
 	const problems: SetProblem[] = entries.map(({ id, difficulty }) => ({ id, difficulty, answer: toAnswer(answers.get(id)) }));
-	return json({ theme: t, set, problems, playerName: displayName(player.name, player.public_id) });
+	return json({ theme: t, set, problems, playerName: displayName(player.name, player.public_id), playerIdentity: { name: player.name, publicId: player.public_id } });
 }
 
 // ---- public pages ----

@@ -239,7 +239,30 @@ describe("answers", () => {
 		expect(solved.sharer).toMatchObject({ action: "d:2m", score: 63, pitari: false });
 		// Each result names its own player for the share image.
 		expect(solved.playerName).toBe(`名無し#${friend.publicId}`);
+		expect(solved.playerIdentity).toEqual({ name: null, publicId: friend.publicId });
+		expect(solved.sharer?.identity).toEqual({ name: null, publicId: sharer.publicId });
 	});
+
+	it("keeps chosen anonymous-looking names distinct in result, sharer and set identities", async () => {
+ const player = await newPlayer();
+ const name = `名無し#${player.publicId}`;
+ await call("/api/me/name", player, { method: "PUT", body: JSON.stringify({ name }) });
+ await call("/api/problems/7", player);
+ const solved = result(await answer(player, 7, "d:1m"));
+ expect(solved.playerIdentity).toEqual({ name, publicId: player.publicId });
+ const friend = await newPlayer();
+ await call(`/api/problems/7?from=${player.publicId}`, friend);
+ const shared = result(await answer(friend, 7, "d:2m", `?from=${player.publicId}`));
+ expect(shared.sharer?.identity).toEqual({ name, publicId: player.publicId });
+ for (const path of ["/api/daily", "/api/sets/all/1"]) {
+  const data = await call<{ playerName: string; playerIdentity: { name: string | null; publicId: string } }>(path, player);
+  expect(data.status).toBe(200);
+  expect(data.body.playerName).toBe(name);
+  expect(data.body.playerIdentity).toEqual({ name, publicId: player.publicId });
+  const anonymous = await call<{ playerIdentity: { name: string | null; publicId: string } }>(path, friend);
+  expect(anonymous.body.playerIdentity).toEqual({ name: null, publicId: friend.publicId });
+ }
+});
 
 	it("give concurrent requests the same assigned problem", async () => {
 		const player = await newPlayer();

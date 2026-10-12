@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import { VISITOR_ID_PATTERN, acquisitionFromUrl, type Acquisition } from "../shared/acquisition";
 import type { Session } from "../shared/types";
 
@@ -56,13 +57,13 @@ export function measurementControl(root: HTMLElement): void {
 	const button = document.createElement("button");
 	button.type = "button";
 	button.className = "ghost-button";
-	const update = () => { button.textContent = measurementOff() ? "訪問元と回答の計測を再開する" : "訪問元と回答の計測を停止する"; };
+	const update = () => { button.textContent = measurementOff() ? t("訪問元と回答の計測を再開する", "Resume referral and answer measurement") : t("訪問元と回答の計測を停止する", "Stop referral and answer measurement"); };
 	update();
 	button.addEventListener("click", () => {
 		try {
 			if (measurementOff()) { localStorage.removeItem(MEASUREMENT_OFF_KEY); location.reload(); }
 			else { localStorage.setItem(MEASUREMENT_OFF_KEY, "1"); arrival = null; update(); }
-		} catch { button.textContent = "この端末では設定を保存できません"; button.disabled = true; }
+		} catch { button.textContent = t("この端末では設定を保存できません", "This device can’t save your preference"); button.disabled = true; }
 	});
 	host.replaceChildren(button);
 }

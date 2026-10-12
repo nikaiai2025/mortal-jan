@@ -60,16 +60,26 @@ try {
 }
 let creating: Promise<Session> | null = null;
 
+let requests = 0;
+export const requestPending = (): boolean => requests > 0;
+
 async function request<T>(path: string, init: RequestInit = {}, session?: Session): Promise<T> {
 	const headers = new Headers(init.headers);
 	if (session) headers.set("Authorization", `Bearer ${session.token}`);
 	const visitorId = acquisitionVisitorId();
 	if (session && visitorId) headers.set(VISITOR_HEADER, visitorId);
 	if (init.body) headers.set("Content-Type", "application/json");
-	const response = await fetch(path, { ...init, headers });
-	const body = (await response.json().catch(() => ({}))) as { error?: string };
-	if (!response.ok) throw new ApiError(response.status, body.error ?? "network");
-	return body as T;
+	requests++;
+	signal("request-busy");
+	try {
+		const response = await fetch(path, { ...init, headers });
+		const body = (await response.json().catch(() => ({}))) as { error?: string };
+		if (!response.ok) throw new ApiError(response.status, body.error ?? "network");
+		return body as T;
+	} finally {
+		requests--;
+		signal("request-busy");
+	}
 }
 
 /** The anonymous player of this browser, issued on first use. */

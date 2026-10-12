@@ -1,5 +1,6 @@
+import { t } from "./i18n";
 // How the question page picks the next problem: at random, or in number order from the problem
-// answered last. Kept in this browser; switched beside "次の問題へ" after answering.
+// answered last. Kept in this browser; switched beside "Next problem" after answering.
 
 import type { PickMode } from "../shared/rules";
 import { h } from "./dom";
@@ -56,11 +57,11 @@ export function modeSwitch(): HTMLElement {
 		show(mode);
 	};
 	for (const [mode, label] of [
-		["random", "ランダム"],
-		["order", "番号順"],
+		["random", t("ランダム", "Random")],
+		["order", t("番号順", "In order")],
 	] as const) {
 		buttons.set(mode, h("button", { type: "button", onclick: () => choose(mode) }, label));
 	}
 	show(loadPick().mode);
-	return h("div", { class: "segmented", role: "group", "aria-label": "次の問題の選び方" }, ...buttons.values());
+	return h("div", { class: "segmented", role: "group", "aria-label": t("次の問題の選び方", "How to choose the next problem") }, ...buttons.values());
 }

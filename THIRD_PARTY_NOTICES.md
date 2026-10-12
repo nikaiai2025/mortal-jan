@@ -31,3 +31,9 @@
 
 - Rendered with RoboMajang (the author's own project). The tiles are the FluffyStuff images above (CC0)
 - The center panel's numbers use DotGothic16 <https://github.com/fontworks-fonts/DotGothic16> (SIL Open Font License 1.1); other text is drawn with system fonts (Yu Mincho, Segoe UI)
+
+## DOM test environment
+
+- Package: Happy DOM (development and tests only; not shipped to the site)
+- Source: <https://github.com/capricorn86/happy-dom>
+- License: MIT

@@ -1,8 +1,11 @@
+import { localizedPlayerName } from "./player-label";
+import { t, getLocale } from "./i18n";
 // Share images (portrait 3:4, a problem without its result shorter) drawn in the browser, handed to the OS share sheet or saved.
 
-import { type Mark, displayName, markOf } from "../shared/rules";
+import { type Mark, displayName as japaneseDisplayName, markOf } from "../shared/rules";
+import { EN_SITE_NAME } from "../shared/site-en";
 import { SITE_NAME, SITE_URL } from "../shared/site";
-import type { Candidate, Profile, Question, Result, SetProblem, Stats } from "../shared/types";
+import type { Candidate, PlayerLabel, Profile, Question, Result, SetProblem, Stats } from "../shared/types";
 import { currentPublicId } from "./api";
 import { h } from "./dom";
 import { chosenSlot } from "./evaluation";
@@ -10,6 +13,8 @@ import { CALL_LABELS, DIFFICULTY_LABELS } from "./labels";
 import { hanamaruFor, paintMark, RED_INK } from "./marks";
 import { type HandTag, SCENE_WIDTH, type TagBox, drawScene, drawTile, handTiles, preloadScene, questionText, sceneHeight } from "./scene";
 import { tileOrder } from "./tiles";
+
+const displayName = (name: string | null, publicId: string) => name ?? t(japaneseDisplayName(name, publicId), `Anonymous#${publicId}`);
 
 const GOLD = "#b8860b";
 const PUBLIC_HOST = new URL(SITE_URL).host;
@@ -69,7 +74,7 @@ function footer(ctx: CanvasRenderingContext2D): void {
 	ctx.fillText(PUBLIC_HOST, WIDTH - 48, baseline);
 	const hostWidth = ctx.measureText(PUBLIC_HOST).width;
 	ctx.font = `700 28px ${MINCHO}`;
-	ctx.fillText(SITE_NAME, WIDTH - 48 - hostWidth - 18, baseline);
+	ctx.fillText(t(SITE_NAME, EN_SITE_NAME), WIDTH - 48 - hostWidth - 18, baseline, WIDTH - hostWidth - 120);
 }
 
 /** Whose result it is, shown only with the result. */
@@ -78,7 +83,7 @@ function playerLine(ctx: CanvasRenderingContext2D, name: string, x: number, y: n
 	ctx.textBaseline = "alphabetic";
 	ctx.fillStyle = INK;
 	ctx.font = `700 40px ${GOTHIC}`;
-	ctx.fillText(`${name} さん`, x, y);
+	ctx.fillText(t(`${name} さん`, name), x, y);
 }
 
 function handScore(ctx: CanvasRenderingContext2D, score: string, x: number, y: number, size: number): void {
@@ -89,31 +94,32 @@ function handScore(ctx: CanvasRenderingContext2D, score: string, x: number, y: n
 	ctx.fillText(score, x, y);
 	const width = ctx.measureText(score).width;
 	ctx.font = `600 ${size * 0.45}px ${HAND}`;
-	ctx.fillText("点", x + width + 6, y);
+	ctx.fillText(t("点", "pts"), x + width + 6, y);
 }
 
 /** Labels for the band: the player's answer over the chosen tile, the AI's best over its tile (one label when they agree). */
 function answerTags(result: Result): HandTag[] {
-	const name = `${result.playerName}さんの回答`;
+	const playerName = localizedPlayerName(result.playerName, result.playerIdentity);
+	const name = t(`${playerName}さんの回答`, `${playerName}’s answer`);
 	const best = result.evaluation.best;
 	const mine = result.answer.action;
 	if (result.kind === "call") {
 		const label = (action: string) => CALL_LABELS[action] ?? action;
 		return mine === best
-			? [{ index: null, text: `${name}: ${label(mine)} ＝ AIの最善手`, color: RED_INK }]
+			? [{ index: null, text: t(`${name}: ${label(mine)} ＝ AIの最善手`, `${name}: ${label(mine)} = AI’s best move`), color: RED_INK }]
 			: [
 					{ index: null, text: `${name}: ${label(mine)}`, color: RED_INK },
-					{ index: null, text: `AIの最善手: ${label(best)}`, color: GOLD },
+					{ index: null, text: t(`AIの最善手: ${label(best)}`, `AI’s best move: ${label(best)}`), color: GOLD },
 				];
 	}
-	const way = (action: string) => (result.kind === "riichi" ? (action.startsWith("r:") ? "（リーチ）" : "（ダマ）") : "");
+	const way = (action: string) => (result.kind === "riichi" ? (action.startsWith("r:") ? t("（リーチ）", " (Riichi)") : t("（ダマ）", " (Dama)")) : "");
 	const tiles = handTiles(result.scene);
 	const mineIndex = tiles.indexOf(mine.slice(2));
 	const bestIndex = tiles.indexOf(best.slice(2));
-	if (mine === best) return [{ index: mineIndex, text: `${name}${way(mine)} ＝ AIの最善手`, color: RED_INK }];
+	if (mine === best) return [{ index: mineIndex, text: t(`${name}${way(mine)} ＝ AIの最善手`, `${name}${way(mine)} = AI’s best move`), color: RED_INK }];
 	return [
 		{ index: mineIndex, text: `${name}${way(mine)}`, color: RED_INK },
-		{ index: bestIndex, text: `AIの最善手${way(best)}`, color: GOLD },
+		{ index: bestIndex, text: t(`AIの最善手${way(best)}`, `AI’s best move${way(best)}`), color: GOLD },
 	];
 }
 
@@ -135,9 +141,9 @@ function paintGrading(ctx: CanvasRenderingContext2D, result: Result, x: number, 
 	ctx.font = `600 ${scoreSize}px ${HAND}`;
 	const numberWidth = ctx.measureText(String(result.answer.score)).width;
 	ctx.font = `600 ${scoreSize * 0.45}px ${HAND}`;
-	const unitWidth = ctx.measureText("点").width;
+	const unitWidth = ctx.measureText(t("点", "pts")).width;
 	ctx.font = `800 ${sealFont}px ${MINCHO}`;
-	const sealWidth = mark === "hanamaru" ? ctx.measureText("ピタリ").width + sealFont * 1.1 : 0;
+	const sealWidth = mark === "hanamaru" ? ctx.measureText(t("ピタリ", "Perfect")).width + sealFont * 1.1 : 0;
 	const groupWidth = markSize + gap + numberWidth + 4 + unitWidth + (sealWidth ? gap + sealWidth : 0);
 
 	// On the label's side, clamped to the board.
@@ -160,7 +166,7 @@ function paintGrading(ctx: CanvasRenderingContext2D, result: Result, x: number, 
 	ctx.fillText(String(result.answer.score), cursor, 0);
 	cursor += numberWidth + 4;
 	ctx.font = `600 ${scoreSize * 0.45}px ${HAND}`;
-	ctx.fillText("点", cursor, 0);
+	ctx.fillText(t("点", "pts"), cursor, 0);
 	cursor += unitWidth;
 	if (mark === "hanamaru") {
 		cursor += gap;
@@ -176,7 +182,7 @@ function paintGrading(ctx: CanvasRenderingContext2D, result: Result, x: number, 
 		ctx.fillStyle = "#fff6ea";
 		ctx.font = `800 ${sealFont}px ${MINCHO}`;
 		ctx.textBaseline = "middle";
-		ctx.fillText("ピタリ", cursor + sealFont * 0.55, middle + 1);
+		ctx.fillText(t("ピタリ", "Perfect"), cursor + sealFont * 0.55, middle + 1);
 	}
 	ctx.restore();
 }
@@ -212,7 +218,7 @@ function drawAction(ctx: CanvasRenderingContext2D, action: string, result: Resul
 	};
 	if (action.startsWith("d:")) tile(action.slice(2));
 	else if (action.startsWith("r:")) {
-		tag("リーチ", true);
+		tag(t("リーチ", "Riichi"), true);
 		tile(action.slice(2));
 	} else if (action === "pass") tag(CALL_LABELS.pass, false);
 	else {
@@ -234,7 +240,7 @@ function paintCandidates(ctx: CanvasRenderingContext2D, result: Result, header: 
 	ctx.textAlign = "left";
 	ctx.fillStyle = INK;
 	ctx.font = `700 32px ${GOTHIC}`;
-	ctx.fillText(`AIの判定　${DIFFICULTY_LABELS[result.difficulty]}`, 48, header);
+	ctx.fillText(t(`AIの判定　${DIFFICULTY_LABELS[result.difficulty]}`, `AI difficulty: ${DIFFICULTY_LABELS[result.difficulty]}`), 48, header);
 
 	const rowHeight = 60;
 	const tileH = 48;
@@ -259,7 +265,7 @@ function paintCandidates(ctx: CanvasRenderingContext2D, result: Result, header: 
 		ctx.fillText(`${(candidate.p * 100).toFixed(candidate.p < 0.1 ? 1 : 0)}%`, 870, y - 12);
 		ctx.fillStyle = mine ? RED_INK : INK;
 		ctx.font = `700 34px ${GOTHIC}`;
-		ctx.fillText(`${candidate.score}点`, WIDTH - 64, y - 10);
+		ctx.fillText(t(`${candidate.score}点`, `${candidate.score} pts`), WIDTH - 64, y - 10);
 	});
 }
 
@@ -305,7 +311,8 @@ export async function problemCard(question: Question, result: Result, includeRes
 }
 
 /** A set is always shared with its result. */
-export async function setCard(title: string, problems: SetProblem[], playerName: string): Promise<HTMLCanvasElement> {
+export async function setCard(title: string, problems: SetProblem[], playerName: string, identity?: PlayerLabel): Promise<HTMLCanvasElement> {
+	playerName = localizedPlayerName(playerName, identity);
 	await loadGlyphs(`${title}${playerName} さんピタリ /第問点`);
 	const [element, ctx] = canvas();
 	paper(ctx, 0);
@@ -321,7 +328,7 @@ export async function setCard(title: string, problems: SetProblem[], playerName:
 	handScore(ctx, total.toFixed(1), 72, 380, 190);
 	ctx.fillStyle = INK;
 	ctx.font = `700 44px ${GOTHIC}`;
-	ctx.fillText(`ピタリ ${pitari} / ${problems.length}`, 80, 470);
+	ctx.fillText(t(`ピタリ ${pitari} / ${problems.length}`, `Perfect matches: ${pitari} / ${problems.length}`), 80, 470);
 
 	problems.forEach((problem, index) => {
 		const x = 80 + (index % 2) * 480;
@@ -330,10 +337,10 @@ export async function setCard(title: string, problems: SetProblem[], playerName:
 		paintMark(ctx, mark, x, y, 110, hanamaruFor(currentPublicId(), problem.id, problem.difficulty));
 		ctx.fillStyle = INK;
 		ctx.font = `600 34px ${GOTHIC}`;
-		ctx.fillText(`第${problem.id}問`, x + 132, y + 50);
+		ctx.fillText(t(`第${problem.id}問`, `Problem ${problem.id}`), x + 132, y + 50);
 		ctx.fillStyle = RED_INK;
 		ctx.font = `600 44px ${HAND}`;
-		ctx.fillText(`${problem.answer?.score ?? 0}点`, x + 132, y + 104);
+		ctx.fillText(t(`${problem.answer?.score ?? 0}点`, `${problem.answer?.score ?? 0} pts`), x + 132, y + 104);
 	});
 	footer(ctx);
 	return element;
@@ -346,15 +353,15 @@ export async function profileCard(profile: Profile): Promise<HTMLCanvasElement> 
 	ctx.textAlign = "left";
 	ctx.fillStyle = INK;
 	ctx.font = `800 60px ${MINCHO}`;
-	ctx.fillText("成績表", 72, 150);
+	ctx.fillText(t("成績表", "Stats"), 72, 150);
 	ctx.font = `700 46px ${GOTHIC}`;
 	ctx.fillText(displayName(profile.name, profile.publicId), 72, 240);
 
 	// 全期間 and 今日 side by side, three figures each.
 	const columnWidth = 440;
 	const periods: [string, Stats][] = [
-		["全期間", profile.all],
-		["今日", profile.today],
+		[t("全期間", "All time"), profile.all],
+		[t("今日", "Today"), profile.today],
 	];
 	periods.forEach(([period, stats], column) => {
 		const x = 80 + column * (columnWidth + 40);
@@ -362,9 +369,9 @@ export async function profileCard(profile: Profile): Promise<HTMLCanvasElement> 
 		ctx.font = `800 48px ${MINCHO}`;
 		ctx.fillText(period, x, 370);
 		const rows: [string, string][] = [
-			["回答数", `${stats.answers}問`],
-			["平均点", stats.answers ? `${(stats.scoreSum / stats.answers).toFixed(1)}点` : "—"],
-			["ピタリ率", stats.answers ? `${((stats.pitari / stats.answers) * 100).toFixed(1)}%` : "—"],
+			[t("回答数", "Answers"), t(`${stats.answers}問`, String(stats.answers))],
+			[t("平均点", "Average score"), stats.answers ? t(`${(stats.scoreSum / stats.answers).toFixed(1)}点`, `${(stats.scoreSum / stats.answers).toFixed(1)} pts`) : "—"],
+			[t("ピタリ率", "Perfect-match rate"), stats.answers ? `${((stats.pitari / stats.answers) * 100).toFixed(1)}%` : "—"],
 		];
 		rows.forEach(([label, value], index) => {
 			const y = 470 + index * 270;
@@ -396,11 +403,13 @@ export async function openShare(
 	withoutResult?: () => Promise<{ element: HTMLCanvasElement; url: string }>,
 ): Promise<void> {
 	const file = await toFile(element, name);
-	const text = `${label} ${HASHTAG}`;
+	const text = `${label} ${t(HASHTAG, "#MortalMahjongPractice")}`;
+	const localizeUrl = (value: string) => { const link = new URL(value); if (getLocale() === "en") link.searchParams.set("lang", "en"); return link.href; };
+	url = localizeUrl(url);
 	const initial = { file, url };
 	let current = initial;
 	let revision = 0;
-	const preview = h("img", { class: "share__preview", src: URL.createObjectURL(file), alt: "共有する画像" });
+	const preview = h("img", { class: "share__preview", src: URL.createObjectURL(file), alt: t("共有する画像", "Image to share") });
 	const dialog = h("dialog", { class: "share" }) as HTMLDialogElement;
 	const close = () => dialog.close();
 	dialog.addEventListener("close", () => {
@@ -425,7 +434,7 @@ export async function openShare(
 						}
 					},
 				},
-				"共有する",
+				t("共有する", "Share"),
 			),
 		);
 	}
@@ -437,10 +446,10 @@ export async function openShare(
 		save();
 		window.open(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(current.url)}`, "_blank", "noopener");
 	};
-	const closeButton = h("button", { class: "ghost-button", type: "button", onclick: close }, "閉じる");
+	const closeButton = h("button", { class: "ghost-button", type: "button", onclick: close }, t("閉じる", "Close"));
 	actions.append(
-		h("button", { class: "ghost-button", type: "button", onclick: save }, "画像を保存"),
-		h("button", { class: "ghost-button", type: "button", onclick: postToX }, "Xに投稿"),
+		h("button", { class: "ghost-button", type: "button", onclick: save }, t("画像を保存", "Save image")),
+		h("button", { class: "ghost-button", type: "button", onclick: postToX }, t("Xに投稿", "Post to X")),
 		closeButton,
 	);
 	const message = h("p", { class: "form-message share__message", role: "alert" });
@@ -459,7 +468,7 @@ export async function openShare(
 				let next = initial;
 				if (!includeResult) {
 					const content = await withoutResult();
-					next = { file: await toFile(content.element, name), url: content.url };
+					next = { file: await toFile(content.element, name), url: localizeUrl(content.url) };
 				}
 				if (update !== revision || !dialog.open) return;
 				const oldUrl = preview.src;
@@ -470,17 +479,17 @@ export async function openShare(
 				if (update !== revision || !dialog.open) return;
 				console.error(error);
 				toggle.checked = current === initial;
-				message.textContent = "画像を生成できませんでした。もう一度切り替えてください。";
+				message.textContent = t("画像を生成できませんでした。もう一度切り替えてください。", "Could not create the image. Please try the switch again.");
 			} finally {
 				if (update === revision && dialog.open) busy(false);
 			}
 		});
-		dialog.append(h("label", { class: "share__toggle" }, "採点結果を含める", toggle));
+		dialog.append(h("label", { class: "share__toggle" }, t("採点結果を含める", "Include the result"), toggle));
 	}
 	dialog.append(
 		preview,
 		message,
-		h("p", { class: "share__note" }, "Xに投稿するときは、保存した画像を投稿画面で添付してください。"),
+		h("p", { class: "share__note" }, t("Xに投稿するときは、保存した画像を投稿画面で添付してください。", "To post on X, attach the saved image to your post.")),
 		actions,
 	);
 	document.body.append(dialog);
