@@ -127,7 +127,6 @@ it("switches the active UI without losing an answer draft or a one-time recovery
 	expect(vi.mocked(api)).toHaveBeenCalledTimes(requests);
 	expect(document.querySelector<HTMLTextAreaElement>(".comments textarea")!.value).toBe("コメントの下書き");
 	expect(fixture.submissions).toBe(1);
-	click(".comments__toggle");
 	const previousInput = document.querySelector<HTMLTextAreaElement>(".comments textarea");
 	fixture.saved = false;
 	click(".result__actions .stamp-button");

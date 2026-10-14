@@ -14,8 +14,17 @@ export interface CommentDraft {
 }
 
 const drafts = new WeakMap<HTMLElement, CommentDraft>();
-// Remember the PC view within this tab; each new problem gets a fresh input and list.
-const desktopView: Pick<CommentDraft, "open" | "mode"> = { open: false, mode: "problem" };
+// Remember the PC scope within this tab; each new problem gets a fresh input and list.
+const desktopView: Pick<CommentDraft, "mode"> = { mode: "all" };
+const OPEN_KEY = "mortal-jan.comments-open";
+let rememberedOpen = true;
+function initialOpen(): boolean {
+	try {
+		const saved = localStorage.getItem(OPEN_KEY);
+		if (saved !== null) rememberedOpen = saved !== "false";
+	} catch { /* Keep the preference in this tab when storage is unavailable. */ }
+	return rememberedOpen;
+}
 const isDesktop = () => matchMedia("(min-width: 900px)").matches;
 export function commentDraft(root: HTMLElement): CommentDraft | undefined {
 	const section = root.querySelector<HTMLElement>(".comments");
@@ -41,7 +50,7 @@ function commentRow(comment: Comment): HTMLElement {
 
 /** The board is fetched only when opened; the problem context stays on screen. */
 export function comments(problemId: number, draft?: CommentDraft): HTMLElement {
-	const state: CommentDraft = draft ? { ...draft } : { body: "", open: false, mode: "problem", ...(isDesktop() ? desktopView : {}), response: null };
+	const state: CommentDraft = draft ? { ...draft } : { body: "", open: initialOpen(), mode: "all", ...(isDesktop() ? desktopView : {}), response: null };
 	const input = h("textarea", { rows: 2, value: state.body, placeholder: t("この問題へのコメント", "Comment on this problem"), "aria-label": t(`第${problemId}問へのコメント`, `Comment on problem ${problemId}`) });
 	const counter = h("span", { class: "comments__count" });
 	const message = h("p", { class: "comments__message", role: "status" });
@@ -69,7 +78,9 @@ export function comments(problemId: number, draft?: CommentDraft): HTMLElement {
 	let posting = false;
 	let version = 0;
 	function rememberView(): void {
-		if (isDesktop()) Object.assign(desktopView, { open: state.open, mode: state.mode });
+		rememberedOpen = state.open;
+		try { localStorage.setItem(OPEN_KEY, String(state.open)); } catch { /* Retained in memory. */ }
+		if (isDesktop()) Object.assign(desktopView, { mode: state.mode });
 	}
 	function updateInput(): void {
 		const length = [...input.value].length;

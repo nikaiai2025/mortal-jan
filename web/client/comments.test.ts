@@ -10,6 +10,7 @@ const comment: Comment = { id: 10, problemId: 42, player: { name: "投稿者", p
 const response = (items: Comment[] = [comment]): CommentsResponse => ({ comments: items });
 beforeEach(() => {
 	vi.clearAllMocks();
+	localStorage.setItem("mortal-jan.comments-open", "true");
 	vi.stubGlobal("matchMedia", () => ({ matches: false }));
 	setLocale("ja");
 	document.body.replaceChildren();
@@ -30,22 +31,33 @@ const type = (root: HTMLElement, body: string) => {
 };
 const settled = () => vi.waitFor(() => expect(document.querySelector(".comments__message")?.textContent).not.toBe("投稿中…"));
 
-it("loads lazily and switches between all and the displayed problem", async () => {
+it("opens in all mode by default and keeps a closed board closed until reopened", async () => {
+	localStorage.removeItem("mortal-jan.comments-open");
 	const root = mount();
-	expect(publicApi).not.toHaveBeenCalled();
-	expect(root.querySelector<HTMLElement>(".comments__content")!.hidden).toBe(true);
-	expect(button(root, "投稿").disabled).toBe(true);
-	button(root, "コメント").click();
 	expect(root.querySelector<HTMLElement>(".comments__content")!.hidden).toBe(false);
+	expect(button(root, "投稿").disabled).toBe(true);
 	await vi.waitFor(() => expect(root.querySelectorAll(".comments__entry")).toHaveLength(1));
-	expect(publicApi).toHaveBeenLastCalledWith("/api/comments?problem=42");
+	expect(publicApi).toHaveBeenLastCalledWith("/api/comments");
+	expect(mode(root, "全表示").checked).toBe(true);
 	expect(root.textContent).not.toContain("以前のコメント");
+	mode(root, "対象問題のみ（第42問）").click();
+	await vi.waitFor(() => expect(publicApi).toHaveBeenLastCalledWith("/api/comments?problem=42"));
+	expect(mode(root, "全表示").checked).toBe(false);
 	mode(root, "全表示").click();
 	await vi.waitFor(() => expect(mode(root, "全表示").checked).toBe(true));
 	expect(mode(root, "対象問題のみ（第42問）").checked).toBe(false);
 	expect(publicApi).toHaveBeenLastCalledWith("/api/comments");
 	button(root, "コメント").click();
 	expect(root.querySelector<HTMLElement>(".comments__content")!.hidden).toBe(true);
+	expect(localStorage.getItem("mortal-jan.comments-open")).toBe("false");
+	vi.mocked(publicApi).mockClear();
+	root.replaceChildren(comments(43));
+	expect(root.querySelector<HTMLElement>(".comments__content")!.hidden).toBe(true);
+	expect(publicApi).not.toHaveBeenCalled();
+	button(root, "コメント").click();
+	expect(root.querySelector<HTMLElement>(".comments__content")!.hidden).toBe(false);
+	expect(localStorage.getItem("mortal-jan.comments-open")).toBe("true");
+	expect(publicApi).toHaveBeenLastCalledWith("/api/comments");
 });
 it("keeps failed drafts and blocks duplicate submissions while pending", async () => {
 	const root = mount();
@@ -64,7 +76,6 @@ it("keeps failed drafts and blocks duplicate submissions while pending", async (
 });
 it("clears a successful draft and refreshes the open board", async () => {
 	const root = mount();
-	button(root, "コメント").click();
 	await vi.waitFor(() => expect(root.querySelectorAll(".comments__entry")).toHaveLength(1));
 	type(root, "投稿本文");
 	button(root, "投稿").click();
@@ -76,9 +87,8 @@ it("clears a successful draft and refreshes the open board", async () => {
 it("renders untrusted text safely and retains loaded posts and drafts across a language switch", async () => {
 	vi.mocked(publicApi).mockResolvedValueOnce(response([{ ...comment, body: '<img src=x onerror="alert(1)">' }, { ...comment, id: 9, player: { name: null, publicId: "anon" } }]));
 	const root = mount();
-	button(root, "コメント").click();
 	await vi.waitFor(() => expect(root.querySelectorAll(".comments__entry")).toHaveLength(2));
-	expect(publicApi).toHaveBeenLastCalledWith("/api/comments?problem=42");
+	expect(publicApi).toHaveBeenLastCalledWith("/api/comments");
 	expect(root.querySelector("img")).toBeNull();
 	type(root, "未投稿の下書き");
 	setLocale("en");
@@ -93,8 +103,7 @@ it("ignores a slow response from the previous mode", async () => {
 	let resolve!: (response: CommentsResponse) => void;
 	vi.mocked(publicApi).mockImplementationOnce(() => new Promise(done => { resolve = done; })).mockResolvedValueOnce(response([{ ...comment, problemId: 99 }]));
 	const root = mount();
-	button(root, "コメント").click();
-	mode(root, "全表示").click();
+	mode(root, "対象問題のみ（第42問）").click();
 	await vi.waitFor(() => expect(root.textContent).toContain("第99問"));
 	resolve(response());
 	await Promise.resolve();
@@ -115,8 +124,10 @@ it("counts Unicode characters and disables blank or excessive posts", () => {
 it("keeps the PC board open for a new problem without carrying its draft or cached posts", async () => {
 	vi.stubGlobal("matchMedia", () => ({ matches: true }));
 	const root = mount();
-	button(root, "コメント").click();
 	await vi.waitFor(() => expect(root.querySelectorAll(".comments__entry")).toHaveLength(1));
+	expect(mode(root, "全表示").checked).toBe(true);
+	expect(publicApi).toHaveBeenLastCalledWith("/api/comments");
+	mode(root, "対象問題のみ（第42問）").click();
 	type(root, "第42問だけの下書き");
 	root.replaceChildren(comments(43));
 	expect(root.querySelector<HTMLElement>(".comments__content")!.hidden).toBe(false);
@@ -129,13 +140,17 @@ it("keeps the PC board open for a new problem without carrying its draft or cach
 	root.replaceChildren(comments(44));
 	expect(mode(root, "全表示").checked).toBe(true);
 	expect(publicApi).toHaveBeenLastCalledWith("/api/comments");
-	// A phone starts closed even when the PC view was open.
+	// The open preference also applies on phones.
 	vi.stubGlobal("matchMedia", () => ({ matches: false }));
 	root.replaceChildren(comments(45));
-	expect(root.querySelector<HTMLElement>(".comments__content")!.hidden).toBe(true);
+	expect(root.querySelector<HTMLElement>(".comments__content")!.hidden).toBe(false);
+	expect(mode(root, "全表示").checked).toBe(true);
 	vi.stubGlobal("matchMedia", () => ({ matches: true }));
 	root.replaceChildren(comments(46));
 	button(root, "コメント").click();
 	root.replaceChildren(comments(47));
+	expect(root.querySelector<HTMLElement>(".comments__content")!.hidden).toBe(true);
+	vi.stubGlobal("matchMedia", () => ({ matches: false }));
+	root.replaceChildren(comments(48));
 	expect(root.querySelector<HTMLElement>(".comments__content")!.hidden).toBe(true);
 });
