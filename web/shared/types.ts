@@ -89,6 +89,19 @@ export interface AnswerResult {
 /** Raw name identity, so locale-specific defaults never rewrite a chosen name. */
 export interface PlayerLabel { name: string | null; publicId: string; }
 
+export interface Comment {
+	id: number;
+	problemId: number;
+	/** Identity and name at the time of posting. */
+	player: PlayerLabel;
+	body: string;
+	createdAt: string;
+}
+
+export interface CommentsResponse {
+	comments: Comment[];
+}
+
 export interface Result extends Question {
 	difficulty: Difficulty;
 	answer: AnswerResult;

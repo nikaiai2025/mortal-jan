@@ -5,7 +5,7 @@ import { h } from "./dom";
 import { errorMessage } from "./errors";
 
 /** This control appears only on results. The API separately checks the player's answer. */
-export function logViewer(result: Result): HTMLElement {
+export function logViewer(result: Result, heading: HTMLElement, nextSwitch?: HTMLElement): HTMLElement {
 	const panelId = `problem-log-${result.id}`;
 	const button = h("button", { class: "ghost-button", type: "button", "aria-expanded": "false", "aria-controls": panelId }, t("牌譜を表示", "Show game log"));
 	const message = h("p", { class: "log-viewer__message", role: "status", "aria-live": "polite" });
@@ -53,5 +53,8 @@ export function logViewer(result: Result): HTMLElement {
 			button.disabled = false;
 		}
 	});
-	return h("div", { class: "log-viewer" }, button, panel, message);
+	return h("div", { class: "log-viewer" },
+		h("div", { class: "log-viewer__head" }, heading, h("div", { class: "log-viewer__controls" }, button, nextSwitch ?? null)),
+		panel, message,
+	);
 }

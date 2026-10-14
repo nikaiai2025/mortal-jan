@@ -11,9 +11,30 @@ export function json(data: unknown, status = 200, cacheControl = "no-store"): Re
 	return Response.json(data, { status, headers: { "Cache-Control": cacheControl } });
 }
 
-export async function readJson(request: Request): Promise<Record<string, unknown>> {
+export async function readJson(request: Request, maxBytes?: number): Promise<Record<string, unknown>> {
+	let text: string | undefined;
+	if (maxBytes !== undefined) {
+		const reader = request.body?.getReader();
+		if (!reader) throw new HttpError(400, "invalid_body");
+		const decoder = new TextDecoder();
+		text = "";
+		let size = 0;
+		try {
+			for (;;) {
+				const chunk = await reader.read();
+				if (chunk.done) break;
+				size += chunk.value.byteLength;
+				if (size > maxBytes) {
+					await reader.cancel();
+					throw new HttpError(413, "body_too_large");
+				}
+				text += decoder.decode(chunk.value, { stream: true });
+			}
+			text += decoder.decode();
+		} finally { reader.releaseLock(); }
+	}
 	try {
-		const body = await request.json();
+		const body = text === undefined ? await request.json() : JSON.parse(text);
 		if (typeof body === "object" && body !== null && !Array.isArray(body)) return body as Record<string, unknown>;
 	} catch {
 		// fall through

@@ -60,6 +60,7 @@ vi.mock("./api", async (original) => {
 		currentPublicId: () => "fixture",
 		ensureSession: async () => ({ publicId: "fixture", token: "fixture-only" }),
 		reportInitialArrival: vi.fn(async () => {}),
+		publicApi: vi.fn(async () => ({ comments: [] })),
 		requestPending: () => false,
 		api: vi.fn(async (path: string) => {
 			if (path.startsWith("/api/players/"))
@@ -108,6 +109,7 @@ it("switches the active UI without losing an answer draft or a one-time recovery
 	expect(document.documentElement.lang).toBe("ja");
 	click(".riichi-toggle");
 	click(".fixture-tile");
+	document.querySelector<HTMLTextAreaElement>(".comments textarea")!.value = "コメントの下書き";
 	const requests = vi.mocked(api).mock.calls.length;
 	await language("en");
 	expect(vi.mocked(api)).toHaveBeenCalledTimes(requests);
@@ -115,13 +117,26 @@ it("switches the active UI without losing an answer draft or a one-time recovery
 	expect(document.querySelector(".fixture-tile")?.getAttribute("aria-pressed")).toBe("true");
 	expect(document.querySelector<HTMLButtonElement>(".answer__actions button")?.disabled).toBe(false);
 	expect(document.querySelector(".answer__question")?.textContent).toBe("Riichi? Which tile?");
+	expect(document.querySelector<HTMLTextAreaElement>(".comments textarea")!.value).toBe("コメントの下書き");
 	click(".answer__actions button");
 	await vi.waitFor(() => expect(document.querySelector(".result__actions")).not.toBeNull());
 	expect(document.body.textContent).toContain("Anonymous#shared");
+	expect(document.querySelector<HTMLTextAreaElement>(".comments textarea")!.value).toBe("コメントの下書き");
 	await language("ja");
 	await language("en");
 	expect(vi.mocked(api)).toHaveBeenCalledTimes(requests);
+	expect(document.querySelector<HTMLTextAreaElement>(".comments textarea")!.value).toBe("コメントの下書き");
 	expect(fixture.submissions).toBe(1);
+	click(".comments__toggle");
+	const previousInput = document.querySelector<HTMLTextAreaElement>(".comments textarea");
+	fixture.saved = false;
+	click(".result__actions .stamp-button");
+	await vi.waitFor(() => expect(document.querySelector(".riichi-toggle")).not.toBeNull());
+	expect(document.querySelector(".comments__toggle")?.getAttribute("aria-expanded")).toBe("true");
+	expect(document.querySelector<HTMLTextAreaElement>(".comments textarea")).not.toBe(previousInput);
+	expect(document.querySelector<HTMLTextAreaElement>(".comments textarea")!.value).toBe("");
+	expect(fixture.submissions).toBe(1);
+	click(".comments__toggle");
 	click('.site-nav a[href^="/rules"]');
 	await vi.waitFor(() => expect(document.querySelector("main")?.textContent).toContain("Game rules"));
 	expect(location.search).toContain("lang=en");

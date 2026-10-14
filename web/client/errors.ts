@@ -1,6 +1,7 @@
 import { t } from "./i18n";
 import { DAILY_ANSWER_LIMIT, NAME_MAX_LENGTH } from "../shared/rules";
 import { ApiError } from "./api";
+import { COMMENT_MAX_LENGTH } from "../shared/comments";
 
 const messages = (): Record<string, string> => ({
 	rate_limited: t("操作が多すぎます。少し時間をおいてからもう一度お試しください。", "Too many requests. Please wait a moment and try again."),
@@ -12,6 +13,9 @@ const messages = (): Record<string, string> => ({
 	name_too_long: t(`${NAME_MAX_LENGTH}文字以内にしてください。`, `Use no more than ${NAME_MAX_LENGTH} characters.`),
 	name_ng: t("使えない言葉が含まれています。", "That name contains a word that isn’t allowed."),
 	name_invalid: t("使えない文字が含まれています。", "That name contains unsupported characters."),
+	invalid_comment: t("コメントを入力してください。制御文字は使えません。", "Enter a comment without unsupported control characters."),
+	comment_too_long: t(`コメントは${COMMENT_MAX_LENGTH}文字以内にしてください。`, `Keep your comment within ${COMMENT_MAX_LENGTH} characters.`),
+	body_too_large: t("送信内容が大きすぎます。文字数を減らしてください。", "The message is too large. Please shorten it."),
 	unauthorized: t("この端末では成績を利用できません。復活の呪文で復旧してください。", "This device no longer has access to your stats. Restore them with your recovery code."),
 	session_invalid: t("保存された利用者情報を読み取れません。復活の呪文で復旧してください。", "Your saved profile couldn’t be read. Restore it with your recovery code."),
 	session_unavailable: t("このブラウザーでは利用者情報を保存できません。ブラウザーの設定を確認してください。", "This browser can’t save your profile. Please check your browser settings."),

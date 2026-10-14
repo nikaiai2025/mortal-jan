@@ -14,12 +14,13 @@ import { DIFFICULTY_LABELS, actionElement } from "./labels";
 import { chosenSlot, handBars } from "./evaluation";
 import { openShare, problemCard } from "./share";
 import { logViewer } from "./paifu";
+import { comments, commentDraft, type CommentDraft } from "./comments";
 
 export interface PlayOptions {
 	/** Shown after the answer, never between the board and it: a message to the player, and set progress. */
 	notice?: string;
 	progress?: string;
-	/** Beside "Next problem": the switch between random and number order (when the next problem is free play). */
+	/** Free play: below the game-log button on PC, below Next on phones. */
 	nextSwitch?: HTMLElement;
 	from: string | null;
 	nextLabel: string;
@@ -36,33 +37,36 @@ export async function localizeProblem(root: HTMLElement): Promise<boolean> {
 	return true;
 }
 
-export async function showProblem(root: HTMLElement, response: ProblemResponse, options: PlayOptions): Promise<void> {
+export async function showProblem(root: HTMLElement, response: ProblemResponse, options: PlayOptions, draft?: CommentDraft): Promise<void> {
 	localizers.set(root, async () => {
 		const answer = root.querySelector<HTMLElement>("section.answer");
-		if (response.state === "question") await showQuestion(root, response.question, options, answer ? answerDraft(answer) : undefined);
-		else await showProblem(root, response, options);
+		if (response.state === "question") await showQuestion(root, response.question, options, answer ? answerDraft(answer) : undefined, commentDraft(root));
+		else await showProblem(root, response, options, commentDraft(root));
 	});
 	switch (response.state) {
 		case "question":
-			return showQuestion(root, response.question, options);
+			return showQuestion(root, response.question, options, undefined, draft);
 		case "result":
-			return showResult(root, response.result, options);
+			return showResult(root, response.result, options, draft);
 		case "finished":
 			replace(root, h("section", { class: "notice" }, h("h2", {}, t("全問解きました", "You’ve answered every problem")), h("p", {}, t("すべての問題に回答済みです。", "You’ve already answered all the problems."))));
 	}
 }
 
-const rulesNote = () =>
+const rulesNote = (open: boolean) =>
 	h(
-		"p",
-		{ class: "rules-note" },
-		t("東南戦（半荘戦）・天鳳準拠　4人ともガチレベルの打ち手", "East–South game (hanchan), following Tenhou rules. All four players play at a competitive level."),
-		h("br"),
-		t("赤ドラあり（5萬・5筒・5索に各1枚）。喰いタン・後付けあり。一発・裏ドラ・槓ドラあり。", "One red five per suit. Open tanyao, atozuke, ippatsu, ura-dora and kan-dora are enabled."),
-		h("br"),
-		t("暗い表示はツモ切り", "Dimmed tiles were discarded straight from the draw."),
-		h("br"),
-		h("a", { href: "/rules" }, t("詳細ルール", "Full rules")),
+		"details",
+		{ class: "rules-note", open },
+		h("summary", {}, t("ルール説明", "Game rules")),
+		h("p", {},
+			t("東南戦（半荘戦）・天鳳準拠　4人ともガチレベルの打ち手", "East–South game (hanchan), following Tenhou rules. All four players play at a competitive level."),
+			h("br"),
+			t("赤ドラあり（5萬・5筒・5索に各1枚）。喰いタン・後付けあり。一発・裏ドラ・槓ドラあり。", "One red five per suit. Open tanyao, atozuke, ippatsu, ura-dora and kan-dora are enabled."),
+			h("br"),
+			t("暗い表示はツモ切り", "Dimmed tiles were discarded straight from the draw."),
+			h("br"),
+			h("a", { href: "/rules" }, t("詳細ルール", "Full rules")),
+		),
 	);
 
 function info(options: PlayOptions): HTMLElement | null {
@@ -76,29 +80,29 @@ function info(options: PlayOptions): HTMLElement | null {
 }
 
 /** The board first, so that nothing pushes it down; under it the answer or the result, then the info and the rules. */
-const play = (view: Board, below: HTMLElement, options: PlayOptions) =>
-	h("div", { class: "play" }, view.element, below, info(options), rulesNote());
+const play = (root: HTMLElement, view: Board, below: HTMLElement, options: PlayOptions, id: number, draft?: CommentDraft) =>
+	h("div", { class: "play" }, view.element, below, info(options), comments(id, draft), rulesNote(root.querySelector<HTMLDetailsElement>("details.rules-note")?.open ?? false));
 
-async function showQuestion(root: HTMLElement, question: Question, options: PlayOptions, draft?: AnswerDraft): Promise<void> {
+async function showQuestion(root: HTMLElement, question: Question, options: PlayOptions, draft?: AnswerDraft, commentState?: CommentDraft): Promise<void> {
 	const view = await board(question);
 	const answer = answerWindow(question, view, async (action) => {
 		const from = options.from ? `?from=${encodeURIComponent(options.from)}` : "";
 		const response = await post<ProblemResponse>(`/api/problems/${question.id}/answer${from}`, { action });
 		if (response.state !== "result") return showProblem(root, response, options);
 		options.onAnswered?.(response.result);
-		localizers.set(root, () => showProblem(root, response, options));
+		localizers.set(root, () => showProblem(root, response, options, commentDraft(root)));
 		await grade(root, view, below, response.result, options, true);
 	}, draft);
 	// The question stays above the hand; call choices and confirmation go under the board.
 	const below = question.kind === "call" ? answer : h("div");
 	view.prompt(question.kind === "call" ? h("div", { class: "answer answer--call" }, answer.querySelector<HTMLElement>(".answer__prompt")) : answer);
-	replace(root, play(view, below, options));
+	replace(root, play(root, view, below, options, question.id, commentState));
 }
 
-async function showResult(root: HTMLElement, result: Result, options: PlayOptions): Promise<void> {
+async function showResult(root: HTMLElement, result: Result, options: PlayOptions, draft?: CommentDraft): Promise<void> {
 	const view = await board(result);
 	const placeholder = h("div");
-	replace(root, play(view, placeholder, options));
+	replace(root, play(root, view, placeholder, options, result.id, draft));
 	await grade(root, view, placeholder, result, options, false);
 }
 
@@ -164,13 +168,15 @@ function resultCard(result: Result, options: PlayOptions): HTMLElement {
 		);
 	}
 
+	const judgment = [h("dt", {}, t("AIの判定", "AI difficulty")), h("dd", {}, DIFFICULTY_LABELS[result.difficulty])];
+	const average = [
+		h("dt", {}, t("みんなの平均", "Player average")),
+		h("dd", {}, result.human ? t(`${result.human.average.toFixed(1)}点（${result.human.answers}人）`, `${result.human.average.toFixed(1)} pts (${result.human.answers} players)`) : t("集計中", "Collecting results")),
+	];
 	const meta = h(
 		"dl",
 		{ class: "result__meta" },
-		h("dt", {}, t("AIの判定", "AI difficulty")),
-		h("dd", {}, DIFFICULTY_LABELS[result.difficulty]),
-		h("dt", {}, t("みんなの平均", "Player average")),
-		h("dd", {}, result.human ? t(`${result.human.average.toFixed(1)}点（${result.human.answers}人）`, `${result.human.average.toFixed(1)} pts (${result.human.answers} players)`) : t("集計中", "Collecting results")),
+		...(result.kind === "call" ? [...judgment, ...average] : []),
 	);
 	if (result.kind === "riichi") {
 		// The board shows the chosen tile, not whether it was a riichi; the bars over the hand: one per way of discarding the tile.
@@ -200,19 +206,40 @@ function resultCard(result: Result, options: PlayOptions): HTMLElement {
 		);
 	};
 
-	return h(
+	const nextSwitch = options.nextSwitch;
+	nextSwitch?.classList.add("result__picker");
+	const card = h(
 		"section",
 		{ class: "result", "aria-label": t("結果", "Results") },
-		result.kind === "call" ? h("div", { class: "result__list" }, h("h3", {}, t("候補ごとのAI評価", "AI evaluation by choice")), list) : null,
-		meta,
-		logViewer(result),
+		h("div", { class: "result__details" },
+			logViewer(result, result.kind === "call"
+				? h("h3", { class: "result__heading" }, t("候補ごとのAI評価", "AI evaluation by choice"))
+				: h("div", { class: "result__summary" }, h("dl", { class: "result__meta" }, ...judgment), h("dl", { class: "result__meta" }, ...average)),
+				nextSwitch),
+			result.kind === "call" ? h("div", { class: "result__list" }, list) : null,
+			meta.childElementCount ? meta : null,
+		),
 		h(
 			"div",
 			{ class: "result__actions" },
-			// The switch sits right above "Next problem", the same width: it belongs to that button.
-			options.nextSwitch ?? null,
 			h("button", { class: "ghost-button", type: "button", onclick: share }, t("結果を共有", "Share results")),
 			h("button", { class: "stamp-button", type: "button", onclick: () => options.onNext() }, options.nextLabel),
 		),
 	);
+	if (nextSwitch) {
+		const controls = card.querySelector<HTMLElement>(".log-viewer__controls")!;
+		const actions = card.querySelector<HTMLElement>(".result__actions")!;
+		// Move the same control on rotation; its selection and handlers stay intact.
+		const place = () => {
+			const target = matchMedia("(max-width: 520px)").matches ? actions : controls;
+			if (nextSwitch.parentElement !== target) target.append(nextSwitch);
+		};
+		place();
+		const observer = new ResizeObserver(() => {
+			if (!card.isConnected) return observer.disconnect();
+			place();
+		});
+		observer.observe(card);
+	}
+	return card;
 }

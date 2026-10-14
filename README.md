@@ -76,6 +76,20 @@ npm test; npm run typecheck
 
 復活の呪文を保存していない利用者への発行手順は [tools/recovery/README.md](tools/recovery/README.md)。
 
+## 掲示板の管理
+
+マイグレーション0007が必要。ローカルでは `npm run db:migrate:local`、本番では既存のDeployワークフローが適用する。本文は1,000文字まで、投稿は利用者・IPごとに毎分5回まで。自動モデレーションは行わず、削除は管理人がD1で行う。
+
+`web/` で次を実行する。最初のSELECTで問題番号・名前・本文を確認し、削除対象の投稿IDを `123` に入れる。ローカルで試す場合は `--remote` を `--local` に替える。
+
+```powershell
+npx wrangler d1 execute DB --remote --command "SELECT id, problem_id, player_public_id, player_name, body, created_at FROM comments ORDER BY id DESC LIMIT 50"
+npx wrangler d1 execute DB --remote --command "DELETE FROM comments WHERE id = 123"
+npx wrangler d1 execute DB --remote --command "SELECT id FROM comments WHERE id = 123"
+```
+
+問題別の確認は最初のSELECTに `WHERE problem_id = 50` を付ける。削除後は掲示板を開き直すと表示に反映される。
+
 ## 公開後の検索設定
 
 初回配信後、[Google Search Console](https://search.google.com/search-console/) に本番URLの「URLプレフィックス」プロパティを追加し、「HTMLタグ」の方式で所有権を確認する。Googleが指定する `google-site-verification` のmetaタグを `web/index.html` のheadに追加して配信し、確認後もタグを残す。サイトマップに `/sitemap.xml` を登録し、「URL検査」でトップページのインデックス登録をリクエストする。サイト名やfaviconの更新時も同じ手順で再クロールを依頼する。反映時期と表示名はGoogleが決める。

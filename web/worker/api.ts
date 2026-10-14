@@ -33,6 +33,7 @@ import { validateName } from "./names";
 import { formatSpell, normalizeSpell, spellHashInput } from "../shared/recovery";
 import { VISITOR_HEADER, VISITOR_ID_PATTERN } from "../shared/acquisition";
 import { collectArrival, collectAnswer } from "./acquisition";
+import { insertComment, listComments, validateComment } from "./comments";
 
 interface Ctx {
 	request: Request;
@@ -88,6 +89,8 @@ const routes: [string, RegExp, Handler][] = [
 	["GET", /^\/api\/problems\/(\d+)$/, getProblem],
 	["GET", /^\/api\/problems\/(\d+)\/log$/, getProblemLog],
 	["POST", /^\/api\/problems\/(\d+)\/answer$/, postAnswer],
+	["POST", /^\/api\/problems\/(\d+)\/comments$/, postComment],
+	["GET", /^\/api\/comments$/, getComments],
 	["GET", /^\/api\/daily$/, getDaily],
 	["GET", /^\/api\/sets$/, getSets],
 	["GET", /^\/api\/sets\/([a-z]+)\/(\d+)$/, getSet],
@@ -160,27 +163,7 @@ async function postAcquisition(ctx: Ctx): Promise<Response> {
 	if (ctx.request.headers.get("Origin") !== ctx.url.origin) throw new HttpError(403, "cross_origin");
 	await limit(ctx.env.ACQUISITION_LIMITER, `ip:${clientIp(ctx)}`);
 	// This unauthenticated endpoint accepts only a small, same-origin JSON message.
-	const reader = ctx.request.body?.getReader();
-	if (!reader) throw new HttpError(400, "invalid_body");
-	let text = "";
-	let size = 0;
-	const decoder = new TextDecoder();
-	try {
-		for (;;) {
-			const chunk = await reader.read();
-			if (chunk.done) break;
-			size += chunk.value.byteLength;
-			if (size > 1024) { await reader.cancel(); throw new HttpError(413, "body_too_large"); }
-			text += decoder.decode(chunk.value, { stream: true });
-		}
-		text += decoder.decode();
-	} finally { reader.releaseLock(); }
-	let body: Record<string, unknown>;
-	try {
-		const value: unknown = JSON.parse(text);
-		if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error();
-		body = value as Record<string, unknown>;
-	} catch { throw new HttpError(400, "invalid_body"); }
+	const body = await readJson(ctx.request, 1024);
 	if (typeof body.visitorId !== "string" || !VISITOR_ID_PATTERN.test(body.visitorId)) throw new HttpError(400, "invalid_visitor");
 	const player = ctx.request.headers.has("Authorization") ? await authenticate(ctx) : null;
 	await collectArrival(ctx.env.DB, body, player?.id ?? null);
@@ -306,6 +289,22 @@ async function recoverPlayer(ctx: Ctx): Promise<Response> {
 }
 
 // ---- problems ----
+
+async function postComment(ctx: Ctx): Promise<Response> {
+	const player = await authenticate(ctx);
+	await limit(ctx.env.COMMENT_LIMITER, `p:${player.id}`);
+	await limit(ctx.env.COMMENT_LIMITER, `ip:${clientIp(ctx)}`);
+	await limit(ctx.env.IP_LIMITER, `ip:${clientIp(ctx)}`);
+	const body = validateComment((await readJson(ctx.request, 16_384)).body);
+	const comment = await insertComment(ctx.env.DB, positiveInt(ctx.params[0]), { id: player.id, publicId: player.public_id, name: player.name }, body);
+	return json(comment, 201);
+}
+
+async function getComments(ctx: Ctx): Promise<Response> {
+	const problem = ctx.url.searchParams.get("problem");
+	if (ctx.url.searchParams.has("before")) throw new HttpError(400, "invalid_query");
+	return json(await listComments(ctx.env.DB, problem === null ? null : positiveInt(problem)));
+}
 
 // Problems are added or relabelled (generator.relabel) rarely, so a few minutes of staleness is fine.
 const PROBLEM_CACHE_TTL_MS = 10 * 60_000;

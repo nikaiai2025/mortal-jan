@@ -1,6 +1,6 @@
 import { t } from "./i18n";
 // How the question page picks the next problem: at random, or in number order from the problem
-// answered last. Kept in this browser; switched beside "Next problem" after answering.
+// answered last. Kept in this browser; switched on the result card after answering.
 
 import type { PickMode } from "../shared/rules";
 import { h } from "./dom";
